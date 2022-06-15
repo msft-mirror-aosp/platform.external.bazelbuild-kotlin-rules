@@ -674,6 +674,7 @@ def _check_srcs_package(target_package, srcs, attr_name):
 # TODO: Streamline API to generate less actions.
 def _kt_jvm_library(
         ctx,
+        kt_toolchain,
         srcs = [],
         common_srcs = [],
         coverage_srcs = [],
@@ -700,14 +701,15 @@ def _kt_jvm_library(
         testonly = False,  # used by Android Lint
         enforce_strict_deps = True,
         run_kt_lint = True,
-        kt_toolchain = None,
         java_toolchain = None,
         kt_plugin_configs = [],
         friend_jars = depset(),
                 annotation_processor_additional_outputs = [],
         annotation_processor_additional_inputs = []):
     if not java_common.JavaToolchainInfo in java_toolchain:
-        fail("_kt_jvm_library called with missing or invalid java_toolchain")
+        fail("Missing or invalid java_toolchain")
+    if not kt_toolchain:
+        fail("Missing or invalid kt_toolchain")
     _check_srcs_package(ctx.label.package, srcs, "srcs")
     _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
     _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
@@ -765,9 +767,6 @@ def _kt_jvm_library(
     # Skip kapt if no plugins have processors (can happen with only
     # go/errorprone plugins, # b/110540324)
     if kt_srcs and plugin_processors:
-        if not kt_toolchain:
-            fail("Annotation processors present but missing the kt_toolchain.")
-
         kapt_java_srcjar = ctx.actions.declare_file(ctx.label.name + "-kapt.srcjar")
         kapt_jar = ctx.actions.declare_file(ctx.label.name + "-kapt.jar")
         kapt_manifest_proto = ctx.actions.declare_file(ctx.label.name + "-kapt.jar_manifest_proto")
@@ -800,9 +799,6 @@ def _kt_jvm_library(
 
     kotlin_jdeps_output = None
     if kt_srcs or common_srcs:
-        if not kt_toolchain:
-            fail("Kotlin sources given but missing the kt_toolchain.")
-
         main_compile_plugin_configs = list(kt_plugin_configs)
 
         kt_jar = ctx.actions.declare_file(ctx.label.name + "-kt.jar")
