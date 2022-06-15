@@ -354,7 +354,7 @@ def _derive_gen_class_jar(
 
     return result
 
-def _jvm_compile(
+def _run_kotlinc(
         ctx,
         output,
         kt_srcs = [],
@@ -806,7 +806,7 @@ def _kt_jvm_library(
         main_compile_plugin_configs = list(kt_plugin_configs)
 
         kt_jar = ctx.actions.declare_file(ctx.label.name + "-kt.jar")
-        kt_java_info = _jvm_compile(
+        kt_java_info = _run_kotlinc(
             ctx,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
@@ -1053,7 +1053,7 @@ common = struct(
     JAR_FILE_TYPE = _JAR_FILE_TYPE,
     SRCJAR_FILE_TYPES = _SRCJAR_FILE_TYPES,
     JVM_FLAGS = BASE_JVMOPTS,
-    jvm_compile = _jvm_compile,
+    run_kotlinc = _run_kotlinc,
     kt_jvm_library = _kt_jvm_library,
     kt_jvm_import = _kt_jvm_import,
     collect_proguard_specs = _collect_proguard_specs,
