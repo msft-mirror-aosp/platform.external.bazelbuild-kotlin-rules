@@ -35,7 +35,6 @@ def compile(
         android_lint_plugins,
         resource_files,
         exported_plugins,
-        friend = None,
         manifest = None,
         merged_manifest = None,
         classpath_resources = [],
@@ -70,7 +69,6 @@ def compile(
       kotlincopts: List of strings. A list of Kotlin compile options.
       neverlink: A bool. Signifies whether the target is only used for compile-time.
       testonly: A bool. Signifies whether the target is only used for testing only.
-      friend: Deprecated. Do not use
       android_lint_plugins: List of targets. An list of android lint plugins to
         execute as a part of linting.
       resource_files: List of Files. The list of Android Resource files.
@@ -111,9 +109,6 @@ def compile(
     use_compose = False
     use_flogger = False
     use_parcelize = False
-
-    if friend:
-        fail("`friend` attribute is deprecated. Friends are inferred from `deps`.")
 
     friend_jars = depset(transitive = [
         _select_friend_jars(dep)
