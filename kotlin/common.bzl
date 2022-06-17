@@ -359,8 +359,7 @@ def _run_kotlinc(
         output,
         kt_srcs = [],
         common_srcs = [],
-        java_srcs = [],
-        java_source_dirs = [],
+        java_srcs_and_dirs = [],
         merged_deps = None,
         kotlincopts = [],
         toolchain = None,
@@ -389,8 +388,7 @@ def _run_kotlinc(
         direct = (
             kt_srcs +
             common_srcs +
-            java_srcs +
-            java_source_dirs +
+            java_srcs_and_dirs +
             [config.jar for config in kt_plugin_configs] +
             jdeps_input
         ),
@@ -429,11 +427,9 @@ def _run_kotlinc(
     kotlinc_args.add_all(kt_srcs)
     kotlinc_args.add_all(common_srcs)
 
-    if java_srcs:
-        kotlinc_args.add_all(java_srcs)
-    if java_source_dirs:
-        # This expands directories into their constituent (source) files
-        kotlinc_args.add_all(java_source_dirs)
+    if java_srcs_and_dirs:
+        # This expands any directories into their contained files
+        kotlinc_args.add_all(java_srcs_and_dirs)
 
     kotlinc_args.add_joined(friend_jars, format_joined = "-Xfriend-paths=%s", join_with = ",")
 
@@ -806,8 +802,7 @@ def _kt_jvm_library(
             ctx,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
-            java_srcs = java_srcs,
-            java_source_dirs = kapt_gen_srcs,
+            java_srcs_and_dirs = java_srcs + kapt_gen_srcs,
             output = kt_jar,
             merged_deps = merged_deps,
             kotlincopts = kotlincopts,
