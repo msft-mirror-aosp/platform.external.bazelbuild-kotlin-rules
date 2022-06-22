@@ -58,18 +58,23 @@ def kt_jvm_library(
       runtime_deps: Libraries to make available to the final binary or test at runtime only.
       proguard_specs: Proguard specifications to go along with this library.
       plugins: Java annotation processors to run at compile-time.
-      exported_plugins: go/be-java#java_plugin rules to export to direct dependencies.
-      resources: A list of data files to include in the Jar, see go/be#java_library.resources.
+      exported_plugins: https://bazel.build/reference/be/java#java_plugin rules to export to direct
+        dependencies.
+      resources: A list of data files to include in the Jar, see
+        https://bazel.build/reference/be/java#java_library.resources.
       tags: A list of string tags passed to generated targets.
       testonly: Whether this target is intended only for tests.
       javacopts: Additional flags to pass to javac if used.
       custom_kotlincopts: Additional flags to pass to Kotlin compiler.
       disable_lint_checks: A list of AndroidLint checks to be skipped.
-      compatible_with: Standard attribute, see http://go/be-common#common.compatible_with.
-      restricted_to: Standard attribute, see http://go/be-common#common.restricted_to.
+      compatible_with: Standard attribute, see
+        https://bazel.build/reference/be/common-definitions#common.compatible_with.
+      restricted_to: Standard attribute, see
+        https://bazel.build/reference/be/common-definitions#common.restricted_to.
       transitive_configs:  Blaze feature flags (if any) on which this target depends.
       visibility: A list of targets allowed to depend on this rule.
-      deprecation: Standard attribute, see http://go/be-common#common.deprecation.
+      deprecation: Standard attribute, see
+        https://bazel.build/reference/be/common-definitions#common.deprecation.
       features: Features enabled.
     """
     srcs = srcs or []
