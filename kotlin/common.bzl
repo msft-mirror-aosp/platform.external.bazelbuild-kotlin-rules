@@ -183,8 +183,7 @@ def _kapt_stubs(
     kaptargs.set_param_file_format("multiline")  # avoid shell-quoting which breaks workers
 
     kaptargs.add(toolchain.kotlin_annotation_processing, format = "-Xplugin=%s")
-    kaptargs.add("-P")
-    kaptargs.add("plugin:org.jetbrains.kotlin.kapt3:aptMode=stubs")
+    kaptargs.add("-P", "plugin:org.jetbrains.kotlin.kapt3:aptMode=stubs")
 
     # List processor classes one by one (comma-separated list doesn't work even though documentation
     # seems to say that it should: http://kotlinlang.org/docs/reference/kapt.html#using-in-cli)
@@ -199,21 +198,16 @@ def _kapt_stubs(
         before_each = "-P",
         format_each = "plugin:org.jetbrains.kotlin.kapt3:apclasspath=%s",
     )
-    kaptargs.add("-P")
-    kaptargs.add("plugin:org.jetbrains.kotlin.kapt3:sources=/tmp")
-    kaptargs.add("-P")
-    kaptargs.add("plugin:org.jetbrains.kotlin.kapt3:classes=/tmp")
-    kaptargs.add("-P")
-    kaptargs.add(stubs_dir.path, format = "plugin:org.jetbrains.kotlin.kapt3:stubs=%s")
-    kaptargs.add("-P")
-    kaptargs.add("plugin:org.jetbrains.kotlin.kapt3:correctErrorTypes=true")
+    kaptargs.add("-P", "plugin:org.jetbrains.kotlin.kapt3:sources=/tmp")
+    kaptargs.add("-P", "plugin:org.jetbrains.kotlin.kapt3:classes=/tmp")
+    kaptargs.add("-P", stubs_dir.path, format = "plugin:org.jetbrains.kotlin.kapt3:stubs=%s")
+    kaptargs.add("-P", "plugin:org.jetbrains.kotlin.kapt3:correctErrorTypes=true")
 
     # kapt requires javac options to be base64-encoded,
     # see: http://kotlinlang.org/docs/reference/kapt.html#apjavac-options-encoding
     # The string below is the encoding of "-source 8 -target 8".
     # TODO: use the full google3 defaults instead of hard-coding.
-    kaptargs.add("-P")
-    kaptargs.add("plugin:org.jetbrains.kotlin.kapt3:javacArguments=rO0ABXccAAAAAgAHLXNvdXJjZQABOAAHLXRhcmdldAABOA")
+    kaptargs.add("-P", "plugin:org.jetbrains.kotlin.kapt3:javacArguments=rO0ABXccAAAAAgAHLXNvdXJjZQABOAAHLXRhcmdldAABOA")
     kaptargs.add_all(_common_kapt_and_kotlinc_args(ctx, toolchain))
     kaptargs.add_joined("-cp", classpath, join_with = ":")
     kaptargs.add_all(kotlincopts)
