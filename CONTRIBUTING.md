@@ -42,9 +42,9 @@ the one above, the
    an [issue](https://github.com/bazelbuild/rules_kotlin/issues) or comment on
    an existing issue.
 1. Prepare a git commit with your change. Don't forget to
-   add [tests](https://github.com/bazelbuild/rules_kotlin/tree/master/tests).
+   add [tests](https://github.com/bazelbuild/rules_kotlin/tree/main/tests).
    Run the existing tests with `bazel test //...`. Update
-   [README.md](https://github.com/bazelbuild/rules_kotlin/blob/master/README.md)
+   [README.md](https://github.com/bazelbuild/rules_kotlin/blob/main/README.md)
    if appropriate.
 1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request/).
    This will start the code review process. **All submissions, including
