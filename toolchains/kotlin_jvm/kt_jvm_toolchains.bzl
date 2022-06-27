@@ -17,9 +17,9 @@
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_6_21"
+KT_VERSION = "v1_7_0"
 
-KT_LANG_VERSION = "1.6"
+KT_LANG_VERSION = "1.7"
 
 # Only for testing kotlinc updates. Do not use in production.
 _ALLOW_PRERELEASE_VERSIONS = False
