@@ -21,9 +21,6 @@ KT_VERSION = "v1_7_0"
 
 KT_LANG_VERSION = "1.7"
 
-# Only for testing kotlinc updates. Do not use in production.
-_ALLOW_PRERELEASE_VERSIONS = False
-
 # Kotlin JVM toolchain type label
 _TYPE = Label("@//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
 
@@ -71,10 +68,10 @@ def _common_kotlinc_flags(ctx):
 
         # We don't want people to use experimental APIs, but if they do, we want them to use @OptIn
         "-opt-in=kotlin.RequiresOptIn",
-    ]
 
-    if _ALLOW_PRERELEASE_VERSIONS:
-        args.append("-Xskip-prerelease-check")
+        # Don't complain when using old builds or release candidate builds
+        "-Xskip-prerelease-check",
+    ]
 
     # --define=extra_kt_jvm_opts is for overriding from command line.
     # (Last wins in repeated --define=foo= use, so use --define=bar= instead.)
