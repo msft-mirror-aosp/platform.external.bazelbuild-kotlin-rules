@@ -416,8 +416,7 @@ def _run_kotlinc(
         kotlinc_args.add("-Xmulti-platform=true")
         kotlinc_args.add_all(common_srcs, format_each = "-Xcommon-sources=%s")
 
-    kotlinc_args.add("-d")
-    kotlinc_args.add(output)
+    kotlinc_args.add("-d", output)
     kotlinc_args.add_all(kt_srcs)
     kotlinc_args.add_all(common_srcs)
 
