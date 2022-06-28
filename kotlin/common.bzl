@@ -218,14 +218,10 @@ def _kapt_stubs(
         kaptargs.add_all(java_srcs)
 
     tool_inputs = [toolchain.kotlin_annotation_processing]
-    args = ctx.actions.args()
 
     ctx.actions.run(
         executable = toolchain.kotlin_compiler,
-        arguments = [
-            args,
-            kaptargs,
-        ],
+        arguments = [kaptargs],
         inputs = depset(
             direct = (
                 kt_srcs +
