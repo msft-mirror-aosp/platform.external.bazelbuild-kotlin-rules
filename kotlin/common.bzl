@@ -801,7 +801,6 @@ def _kt_jvm_library(
             compile_jdeps = compile_jdeps,
             toolchain = kt_toolchain,
             classpath = full_classpath,
-            directdep_jars = directdep_jars,
             kt_plugin_configs = main_compile_plugin_configs,
             friend_jars = friend_jars,
         )
