@@ -62,6 +62,9 @@ def _aspect_impl(target, ctx):
 def _collect_compile_jdeps(targets):
     return [target[_KtJdepsInfo].compile_jdeps for target in targets if (_KtJdepsInfo in target)]
 
+def _collect_compile_jdeps_depset(targets):
+    return depset(transitive = _collect_compile_jdeps(targets))
+
 _aspect = aspect(
     implementation = _aspect_impl,
     # Transitively check exports, since they are effectively directly depended on.
@@ -72,5 +75,5 @@ _aspect = aspect(
 
 kt_jvm_dep_jdeps = struct(
     aspect = _aspect,
-    collect_compile_jdeps_depsets = _collect_compile_jdeps,
+    collect_compile_jdeps_depset = _collect_compile_jdeps_depset,
 )

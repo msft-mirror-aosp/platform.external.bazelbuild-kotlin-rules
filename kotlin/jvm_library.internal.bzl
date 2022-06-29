@@ -20,6 +20,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":common.bzl", "common")
 load(":forbidden_deps.bzl", "kt_forbidden_deps")
 load(":jvm_compile.bzl", "compile")
+load(":kt_jvm_deps.bzl", "kt_jvm_dep_jdeps")
 
 # TODO: Use this function in all Kotlin rules
 def _make_default_info(ctx, direct_files, propagated_attrs):
@@ -141,6 +142,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         ],
         aspects = [
             kt_forbidden_deps.aspect,
+            kt_jvm_dep_jdeps.aspect,
         ],
         doc = """The list of libraries this library directly depends on at compile-time. For Java
                      and Kotlin libraries listed, the Jars they build as well as the transitive closure

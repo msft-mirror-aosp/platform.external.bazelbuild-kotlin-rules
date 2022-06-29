@@ -15,7 +15,8 @@
 """Compile method that can compile kotlin or java sources"""
 
 load(":common.bzl", "common")
-load("@//kotlin:forbidden_deps.bzl", "kt_forbidden_deps")
+load(":forbidden_deps.bzl", "kt_forbidden_deps")
+load(":kt_jvm_deps.bzl", "kt_jvm_dep_jdeps")
 
 _PARCELIZE_V2_RUNTIME = "@kotlinc//:parcelize_runtime"
 
@@ -203,6 +204,7 @@ def compile(
         java_toolchain = java_toolchain,
         javacopts = javacopts,
         kotlincopts = kotlincopts,
+        compile_jdeps = kt_jvm_dep_jdeps.collect_compile_jdeps_depset(deps),
         kt_toolchain = kt_toolchain,
         manifest = manifest,
         merged_manifest = merged_manifest,

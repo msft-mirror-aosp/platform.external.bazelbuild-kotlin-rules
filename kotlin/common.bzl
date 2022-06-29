@@ -352,12 +352,14 @@ def _run_kotlinc(
         java_srcs_and_dirs = [],
         merged_deps = None,
         kotlincopts = [],
+        compile_jdeps = depset(),
         toolchain = None,
         classpath = [],
+        directdep_jars = depset(),
         kt_plugin_configs = [],
         friend_jars = depset(),
-        jdeps_input = []):
-    if jdeps_input:
+        enforce_complete_jdeps = False):
+    if enforce_complete_jdeps:
         # Second pass for complete jdeps test requires a different output file name
         kt_ijar = ctx.actions.declare_file(ctx.label.name + "-kt-ijar-ext.jar")
     else:
@@ -379,12 +381,13 @@ def _run_kotlinc(
             kt_srcs +
             common_srcs +
             java_srcs_and_dirs +
-            [config.jar for config in kt_plugin_configs] +
-            jdeps_input
+            [config.jar for config in kt_plugin_configs]
         ),
         transitive = [
             # friend_jars # These are always a subset of the classpath
+            # directdep_jars # These are always a subset of the classpath
             classpath,
+            compile_jdeps,
         ],
     )
     outputs = [output]
@@ -427,11 +430,10 @@ def _run_kotlinc(
     # particular, the extractor expects this to be a vanilla "spawn" (ctx.actions.run) so don't
     # change this to ctx.actions.run_shell or something else without considering Kythe implications
     # (b/112439843).
+    # TODO: populate unused_inputs_list to speed interactive rebuilds
     ctx.actions.run(
         executable = toolchain.kotlin_compiler,
-        arguments = [
-            kotlinc_args,
-        ],
+        arguments = [kotlinc_args],
         inputs = inputs,
         outputs = outputs,
         mnemonic = "Kt2JavaCompile",
@@ -681,6 +683,7 @@ def _kt_jvm_library(
         android_lint_rules_jars = depset(),  # Depset with standalone Android Lint rules Jars
         javacopts = [],
         kotlincopts = [],
+        compile_jdeps = depset(),
         disable_lint_checks = [],
         neverlink = False,
         testonly = False,  # used by Android Lint
@@ -795,8 +798,10 @@ def _kt_jvm_library(
             output = kt_jar,
             merged_deps = merged_deps,
             kotlincopts = kotlincopts,
+            compile_jdeps = compile_jdeps,
             toolchain = kt_toolchain,
             classpath = full_classpath,
+            directdep_jars = directdep_jars,
             kt_plugin_configs = main_compile_plugin_configs,
             friend_jars = friend_jars,
         )
