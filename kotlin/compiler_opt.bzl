@@ -63,6 +63,7 @@ def kotlincopts_attrs():
         custom_kotlincopts = attr.label_list(
             doc = "kt_compiler_opt targets to pass to Kotlin compiler. Most users should not need this attr.",
             providers = [[_KtCompilerOptInfo]],
+            cfg = "exec",
         ),
     )
 
