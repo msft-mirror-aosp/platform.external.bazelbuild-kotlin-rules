@@ -33,9 +33,11 @@ def _common_kotlinc_flags(ctx):
         # stdlib included in merged_deps
         "-no-stdlib",
 
-        # Emit Java 8 bytecode with parameter names
+        # The bytecode format to emit
         "-jvm-target",
-        "1.8",
+        ctx.attr.jvm_target,
+
+        # Emit bytecode with parameter names
         "-java-parameters",
 
         # Allow default method declarations, akin to what javac emits (b/110378321).
@@ -130,6 +132,9 @@ _kt_jvm_toolchain_internal = rule(
             cfg = "exec",
             allow_single_file = [".jar"],
         ),
+        jvm_target = attr.string(
+            doc = "The value to pass as -jvm-target, indicating the bytecode format to emit.",
+        ),
         kotlin_annotation_processing = attr.label(
             default = "@kotlinc//:kotlin_annotation_processing",
             cfg = "exec",
@@ -205,6 +210,9 @@ _kt_jvm_toolchain_internal = rule(
 
 def _kt_jvm_toolchain(**kwargs):
     _kt_jvm_toolchain_internal(
+        jvm_target = select({
+            "//conditions:default": "11",
+        }),
         **kwargs
     )
 
