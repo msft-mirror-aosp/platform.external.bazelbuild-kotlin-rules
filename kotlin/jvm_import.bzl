@@ -17,6 +17,7 @@
 load(":common.bzl", "common")
 load(":forbidden_deps.bzl", "kt_forbidden_deps")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
+load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 def _kt_jvm_import_impl(ctx):
@@ -47,7 +48,7 @@ def _kt_jvm_import_impl(ctx):
         deps = deps_java_infos,
         runtime_deps = runtime_deps_java_infos,
         neverlink = ctx.attr.neverlink,
-        java_toolchain = ctx.attr._java_toolchain,
+        java_toolchain = java_toolchains.get(ctx),
         deps_checker = ctx.executable._deps_checker,
     )
     result_java_info = result.java_info
@@ -78,6 +79,7 @@ def _kt_jvm_import_impl(ctx):
     ]
 
 _KT_JVM_IMPORT_ATTRS = dicts.add(
+    java_toolchains.attrs,
     kt_jvm_toolchains.attrs,
     deps = attr.label_list(
         # We allow android rule deps to make importing android JARs easier.
@@ -130,11 +132,6 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
         default = "@bazel_tools//tools/android:aar_import_deps_checker",
         executable = True,
         cfg = "exec",
-    ),
-    _java_toolchain = attr.label(
-        default = Label(
-            "@bazel_tools//tools/jdk:current_java_toolchain",
-        ),
     ),
 )
 

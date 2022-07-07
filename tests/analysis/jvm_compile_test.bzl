@@ -17,6 +17,7 @@
 load("@//kotlin:forbidden_deps.bzl", "kt_forbidden_deps")
 load("@//kotlin:jvm_compile.bzl", "compile")
 load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
+load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
@@ -43,7 +44,7 @@ def _impl(ctx):
         merged_manifest = None,
         resource_files = [],
         kt_toolchain = kt_jvm_toolchains.get(ctx),
-        java_toolchain = ctx.attr._java_toolchain,
+        java_toolchain = java_toolchains.get(ctx),
         disable_lint_checks = [],
         r_java = ctx.attr.r_java[JavaInfo] if ctx.attr.r_java else None,
     )

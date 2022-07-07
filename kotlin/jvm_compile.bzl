@@ -106,6 +106,10 @@ def compile(
     Returns:
       A struct that carries the following fields: java_info and validations.
     """
+    if type(java_toolchain) != "JavaToolchainInfo":
+        # Allow passing either a target or a provider until all callers are updated
+        java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
+
     java_infos = []
     use_compose = False
     use_flogger = False

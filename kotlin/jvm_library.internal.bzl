@@ -15,6 +15,7 @@
 """Kotlin kt_jvm_library rule."""
 
 load("@//kotlin:compiler_opt.bzl", "kotlincopts_attrs", "merge_kotlincopts")
+load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":common.bzl", "common")
@@ -72,7 +73,7 @@ def _jvm_library_impl(ctx):
         resource_files = [],
         classpath_resources = ctx.files.resources,
         kt_toolchain = kt_jvm_toolchain,
-        java_toolchain = ctx.attr._java_toolchain,
+        java_toolchain = java_toolchains.get(ctx),
         disable_lint_checks = ctx.attr.disable_lint_checks,
         is_kt_jvm_library = True,
     )
@@ -124,6 +125,7 @@ def _jvm_library_impl(ctx):
     ]
 
 _KT_JVM_LIBRARY_ATTRS = dicts.add(
+    java_toolchains.attrs,
     kotlincopts_attrs(),
     kt_jvm_toolchains.attrs,
     common_srcs = attr.label_list(
@@ -227,9 +229,6 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         cfg = "exec",
         doc = """Additional Android Lint checks to run at compile-time.  Checks must use
                      //java/com/google/android/tools/lint/registration to work.""",
-    ),
-    _java_toolchain = attr.label(
-        default = "@bazel_tools//tools/jdk:current_java_toolchain",
     ),
 )
 

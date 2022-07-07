@@ -502,7 +502,7 @@ def _check_deps(
         transitive = [merged_deps.compile_jars, merged_deps.transitive_compile_time_jars],
     )
     label = _get_original_kt_target_label(ctx)
-    bootclasspath = java_toolchain[java_common.JavaToolchainInfo].bootclasspath
+    bootclasspath = java_toolchain.bootclasspath
 
     args = ctx.actions.args()
     args.add("--jdeps_output", jdeps_output)
@@ -694,7 +694,7 @@ def _kt_jvm_library(
         friend_jars = depset(),
                 annotation_processor_additional_outputs = [],
         annotation_processor_additional_inputs = []):
-    if not java_common.JavaToolchainInfo in java_toolchain:
+    if not java_toolchain:
         fail("Missing or invalid java_toolchain")
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
@@ -717,7 +717,7 @@ def _kt_jvm_library(
     full_classpath = depset(
         order = "preorder",
         transitive = [
-            java_toolchain[java_common.JavaToolchainInfo].bootclasspath,
+            java_toolchain.bootclasspath,
             merged_deps.compile_jars,
             merged_deps.transitive_compile_time_jars,
         ],
@@ -771,7 +771,7 @@ def _kt_jvm_library(
             plugin_data = depset(transitive = [p.processor_data for p in java_plugin_data]),
             # Put contents of Bazel flag --javacopt before given javacopts as is Java rules.
             # This still ignores package configurations, which aren't exposed to Starlark.
-            javacopts = (java_common.default_javac_opts(java_toolchain = java_toolchain[java_common.JavaToolchainInfo]) +
+            javacopts = (java_common.default_javac_opts(java_toolchain = java_toolchain) +
                          ctx.fragments.java.default_javac_flags +
                          javacopts),
             kotlincopts = kotlincopts,  # don't need strict_deps flags for kapt
@@ -830,7 +830,7 @@ def _kt_jvm_library(
             javac_opts = ctx.fragments.java.default_javac_flags + javacopts,
             plugins = plugins,
             strict_deps = "DEFAULT",
-            java_toolchain = java_toolchain[java_common.JavaToolchainInfo],
+            java_toolchain = java_toolchain,
             neverlink = neverlink,
             # Enable annotation processing for java-only sources to enable data binding
             enable_annotation_processing = not kt_srcs,
@@ -862,7 +862,7 @@ def _kt_jvm_library(
                 javac_opts = ctx.fragments.java.default_javac_flags + javacopts,
                 plugins = plugins,
                 strict_deps = "DEFAULT",
-                java_toolchain = java_toolchain[java_common.JavaToolchainInfo],
+                java_toolchain = java_toolchain,
                 neverlink = neverlink,
             )
             out_compilejars.extend(header_java_info.compile_jars.to_list())  # unpack singleton depset
@@ -882,7 +882,7 @@ def _kt_jvm_library(
     if output_srcjar == None:
         output_srcjar = ctx.actions.declare_file("lib%s-src.jar" % ctx.label.name)
     compile_jar = ctx.actions.declare_file(ctx.label.name + "-compile.jar")
-    single_jar = java_toolchain[java_common.JavaToolchainInfo].single_jar
+    single_jar = java_toolchain.single_jar
     _singlejar(ctx, out_srcjars, output_srcjar, single_jar, mnemonic = "KtMergeSrcjar", content = "srcjar", preserve_compression = True)
 
     # Don't block compile-time Jar on Android Lint and other validations (b/117991324).
@@ -934,8 +934,8 @@ def _kt_jvm_import(
         neverlink = False,
         java_toolchain = None,
         deps_checker = None):
-    if not java_common.JavaToolchainInfo in java_toolchain:
-        fail("_kt_jvm_library called with missing or invalid java_toolchain")
+    if not java_toolchain:
+        fail("Missing or invalid java_toolchain")
     merged_deps = java_common.merge(deps)
 
     # Check that any needed deps are declared unless neverlink, in which case Jars won't be used
