@@ -20,7 +20,7 @@ load(":kt_jvm_deps.bzl", "kt_jvm_dep_jdeps")
 
 _PARCELIZE_V2_RUNTIME = "@kotlinc//:parcelize_runtime"
 
-def compile(
+def kt_jvm_compile(
         ctx,
         output,
         srcs,
@@ -225,6 +225,9 @@ def compile(
         annotation_processor_additional_outputs = annotation_processor_additional_outputs,
         annotation_processor_additional_inputs = annotation_processor_additional_inputs,
     )
+
+# TODO Delete this
+compile = kt_jvm_compile
 
 def _is_eligible_friend(ctx, friend):
     """
