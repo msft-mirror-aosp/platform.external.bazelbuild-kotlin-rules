@@ -430,7 +430,6 @@ def _run_kotlinc(
     # particular, the extractor expects this to be a vanilla "spawn" (ctx.actions.run) so don't
     # change this to ctx.actions.run_shell or something else without considering Kythe implications
     # (b/112439843).
-    # TODO: populate unused_inputs_list to speed interactive rebuilds
     ctx.actions.run(
         executable = toolchain.kotlin_compiler,
         arguments = [kotlinc_args],
