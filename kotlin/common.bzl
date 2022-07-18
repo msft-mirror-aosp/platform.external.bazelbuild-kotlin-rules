@@ -359,11 +359,9 @@ def _run_kotlinc(
         kt_plugin_configs = [],
         friend_jars = depset(),
         enforce_complete_jdeps = False):
-    if enforce_complete_jdeps:
-        # Second pass for complete jdeps test requires a different output file name
-        kt_ijar = ctx.actions.declare_file(ctx.label.name + "-kt-ijar-ext.jar")
-    else:
-        kt_ijar = ctx.actions.declare_file(ctx.label.name + "-kt-ijar.jar")
+    if output.extension != "jar":
+        fail("Expect to output a Jar but got %s" % output)
+    kt_ijar = ctx.actions.declare_file(output.basename[:-4] + "-ijar.jar", sibling = output)
 
     def write_opts_jvm_abi_gen(args):
         args.add("-P", kt_ijar, format = "plugin:org.jetbrains.kotlin.jvm.abi:outputDir=%s")
