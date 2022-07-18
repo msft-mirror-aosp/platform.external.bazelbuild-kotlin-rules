@@ -18,6 +18,7 @@ load(":common.bzl", "common")
 load(":forbidden_deps.bzl", "kt_forbidden_deps")
 load(":kt_jvm_deps.bzl", "kt_jvm_dep_jdeps")
 
+_RULE_FAMILY = common.RULE_FAMILY
 _PARCELIZE_V2_RUNTIME = "@kotlinc//:parcelize_runtime"
 
 def kt_jvm_compile(
@@ -49,8 +50,7 @@ def kt_jvm_compile(
         flogger_plugin = None,
         parcelize_plugin_v2 = None,
         compose_plugin = None,
-        is_kt_jvm_library = False,
-        run_kt_lint = True,
+        rule_family = _RULE_FAMILY.UNKNOWN,
         annotation_processor_additional_outputs = [],
         annotation_processor_additional_inputs = [],
         coverage_srcs = []):
@@ -93,16 +93,15 @@ def kt_jvm_compile(
       flogger_plugin: File pointing to Flogger plugin. Optional
       parcelize_plugin_v2: File pointing to Parcelize Plugin. Optional
       compose_plugin: File pointing to Jetpack Compose Plugin. Optional
-      is_kt_jvm_library: Do not use unless calling from kt_jvm_library's rule implementation.
-      run_kt_lint: Whether to run Kt Android Lint.
-        NOTE: KtAndroidLint should be disabled for the android_library rule until the
-        rollout of all android lint checks is finished.
+      rule_family: The family of the rule calling this function. Element of common.RULE_FAMILY.
+        May be used to enable/disable some features.
       annotation_processor_additional_outputs: sequence of Files. A list of
         files produced by an annotation processor.
       annotation_processor_additional_inputs: sequence of Files. A list of
         files consumed by an annotation processor.
       coverage_srcs: Files to use as the basis when computing code coverage. These are typically
         handwritten files that were inputs to generated `srcs`. Should be disjoint with `srcs`.
+
     Returns:
       A struct that carries the following fields: java_info and validations.
     """
@@ -176,8 +175,8 @@ def kt_jvm_compile(
     if kotlincopts != None and "-Werror" in kotlincopts:
         fail("Flag -Werror is not permitted")
 
-    if classpath_resources and not is_kt_jvm_library:
-        fail("resources attribute only allowed for kt_jvm_library")
+    if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
+        fail("resources attribute only allowed for jvm libraries")
 
     # The r_java field only support Android resources Jar files. For now, verify
     # that the name of the jar matches "_resources.jar". This check does not to
@@ -221,7 +220,7 @@ def kt_jvm_compile(
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,
         testonly = testonly,
-        run_kt_lint = run_kt_lint,
+        rule_family = rule_family,
         annotation_processor_additional_outputs = annotation_processor_additional_outputs,
         annotation_processor_additional_inputs = annotation_processor_additional_inputs,
     )

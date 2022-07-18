@@ -75,7 +75,7 @@ def _jvm_library_impl(ctx):
         kt_toolchain = kt_jvm_toolchain,
         java_toolchain = java_toolchains.get(ctx),
         disable_lint_checks = ctx.attr.disable_lint_checks,
-        is_kt_jvm_library = True,
+        rule_family = common.RULE_FAMILY.JVM_LIBRARY,
     )
 
     java_info = compile_result.java_info

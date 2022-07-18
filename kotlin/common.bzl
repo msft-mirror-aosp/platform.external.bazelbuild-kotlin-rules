@@ -67,6 +67,12 @@ _JAR_FILE_TYPE = [_JAR_EXT]
 
 _SRCJAR_FILE_TYPES = [_JAR_EXT, _SRCJAR_EXT]
 
+_RULE_FAMILY = struct(
+    UNKNOWN = 0,
+    JVM_LIBRARY = 1,
+    ANDROID_LIBRARY = 2,
+)
+
 # Annotation processors allowed to generate sources that violate strict deps.
 _STRICT_EXEMPT_PROCESSORS = {
     "dagger.internal.codegen.ComponentProcessor": True,
@@ -685,7 +691,7 @@ def _kt_jvm_library(
         neverlink = False,
         testonly = False,  # used by Android Lint
         enforce_strict_deps = True,
-        run_kt_lint = True,
+        rule_family = _RULE_FAMILY.UNKNOWN,
         java_toolchain = None,
         kt_plugin_configs = [],
         friend_jars = depset(),
@@ -1034,6 +1040,7 @@ common = struct(
     JAR_FILE_TYPE = _JAR_FILE_TYPE,
     SRCJAR_FILE_TYPES = _SRCJAR_FILE_TYPES,
     JVM_FLAGS = BASE_JVMOPTS,
+    RULE_FAMILY = _RULE_FAMILY,
     run_kotlinc = _run_kotlinc,
     kt_jvm_library = _kt_jvm_library,
     kt_jvm_import = _kt_jvm_import,
