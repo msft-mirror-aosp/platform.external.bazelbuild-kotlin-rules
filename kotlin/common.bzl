@@ -692,6 +692,7 @@ def _kt_jvm_library(
         testonly = False,  # used by Android Lint
         enforce_strict_deps = True,
         rule_family = _RULE_FAMILY.UNKNOWN,
+        enforce_complete_jdeps = False,
         java_toolchain = None,
         kt_plugin_configs = [],
         friend_jars = depset(),
@@ -806,6 +807,7 @@ def _kt_jvm_library(
             classpath = full_classpath,
             kt_plugin_configs = main_compile_plugin_configs,
             friend_jars = friend_jars,
+            enforce_complete_jdeps = enforce_complete_jdeps,
         )
 
         # Use un-instrumented Jar at compile-time to avoid double-instrumenting inline functions
