@@ -14,7 +14,7 @@
 
 """Stubs"""
 
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 
 def register_extension_info(**_kwargs):
     pass

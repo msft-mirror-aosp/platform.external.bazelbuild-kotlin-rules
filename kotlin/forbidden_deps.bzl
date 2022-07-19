@@ -20,7 +20,7 @@ Currently this system recognizes:
   - targets exporting other forbidden targets
 """
 
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@//bazel:stubs.bzl", "EXEMPT_DEPS", "FORBIDDEN_DEP_PACKAGES")
 
 _KtForbiddenDepInfo = provider(

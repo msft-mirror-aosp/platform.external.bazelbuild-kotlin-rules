@@ -16,7 +16,7 @@
 
 load("@//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action_arg")
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 
 def _test_impl(ctx):
