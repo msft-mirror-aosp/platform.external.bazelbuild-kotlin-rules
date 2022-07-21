@@ -18,6 +18,9 @@
 ONLY_FOR_ANALYSIS_TEST_TAGS = ["manual", "nobuilder", "only_for_analysis_test"]
 
 def create_file(name, content):
+    if content:
+        content = content.split("\n", 1)[1]
+
     native.genrule(
         name = "gen_" + name,
         outs = [name],
@@ -25,9 +28,40 @@ def create_file(name, content):
 cat > $@ <<EOF
 %s
 EOF
-""" % content.split("\n", 1)[1],
+""" % content,
     )
 
+    return name
+
+def _create_dir_impl(ctx):
+    if not ctx.files.srcs:
+        fail("Creating empty directories not implemented")
+
+    dir = ctx.actions.declare_directory(ctx.attr.name)
+    ctx.actions.run_shell(
+        command = "mkdir -p {0} && cp {1} {0}".format(
+            dir.path + "/" + ctx.attr.subdir,
+            " ".join([s.path for s in ctx.files.srcs]),
+        ),
+        inputs = ctx.files.srcs,
+        outputs = [dir],
+    )
+    return [DefaultInfo(files = depset([dir]))]
+
+_create_dir = rule(
+    implementation = _create_dir_impl,
+    attrs = dict(
+        subdir = attr.string(),
+        srcs = attr.label_list(allow_files = True),
+    ),
+)
+
+def create_dir(name, subdir, srcs):
+    _create_dir(
+        name = name,
+        subdir = subdir,
+        srcs = srcs,
+    )
     return name
 
 def get_action_arg(actions, mnemonic, arg_name):

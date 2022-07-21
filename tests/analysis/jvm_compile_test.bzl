@@ -16,7 +16,7 @@
 
 load("@//kotlin:forbidden_deps.bzl", "kt_forbidden_deps")
 load("@//kotlin:jvm_compile.bzl", "compile")
-load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
+load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_dir", "create_file")
 load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
@@ -54,7 +54,7 @@ _kt_jvm_compile = rule(
     implementation = _impl,
     attrs = dict(
         srcs = attr.label_list(
-            allow_files = [".kt"],
+            allow_files = True,
         ),
         deps = attr.label_list(
             aspects = [kt_forbidden_deps.aspect],
@@ -307,10 +307,56 @@ fun fooBar(): String = "Foo" + bar()
     )
     return test_name
 
+def _test_kt_jvm_compile_unsupported_src_artifacts():
+    test_name = "kt_jvm_compile_unsupported_src_artifacts_test"
+
+    kt_src = create_file(
+        name = test_name + "/src.kt",
+        content = "",
+    )
+    kt_dir = create_dir(
+        name = test_name + "/kotlin",
+        subdir = "",
+        srcs = [create_file(
+            name = test_name + "/dir.kt",
+            content = "",
+        )],
+    )
+    java_src = create_file(
+        name = test_name + "/src.java",
+        content = "",
+    )
+
+    # TODO: Add java_srcjar and java_dir inputs
+    _kt_jvm_compile(
+        name = test_name + "_expected_lib",
+        srcs = [kt_src, kt_dir, java_src],
+        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+    )
+
+    unexpected_file = create_file(
+        name = test_name + "/src.unexpected",
+        content = "",
+    )
+    _kt_jvm_compile(
+        name = test_name + "_unexpected_lib",
+        srcs = [unexpected_file],
+        deps = [test_name + "_expected_lib"],
+        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+    )
+
+    _failure_test(
+        name = test_name,
+        target_under_test = test_name + "_unexpected_lib",
+        expected_failure_msg = "/src.unexpected",
+    )
+    return test_name
+
 def test_suite(name = None):
     native.test_suite(
         name = name,
         tests = [
+            _test_kt_jvm_compile_unsupported_src_artifacts(),
             _test_kt_jvm_compile_using_kt_jvm_compile_with_r_java(),
             _test_kt_jvm_compile_with_illegal_r_java(),
             _test_kt_jvm_compile_with_r_java_as_first_dep(),

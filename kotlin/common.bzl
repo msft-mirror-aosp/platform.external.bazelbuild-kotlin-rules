@@ -14,6 +14,7 @@
 
 """Common Kotlin definitions."""
 
+load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("@//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
@@ -48,24 +49,23 @@ _ALLOWED_JVM_RULES = [
     "_j2kt_jvm_library_rule",  # b/233055549
 ]
 
-_KT_SRC_EXT = ".kt"
+_EXT = struct(
+    KT = ".kt",
+    JAVA = ".java",
+    JAR = ".jar",
+    SRCJAR = ".srcjar",
+)
 
-_JAVA_SRC_EXT = ".java"
-
-_JAR_EXT = ".jar"
-
-_SRCJAR_EXT = ".srcjar"
-
-_KT_FILE_TYPES = [_KT_SRC_EXT]
+_KT_FILE_TYPES = [_EXT.KT]
 
 _KT_JVM_FILE_TYPES = [
-    _JAVA_SRC_EXT,
-    _KT_SRC_EXT,
+    _EXT.JAVA,
+    _EXT.KT,
 ]
 
-_JAR_FILE_TYPE = [_JAR_EXT]
+_JAR_FILE_TYPE = [_EXT.JAR]
 
-_SRCJAR_FILE_TYPES = [_JAR_EXT, _SRCJAR_EXT]
+_SRCJAR_FILE_TYPES = [_EXT.JAR, _EXT.SRCJAR]
 
 _RULE_FAMILY = struct(
     UNKNOWN = 0,
@@ -82,6 +82,19 @@ _STRICT_EXEMPT_PROCESSORS = {
     "com.google.apps.tiktok.inject.processor.ComponentProcessor": True,
     "dagger.hilt.processor.internal.root.RootProcessor": True,
 }
+
+def _is_dir(file, basename):
+    return file.is_directory and file.basename == basename
+
+def _is_kt_src(src):
+    """Decides if `src` Kotlin code.
+
+    Either:
+      -  a Kotlin source file
+      -  a tree-artifact expected to contain only Kotlin source files
+    """
+
+    return src.path.endswith(_EXT.KT) or _is_dir(src, "kotlin")
 
 # Compute module name based on target (b/139403883), similar to Swift
 def _derive_module_name(ctx):
@@ -709,9 +722,14 @@ def _kt_jvm_library(
     merged_deps = java_common.merge(deps)
 
     # Split sources, as java requires a separate compile step.
-    kt_srcs = [s for s in srcs if not (s.path.endswith(_JAVA_SRC_EXT) or s.path.endswith(_SRCJAR_EXT))]
-    java_srcs = [s for s in srcs if s.path.endswith(_JAVA_SRC_EXT)]
-    srcjar_srcs = [s for s in srcs if s.path.endswith(_SRCJAR_EXT)]
+    kt_srcs = [s for s in srcs if _is_kt_src(s)]
+    java_srcs = [s for s in srcs if s.path.endswith(_EXT.JAVA)]
+    srcjar_srcs = [s for s in srcs if s.path.endswith(_EXT.SRCJAR)]
+
+    expected_srcs = sets.make(kt_srcs + java_srcs + srcjar_srcs)
+    unexpected_srcs = sets.difference(sets.make(srcs), expected_srcs)
+    if sets.length(unexpected_srcs) != 0:
+        fail("Unexpected srcs: %s" % sets.to_list(unexpected_srcs))
 
     if kt_srcs and srcjar_srcs:
         fail(".srcjar files are not allowed with Kotlin sources in %s." % ctx.label)
@@ -1037,16 +1055,17 @@ def _enable_complete_jdeps_extra_run(ctx):
 common = struct(
     ALLOWED_ANDROID_RULES = _ALLOWED_ANDROID_RULES,
     ALLOWED_JVM_RULES = _ALLOWED_JVM_RULES,
+    JAR_FILE_TYPE = _JAR_FILE_TYPE,
+    JVM_FLAGS = BASE_JVMOPTS,
     KT_FILE_TYPES = _KT_FILE_TYPES,
     KT_JVM_FILE_TYPES = _KT_JVM_FILE_TYPES,
-    JAR_FILE_TYPE = _JAR_FILE_TYPE,
-    SRCJAR_FILE_TYPES = _SRCJAR_FILE_TYPES,
-    JVM_FLAGS = BASE_JVMOPTS,
     RULE_FAMILY = _RULE_FAMILY,
-    run_kotlinc = _run_kotlinc,
-    kt_jvm_library = _kt_jvm_library,
-    kt_jvm_import = _kt_jvm_import,
+    SRCJAR_FILE_TYPES = _SRCJAR_FILE_TYPES,
     collect_proguard_specs = _collect_proguard_specs,
     collect_providers = _collect_providers,
+    is_kt_src = _is_kt_src,
+    kt_jvm_import = _kt_jvm_import,
+    kt_jvm_library = _kt_jvm_library,
     kt_plugin_config = _kt_plugin_config,
+    run_kotlinc = _run_kotlinc,
 )
