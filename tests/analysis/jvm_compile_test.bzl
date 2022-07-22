@@ -326,11 +326,21 @@ def _test_kt_jvm_compile_unsupported_src_artifacts():
         name = test_name + "/src.java",
         content = "",
     )
-
-    # TODO: Add java_srcjar and java_dir inputs
+    java_dir = create_dir(
+        name = test_name + "/java",
+        subdir = "",
+        srcs = [create_file(
+            name = test_name + "/dir.java",
+            content = "",
+        )],
+    )
+    java_srcjar = create_file(
+        name = test_name + "/java.srcjar",
+        content = "",
+    )
     _kt_jvm_compile(
         name = test_name + "_expected_lib",
-        srcs = [kt_src, kt_dir, java_src],
+        srcs = [kt_src, kt_dir, java_src, java_dir, java_srcjar],
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
 

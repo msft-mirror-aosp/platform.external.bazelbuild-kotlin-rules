@@ -61,6 +61,7 @@ _KT_FILE_TYPES = [_EXT.KT]
 _KT_JVM_FILE_TYPES = [
     _EXT.JAVA,
     _EXT.KT,
+    _EXT.SRCJAR,
 ]
 
 _JAR_FILE_TYPE = [_EXT.JAR]
@@ -115,9 +116,6 @@ def _common_kapt_and_kotlinc_args(ctx, toolchain):
 # Runs KAPT in two separate actions so annotation processors only rerun when Kotlin stubs changed.
 def _kapt(
         ctx,
-        output_jar = None,
-        output_srcjar = None,
-        output_manifest = None,
         kt_srcs = [],
         common_srcs = [],
         java_srcs = [],
@@ -132,15 +130,11 @@ def _kapt(
     if not plugin_processors:  # shouldn't get here
         fail("Kapt cannot work without processors")
 
-    # Separate sources into its own directory because they are used to generate
-    # a source jar.
-    src_dir = ctx.actions.declare_directory(ctx.label.name + "/kapt/gen/srcs")
-
     # Kapt fails with "no source files" if only given Java sources (b/110473479), so skip ahead to
     # just run turbine if there are no .kt sources.
     stub_srcjars = []
     if kt_srcs or common_srcs:
-        stubs_dir = ctx.actions.declare_directory("stubs", sibling = src_dir)
+        stubs_dir = ctx.actions.declare_directory(ctx.label.name + "/kapt/gen/stubs")
         _kapt_stubs(
             ctx,
             stubs_dir,
@@ -164,6 +158,9 @@ def _kapt(
             file_extensions = ["java"],
         ))
 
+    output_jar = ctx.actions.declare_file(ctx.label.name + "-kapt.jar")
+    output_srcjar = ctx.actions.declare_file(ctx.label.name + "-kapt.srcjar")
+    output_manifest = ctx.actions.declare_file(ctx.label.name + "-kapt.jar_manifest_proto")
     _run_turbine(
         ctx,
         toolchain,
@@ -179,9 +176,17 @@ def _kapt(
         stub_srcjars,
     )
 
-    # Since kotlinc can't consume .srcjar, extract into directory.
-    _expand_zip(ctx, src_dir, output_srcjar, ["*.java", "*.kt"])
-    return src_dir
+    return struct(
+        jar = output_jar,
+        manifest = output_manifest,
+        srcjar = output_srcjar,
+        srcjar_dir = _expand_zip(
+            ctx,
+            ctx.actions.declare_directory(ctx.label.name + "/kapt/gen/srcs"),
+            output_srcjar,
+            extra_args = ["*.java", "*.kt"],
+        ),
+    )
 
 def _kapt_stubs(
         ctx,
@@ -611,6 +616,7 @@ def _expand_zip(ctx, dir, input, extra_args = []):
             args = " ".join(extra_args),
         ),
     )
+    return dir
 
 def _create_zip(ctx, zipper, out_zip, inputs, file_extensions = None):
     def file_filter(file):
@@ -632,6 +638,51 @@ def _create_zip(ctx, zipper, out_zip, inputs, file_extensions = None):
     )
 
     return out_zip
+
+def _DirSrcjarSyncer(ctx, kt_toolchain, name):
+    _dirs = []
+    _srcjars = []
+
+    def add_dirs(dirs):
+        if not dirs:
+            return
+
+        _dirs.extend(dirs)
+        _srcjars.append(
+            _create_zip(
+                ctx,
+                kt_toolchain.zipper,
+                ctx.actions.declare_file("%s/%s%s.srcjar" % (ctx.label.name, name, len(_dirs))),
+                dirs,
+            ),
+        )
+
+    def add_srcjars(srcjars):
+        if not srcjars:
+            return
+
+        _srcjars.extend(srcjars)
+        _dirs.extend([
+            _expand_zip(
+                ctx,
+                ctx.actions.declare_directory("%s/%s%s.expand" % (ctx.label.name, name, len(_srcjars))),
+                s,
+                extra_args = ["*.java", "*.kt"],
+            )
+            for s in srcjars
+        ])
+
+    def add_both(dirs, srcjars):
+        _dirs.extend(dirs)
+        _srcjars.extend(srcjars)
+
+    return struct(
+        add_dirs = add_dirs,
+        add_srcjars = add_srcjars,
+        add_both = add_both,
+        dirs = _dirs,
+        srcjars = _srcjars,
+    )
 
 def _actions_run_deploy_jar(
         ctx,
@@ -724,15 +775,14 @@ def _kt_jvm_library(
     # Split sources, as java requires a separate compile step.
     kt_srcs = [s for s in srcs if _is_kt_src(s)]
     java_srcs = [s for s in srcs if s.path.endswith(_EXT.JAVA)]
-    srcjar_srcs = [s for s in srcs if s.path.endswith(_EXT.SRCJAR)]
+    java_syncer = _DirSrcjarSyncer(ctx, kt_toolchain, "java")
+    java_syncer.add_dirs([s for s in srcs if _is_dir(s, "java")])
+    java_syncer.add_srcjars([s for s in srcs if s.path.endswith(_EXT.SRCJAR)])
 
-    expected_srcs = sets.make(kt_srcs + java_srcs + srcjar_srcs)
+    expected_srcs = sets.make(kt_srcs + java_srcs + java_syncer.dirs + java_syncer.srcjars)
     unexpected_srcs = sets.difference(sets.make(srcs), expected_srcs)
     if sets.length(unexpected_srcs) != 0:
         fail("Unexpected srcs: %s" % sets.to_list(unexpected_srcs))
-
-    if kt_srcs and srcjar_srcs:
-        fail(".srcjar files are not allowed with Kotlin sources in %s." % ctx.label)
 
     # Complete classpath including bootclasspath. Like for Javac, explicitly place direct
     # compile_jars before transitive not to confuse strict_deps (b/149107867).
@@ -761,13 +811,11 @@ def _kt_jvm_library(
     out_jars = []
     out_srcjars = []
     out_compilejars = []
-    java_srcjar = None
+    java_gensrcjar = None
     java_genjar = None
-    kapt_java_srcjar = None
-    kapt_gen_srcs = []
     kt_java_info = None
     javac_java_info = None
-    kapt_manifest_proto = None
+    kapt_outputs = struct(jar = None, manifest = None, srcjar = None, srcjar_dir = None)
     kapt_genjar = None
     java_native_headers_jar = None
 
@@ -777,14 +825,8 @@ def _kt_jvm_library(
     # Skip kapt if no plugins have processors (can happen with only
     # go/errorprone plugins, # b/110540324)
     if kt_srcs and plugin_processors:
-        kapt_java_srcjar = ctx.actions.declare_file(ctx.label.name + "-kapt.srcjar")
-        kapt_jar = ctx.actions.declare_file(ctx.label.name + "-kapt.jar")
-        kapt_manifest_proto = ctx.actions.declare_file(ctx.label.name + "-kapt.jar_manifest_proto")
-        kapt_gen_srcs.append(_kapt(
+        kapt_outputs = _kapt(
             ctx,
-            output_jar = kapt_jar,
-            output_srcjar = kapt_java_srcjar,
-            output_manifest = kapt_manifest_proto,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
             java_srcs = java_srcs,
@@ -799,13 +841,15 @@ def _kt_jvm_library(
             kotlincopts = kotlincopts,  # don't need strict_deps flags for kapt
             toolchain = kt_toolchain,
             classpath = full_classpath,
-        ))
-        out_jars.append(kapt_jar)
-        kapt_java_info = JavaInfo(
-            output_jar = kapt_jar,
-            compile_jar = kapt_jar,
         )
-        merged_deps = java_common.merge([merged_deps, kapt_java_info])
+
+        out_jars.append(kapt_outputs.jar)
+        java_syncer.add_both([kapt_outputs.srcjar_dir], [kapt_outputs.srcjar])
+
+        merged_deps = java_common.merge([merged_deps, JavaInfo(
+            output_jar = kapt_outputs.jar,
+            compile_jar = kapt_outputs.jar,
+        )])
 
     kotlin_jdeps_output = None
     if kt_srcs or common_srcs:
@@ -816,7 +860,7 @@ def _kt_jvm_library(
             ctx,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
-            java_srcs_and_dirs = java_srcs + kapt_gen_srcs,
+            java_srcs_and_dirs = java_srcs + java_syncer.dirs,
             output = kt_jar,
             merged_deps = merged_deps,
             kotlincopts = kotlincopts,
@@ -836,14 +880,14 @@ def _kt_jvm_library(
         out_srcjars.extend(kt_java_info.source_jars)
 
     javac_java_info = None
-    if java_srcs or kapt_java_srcjar or classpath_resources:
+    if java_srcs or java_syncer.srcjars or classpath_resources:
         java_deps = ([kt_java_info] if kt_java_info else []) + [merged_deps]
 
         javac_out = ctx.actions.declare_file(ctx.label.name + "-java.jar")
         javac_java_info = java_common.compile(
             ctx,
             source_files = java_srcs,
-            source_jars = [kapt_java_srcjar] if kapt_java_srcjar else [] + srcjar_srcs,
+            source_jars = java_syncer.srcjars,
             resources = classpath_resources,
             output = javac_out,
             deps = java_deps,
@@ -862,11 +906,11 @@ def _kt_jvm_library(
         )
         out_jars.append(javac_out)
         out_srcjars.extend(javac_java_info.source_jars)
-        kapt_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_manifest_proto, javac_out, java_srcs)
+        kapt_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
         java_native_headers_jar = javac_java_info.outputs.native_headers
 
-        if kapt_java_srcjar and not kt_java_info and all([_STRICT_EXEMPT_PROCESSORS.get(cls) for p in api_plugins for cls in p.processor_classes.to_list()]):
-            # Absent .kt files, java_common.compile can generate headers without kapt_java_srcjar
+        if kapt_outputs.srcjar and not kt_java_info and all([_STRICT_EXEMPT_PROCESSORS.get(cls) for p in api_plugins for cls in p.processor_classes.to_list()]):
+            # Absent .kt files, java_common.compile can generate headers without kapt_outputs.srcjar
             # (which are the generated sources). We heuristically only do this absent arbitrary
             # API-generating processors to avoid this near-duplicate of above in cases where Blaze
             # would end up running API-producing processors a second time. (Note Blaze happens to
@@ -875,12 +919,11 @@ def _kt_jvm_library(
             # AutoValue doesn't generate API, so we benefit in that common case as well.
             # TODO: may deserve further tuning to see where it is or isn't beneficial
             # TODO: can this work with .kt sources absent inline functions using kapt stubs?
-            unused_out = ctx.actions.declare_file(ctx.label.name + "-unused.jar")
             header_java_info = java_common.compile(
                 ctx,
                 source_files = java_srcs,
                 resources = classpath_resources,
-                output = unused_out,
+                output = ctx.actions.declare_file(ctx.label.name + "-unused.jar"),
                 deps = [merged_deps],
                 javac_opts = ctx.fragments.java.default_javac_flags + javacopts,
                 plugins = plugins,
@@ -893,8 +936,14 @@ def _kt_jvm_library(
             out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
 
     if javac_java_info:
-        java_srcjar = kapt_java_srcjar if kt_srcs else javac_java_info.annotation_processing.source_jar
-        java_genjar = kapt_genjar if kt_srcs else javac_java_info.annotation_processing.class_jar
+        if kt_srcs:
+            java_gensrcjar = kapt_outputs.srcjar
+            java_genjar = kapt_genjar
+        else:
+            java_gensrcjar = javac_java_info.annotation_processing.source_jar
+            java_genjar = javac_java_info.annotation_processing.class_jar
+            if java_gensrcjar:
+                java_syncer.add_srcjars([java_gensrcjar])
 
     jdeps_output = None
     compile_jdeps_output = None
@@ -939,7 +988,7 @@ def _kt_jvm_library(
         compile_jdeps = compile_jdeps_output,
         native_libraries = native_libraries,
         native_headers_jar = java_native_headers_jar,
-        generated_source_jar = java_srcjar,
+        generated_source_jar = java_gensrcjar,
         generated_class_jar = java_genjar,
     )
 
