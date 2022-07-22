@@ -74,16 +74,6 @@ _RULE_FAMILY = struct(
     ANDROID_LIBRARY = 2,
 )
 
-# Annotation processors allowed to generate sources that violate strict deps.
-_STRICT_EXEMPT_PROCESSORS = {
-    "dagger.internal.codegen.ComponentProcessor": True,
-    # See b/68158857
-    "com.google.android.libraries.sting.migration.processor.ComponentDependencyModuleProcessor": True,
-    # See b/21307381
-    "com.google.apps.tiktok.inject.processor.ComponentProcessor": True,
-    "dagger.hilt.processor.internal.root.RootProcessor": True,
-}
-
 def _is_dir(file, basename):
     return file.is_directory and file.basename == basename
 
@@ -744,8 +734,6 @@ def _kt_jvm_library(
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
         plugins = [],  # list of JavaPluginInfo
         exported_plugins = [],
-        # TODO: get rid of attribute 'api_plugins' and instead derive it when needed.
-        api_plugins = [],  # list of JavaPluginData
         android_lint_plugins = [],
         android_lint_rules_jars = depset(),  # Depset with standalone Android Lint rules Jars
         javacopts = [],
@@ -811,13 +799,8 @@ def _kt_jvm_library(
     out_jars = []
     out_srcjars = []
     out_compilejars = []
-    java_gensrcjar = None
-    java_genjar = None
     kt_java_info = None
-    javac_java_info = None
     kapt_outputs = struct(jar = None, manifest = None, srcjar = None, srcjar_dir = None)
-    kapt_genjar = None
-    java_native_headers_jar = None
 
     # Kotlin compilation requires two passes when annotation processing is
     # required. The initial pass processes the annotations and generates
@@ -880,9 +863,10 @@ def _kt_jvm_library(
         out_srcjars.extend(kt_java_info.source_jars)
 
     javac_java_info = None
+    java_native_headers_jar = None
+    java_gensrcjar = None
+    java_genjar = None
     if java_srcs or java_syncer.srcjars or classpath_resources:
-        java_deps = ([kt_java_info] if kt_java_info else []) + [merged_deps]
-
         javac_out = ctx.actions.declare_file(ctx.label.name + "-java.jar")
         javac_java_info = java_common.compile(
             ctx,
@@ -890,7 +874,7 @@ def _kt_jvm_library(
             source_jars = java_syncer.srcjars,
             resources = classpath_resources,
             output = javac_out,
-            deps = java_deps,
+            deps = ([kt_java_info] if kt_java_info else []) + [merged_deps],
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
@@ -906,39 +890,12 @@ def _kt_jvm_library(
         )
         out_jars.append(javac_out)
         out_srcjars.extend(javac_java_info.source_jars)
-        kapt_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
+        out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
         java_native_headers_jar = javac_java_info.outputs.native_headers
 
-        if kapt_outputs.srcjar and not kt_java_info and all([_STRICT_EXEMPT_PROCESSORS.get(cls) for p in api_plugins for cls in p.processor_classes.to_list()]):
-            # Absent .kt files, java_common.compile can generate headers without kapt_outputs.srcjar
-            # (which are the generated sources). We heuristically only do this absent arbitrary
-            # API-generating processors to avoid this near-duplicate of above in cases where Blaze
-            # would end up running API-producing processors a second time. (Note Blaze happens to
-            # be optimized for generating headers for Dagger, see go/turbine-apt-builtin-processors;
-            # we use _STRICT_EXEMPT_PROCESSORS as a proxy to still take advantage in that case.
-            # AutoValue doesn't generate API, so we benefit in that common case as well.
-            # TODO: may deserve further tuning to see where it is or isn't beneficial
-            # TODO: can this work with .kt sources absent inline functions using kapt stubs?
-            header_java_info = java_common.compile(
-                ctx,
-                source_files = java_srcs,
-                resources = classpath_resources,
-                output = ctx.actions.declare_file(ctx.label.name + "-unused.jar"),
-                deps = [merged_deps],
-                javac_opts = ctx.fragments.java.default_javac_flags + javacopts,
-                plugins = plugins,
-                strict_deps = "DEFAULT",
-                java_toolchain = java_toolchain,
-                neverlink = neverlink,
-            )
-            out_compilejars.extend(header_java_info.compile_jars.to_list())  # unpack singleton depset
-        else:
-            out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
-
-    if javac_java_info:
         if kt_srcs:
             java_gensrcjar = kapt_outputs.srcjar
-            java_genjar = kapt_genjar
+            java_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
         else:
             java_gensrcjar = javac_java_info.annotation_processing.source_jar
             java_genjar = javac_java_info.annotation_processing.class_jar

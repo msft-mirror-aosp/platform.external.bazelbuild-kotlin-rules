@@ -123,13 +123,10 @@ def kt_jvm_compile(
     kt_forbidden_deps.validate_deps(deps + runtime_deps + exports)
 
     java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins]
-    java_api_plugin_infos = [plugin[JavaPluginInfo].api_generating_plugins for plugin in plugins]
 
     for dep in deps:
         # Collect JavaInfo providers and info about plugins (JavaPluginData).
         if JavaInfo in dep:
-            java_api_plugin_infos.append(dep[JavaInfo].api_generating_plugins)
-
             java_infos.append(dep[JavaInfo])
 
             use_parcelize = use_parcelize or str(dep.label) == _PARCELIZE_V2_RUNTIME
@@ -194,7 +191,6 @@ def kt_jvm_compile(
         ctx,
         android_lint_plugins = android_lint_plugins,  # List of JavaInfo
         android_lint_rules_jars = android_lint_rules_jars,
-        api_plugins = java_api_plugin_infos,  # List of JavaPluginData
         classpath_resources = classpath_resources,
         common_srcs = common_srcs,
         coverage_srcs = coverage_srcs,
