@@ -975,7 +975,7 @@ def _kt_jvm_library(
         preserve_compression = True,
         pseudo_inputs = ([] if use_validation == "true" else blocking_action_outs),
     )
-    base_java_info = JavaInfo(
+    result_java_info = JavaInfo(
         output_jar = output,
         compile_jar = compile_jar,
         source_jar = output_srcjar,
@@ -993,7 +993,7 @@ def _kt_jvm_library(
     )
 
     return struct(
-        java_info = base_java_info,
+        java_info = result_java_info,
         validations = (blocking_action_outs if use_validation == "true" else []),
     )
 
