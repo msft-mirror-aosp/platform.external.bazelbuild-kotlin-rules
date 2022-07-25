@@ -1062,5 +1062,4 @@ common = struct(
     kt_jvm_import = _kt_jvm_import,
     kt_jvm_library = _kt_jvm_library,
     kt_plugin_config = _kt_plugin_config,
-    run_kotlinc = _run_kotlinc,
 )
