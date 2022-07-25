@@ -170,12 +170,6 @@ def _kapt(
         jar = output_jar,
         manifest = output_manifest,
         srcjar = output_srcjar,
-        srcjar_dir = _expand_zip(
-            ctx,
-            ctx.actions.declare_directory(ctx.label.name + "/kapt/gen/srcs"),
-            output_srcjar,
-            extra_args = ["*.java", "*.kt"],
-        ),
     )
 
 def _kapt_stubs(
@@ -662,14 +656,9 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, name):
             for s in srcjars
         ])
 
-    def add_both(dirs, srcjars):
-        _dirs.extend(dirs)
-        _srcjars.extend(srcjars)
-
     return struct(
         add_dirs = add_dirs,
         add_srcjars = add_srcjars,
-        add_both = add_both,
         dirs = _dirs,
         srcjars = _srcjars,
     )
@@ -800,7 +789,7 @@ def _kt_jvm_library(
     out_srcjars = []
     out_compilejars = []
     kt_java_info = None
-    kapt_outputs = struct(jar = None, manifest = None, srcjar = None, srcjar_dir = None)
+    kapt_outputs = struct(jar = None, manifest = None, srcjar = None)
 
     # Kotlin compilation requires two passes when annotation processing is
     # required. The initial pass processes the annotations and generates
@@ -827,7 +816,7 @@ def _kt_jvm_library(
         )
 
         out_jars.append(kapt_outputs.jar)
-        java_syncer.add_both([kapt_outputs.srcjar_dir], [kapt_outputs.srcjar])
+        java_syncer.add_srcjars([kapt_outputs.srcjar])
 
         merged_deps = java_common.merge([merged_deps, JavaInfo(
             output_jar = kapt_outputs.jar,
