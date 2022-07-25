@@ -15,7 +15,7 @@
 """Kotlin kt_jvm_import rule."""
 
 load(":common.bzl", "common")
-load(":forbidden_deps.bzl", "kt_forbidden_deps")
+load(":traverse_exports.bzl", "kt_traverse_exports")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
@@ -84,7 +84,7 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
     deps = attr.label_list(
         # We allow android rule deps to make importing android JARs easier.
         allow_rules = common.ALLOWED_JVM_RULES + common.ALLOWED_ANDROID_RULES,
-        aspects = [kt_forbidden_deps.aspect],
+        aspects = [kt_traverse_exports.aspect],
         providers = [
             # Each provider-set expands on allow_rules
             [JavaInfo],
@@ -121,7 +121,7 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
             # Each provider-set expands on allow_rules
             [CcInfo],  # for JNI / native dependencies
         ],
-        aspects = [kt_forbidden_deps.aspect],
+        aspects = [kt_traverse_exports.aspect],
         doc = """Runtime-only dependencies.""",
     ),
     srcjar = attr.label(

@@ -15,8 +15,7 @@
 """Compile method that can compile kotlin or java sources"""
 
 load(":common.bzl", "common")
-load(":forbidden_deps.bzl", "kt_forbidden_deps")
-load(":kt_jvm_deps.bzl", "kt_jvm_dep_jdeps")
+load(":traverse_exports.bzl", "kt_traverse_exports")
 
 _RULE_FAMILY = common.RULE_FAMILY
 _PARCELIZE_V2_RUNTIME = "@kotlinc//:parcelize_runtime"
@@ -120,7 +119,7 @@ def kt_jvm_compile(
         if _is_eligible_friend(ctx, dep)
     ])
 
-    kt_forbidden_deps.validate_deps(deps + runtime_deps + exports)
+    kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
     java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins]
 
@@ -203,7 +202,7 @@ def kt_jvm_compile(
         java_toolchain = java_toolchain,
         javacopts = javacopts,
         kotlincopts = kotlincopts,
-        compile_jdeps = kt_jvm_dep_jdeps.collect_compile_jdeps_depset(deps),
+        compile_jdeps = kt_traverse_exports.expand_direct_jdeps(deps),
         kt_toolchain = kt_toolchain,
         manifest = manifest,
         merged_manifest = merged_manifest,

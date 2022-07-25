@@ -19,9 +19,8 @@ load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":common.bzl", "common")
-load(":forbidden_deps.bzl", "kt_forbidden_deps")
+load(":traverse_exports.bzl", "kt_traverse_exports")
 load(":jvm_compile.bzl", "compile")
-load(":kt_jvm_deps.bzl", "kt_jvm_dep_jdeps")
 
 # TODO: Use this function in all Kotlin rules
 def _make_default_info(ctx, direct_files, propagated_attrs):
@@ -143,8 +142,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
             # Each provider-set expands on allow_rules
         ],
         aspects = [
-            kt_forbidden_deps.aspect,
-            kt_jvm_dep_jdeps.aspect,
+            kt_traverse_exports.aspect,
         ],
         doc = """The list of libraries this library directly depends on at compile-time. For Java
                      and Kotlin libraries listed, the Jars they build as well as the transitive closure
@@ -177,7 +175,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
             # Each provider-set expands on allow_rules
         ],
         aspects = [
-            kt_forbidden_deps.aspect,
+            kt_traverse_exports.aspect,
         ],
         doc = """List of libraries treated as if they were part of this library by upstream
                      Java/Kotlin dependencies, see go/be-java#java_library.exports. These libraries
@@ -212,7 +210,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
             [CcInfo],  # for JNI / native dependencies
         ],
         aspects = [
-            kt_forbidden_deps.aspect,
+            kt_traverse_exports.aspect,
         ],
         doc = """Runtime-only dependencies.""",
     ),

@@ -14,7 +14,7 @@
 
 """Kotlin kt_jvm_compile API test."""
 
-load("@//kotlin:forbidden_deps.bzl", "kt_forbidden_deps")
+load("@//kotlin:traverse_exports.bzl", "kt_traverse_exports")
 load("@//kotlin:jvm_compile.bzl", "compile")
 load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_dir", "create_file")
 load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
@@ -57,11 +57,11 @@ _kt_jvm_compile = rule(
             allow_files = True,
         ),
         deps = attr.label_list(
-            aspects = [kt_forbidden_deps.aspect],
+            aspects = [kt_traverse_exports.aspect],
             providers = [JavaInfo],
         ),
         exports = attr.label_list(
-            aspects = [kt_forbidden_deps.aspect],
+            aspects = [kt_traverse_exports.aspect],
             providers = [JavaInfo],
         ),
         r_java = attr.label(
