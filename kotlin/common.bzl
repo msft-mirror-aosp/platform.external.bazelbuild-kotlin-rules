@@ -636,7 +636,9 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, name):
             _create_zip(
                 ctx,
                 kt_toolchain.zipper,
-                ctx.actions.declare_file("%s/%s%s.srcjar" % (ctx.label.name, name, len(_dirs))),
+                ctx.actions.declare_file(
+                    "%s/%s%s.srcjar" % (ctx.label.name, name, len(_srcjars)),
+                ),
                 dirs,
             ),
         )
@@ -645,16 +647,18 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, name):
         if not srcjars:
             return
 
-        _srcjars.extend(srcjars)
-        _dirs.extend([
-            _expand_zip(
-                ctx,
-                ctx.actions.declare_directory("%s/%s%s.expand" % (ctx.label.name, name, len(_srcjars))),
-                s,
-                extra_args = ["*.java", "*.kt"],
+        for srcjar in srcjars:
+            _dirs.append(
+                _expand_zip(
+                    ctx,
+                    ctx.actions.declare_directory(
+                        "%s/%s%s.expand" % (ctx.label.name, name, len(_dirs)),
+                    ),
+                    srcjar,
+                    extra_args = ["*.java", "*.kt"],
+                ),
             )
-            for s in srcjars
-        ])
+        _srcjars.extend(srcjars)
 
     return struct(
         add_dirs = add_dirs,
