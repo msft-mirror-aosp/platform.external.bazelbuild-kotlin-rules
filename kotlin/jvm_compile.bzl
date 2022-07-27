@@ -119,7 +119,10 @@ def kt_jvm_compile(
         if _is_eligible_friend(ctx, dep)
     ])
 
-    kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
+    # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
+    has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
+    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
+        kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
     java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins]
 
@@ -196,7 +199,8 @@ def kt_jvm_compile(
                 deps = r_java_info + java_infos,
         disable_lint_checks = disable_lint_checks,
         exported_plugins = [e[JavaPluginInfo] for e in exported_plugins],
-        exports = r_java_info + [e[JavaInfo] for e in exports],
+        # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
+        exports = r_java_info + [e[JavaInfo] for e in exports if JavaInfo in e],
         kt_plugin_configs = kt_plugin_configs,
         friend_jars = friend_jars,
         java_toolchain = java_toolchain,

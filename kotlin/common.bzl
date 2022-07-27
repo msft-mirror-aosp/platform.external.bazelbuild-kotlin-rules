@@ -747,9 +747,6 @@ def _kt_jvm_library(
         fail("Missing or invalid java_toolchain")
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
-    _check_srcs_package(ctx.label.package, srcs, "srcs")
-    _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
-    _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
     merged_deps = java_common.merge(deps)
 
@@ -764,6 +761,12 @@ def _kt_jvm_library(
     unexpected_srcs = sets.difference(sets.make(srcs), expected_srcs)
     if sets.length(unexpected_srcs) != 0:
         fail("Unexpected srcs: %s" % sets.to_list(unexpected_srcs))
+
+    # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
+    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
+        _check_srcs_package(ctx.label.package, srcs, "srcs")
+        _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
+        _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
     # Complete classpath including bootclasspath. Like for Javac, explicitly place direct
     # compile_jars before transitive not to confuse strict_deps (b/149107867).
