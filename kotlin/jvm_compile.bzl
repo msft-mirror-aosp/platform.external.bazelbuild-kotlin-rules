@@ -124,8 +124,6 @@ def kt_jvm_compile(
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
         kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
-    java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins]
-
     for dep in deps:
         # Collect JavaInfo providers and info about plugins (JavaPluginData).
         if JavaInfo in dep:
@@ -214,7 +212,7 @@ def kt_jvm_compile(
         neverlink = neverlink,
         output = output,
         output_srcjar = output_srcjar,
-        plugins = java_plugin_infos,  # List of JavaPluginInfo
+        plugins = [plugin[JavaPluginInfo] for plugin in plugins],
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,
