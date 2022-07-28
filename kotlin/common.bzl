@@ -494,6 +494,20 @@ def _kt_plugin_config(
         write_opts = write_opts,
     )
 
+def _kt_plugins_map(
+        java_plugin_infos = [],
+        kt_plugin_configs = []):
+    """A struct containing all the plugin types understood by rules_kotlin.
+
+    Args:
+      java_plugin_infos: (list[JavaPluginInfo])
+      kt_plugin_configs: (list[kt_plugin_config])
+    """
+    return struct(
+        java_plugin_infos = java_plugin_infos,
+        kt_plugin_configs = kt_plugin_configs,
+    )
+
 def _check_deps(
         ctx,
         jars_to_check = [],
@@ -726,7 +740,7 @@ def _kt_jvm_library(
         exports = [],  # passthrough for JavaInfo constructor
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
-        plugins = [],  # list of JavaPluginInfo
+        plugins = _kt_plugins_map(),
         exported_plugins = [],
         android_lint_plugins = [],
         android_lint_rules_jars = depset(),  # Depset with standalone Android Lint rules Jars
@@ -740,7 +754,6 @@ def _kt_jvm_library(
         rule_family = _RULE_FAMILY.UNKNOWN,
         enforce_complete_jdeps = False,
         java_toolchain = None,
-        kt_plugin_configs = [],
         friend_jars = depset(),
                 annotation_processor_additional_outputs = [],
         annotation_processor_additional_inputs = []):
@@ -780,18 +793,12 @@ def _kt_jvm_library(
         ],
     )
 
-    # Collect all plugin data
-    java_plugin_data = [plugin.plugins for plugin in plugins] + [dep.plugins for dep in deps]
-
-    # Collect processors to run ...
-    plugin_processors = [cls for p in java_plugin_data for cls in p.processor_classes.to_list()]
-
-    # ... and all plugin classpaths, whether they have processors or not (b/120995492).
+    # Collect all plugin data, including processors to run and all plugin classpaths,
+    # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    plugin_classpaths = depset(
-        order = "preorder",
-        transitive = [p.processor_jars for p in java_plugin_data],
-    )
+    java_plugin_datas = [info.plugins for info in plugins.java_plugin_infos] + [dep.plugins for dep in deps]
+    plugin_processors = [cls for p in java_plugin_datas for cls in p.processor_classes.to_list()]
+    plugin_classpaths = depset(transitive = [p.processor_jars for p in java_plugin_datas])
 
     out_jars = []
     out_srcjars = []
@@ -811,7 +818,7 @@ def _kt_jvm_library(
             java_srcs = java_srcs,
             plugin_processors = plugin_processors,
             plugin_classpaths = plugin_classpaths,
-            plugin_data = depset(transitive = [p.processor_data for p in java_plugin_data]),
+            plugin_data = depset(transitive = [p.processor_data for p in java_plugin_datas]),
             # Put contents of Bazel flag --javacopt before given javacopts as is Java rules.
             # This still ignores package configurations, which aren't exposed to Starlark.
             javacopts = (java_common.default_javac_opts(java_toolchain = java_toolchain) +
@@ -842,7 +849,7 @@ def _kt_jvm_library(
             compile_jdeps = compile_jdeps,
             toolchain = kt_toolchain,
             classpath = full_classpath,
-            kt_plugin_configs = kt_plugin_configs,
+            kt_plugin_configs = plugins.kt_plugin_configs,
             friend_jars = friend_jars,
             enforce_strict_deps = enforce_strict_deps,
             enforce_complete_jdeps = enforce_complete_jdeps,
@@ -879,7 +886,7 @@ def _kt_jvm_library(
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
             javac_opts = ctx.fragments.java.default_javac_flags + javacopts,
-            plugins = plugins,
+            plugins = plugins.java_plugin_infos,
             strict_deps = "DEFAULT",
             java_toolchain = java_toolchain,
             neverlink = neverlink,
@@ -1073,4 +1080,5 @@ common = struct(
     kt_jvm_import = _kt_jvm_import,
     kt_jvm_library = _kt_jvm_library,
     kt_plugin_config = _kt_plugin_config,
+    kt_plugins_map = _kt_plugins_map,
 )

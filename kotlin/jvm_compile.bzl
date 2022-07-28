@@ -199,7 +199,6 @@ def kt_jvm_compile(
         exported_plugins = [e[JavaPluginInfo] for e in exported_plugins],
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
         exports = r_java_info + [e[JavaInfo] for e in exports if JavaInfo in e],
-        kt_plugin_configs = kt_plugin_configs,
         friend_jars = friend_jars,
         java_toolchain = java_toolchain,
         javacopts = javacopts,
@@ -212,7 +211,10 @@ def kt_jvm_compile(
         neverlink = neverlink,
         output = output,
         output_srcjar = output_srcjar,
-        plugins = [plugin[JavaPluginInfo] for plugin in plugins],
+        plugins = common.kt_plugins_map(
+            java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins],
+            kt_plugin_configs = kt_plugin_configs,
+        ),
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,
