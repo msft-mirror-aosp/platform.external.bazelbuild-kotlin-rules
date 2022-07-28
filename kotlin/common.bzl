@@ -15,6 +15,7 @@
 """Common Kotlin definitions."""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load("@bazel_skylib//lib:structs.bzl", "structs")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("@//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
@@ -358,7 +359,6 @@ def _run_kotlinc(
         kt_srcs = [],
         common_srcs = [],
         java_srcs_and_dirs = [],
-        merged_deps = None,
         kotlincopts = [],
         compile_jdeps = depset(),
         toolchain = None,
@@ -366,21 +366,23 @@ def _run_kotlinc(
         directdep_jars = depset(),
         kt_plugin_configs = [],
         friend_jars = depset(),
+        enforce_strict_deps = False,
         enforce_complete_jdeps = False):
     if output.extension != "jar":
         fail("Expect to output a Jar but got %s" % output)
+
+    kt_plugin_configs = list(kt_plugin_configs)
+
     kt_ijar = ctx.actions.declare_file(output.basename[:-4] + "-ijar.jar", sibling = output)
-
-    def write_opts_jvm_abi_gen(args):
-        args.add("-P", kt_ijar, format = "plugin:org.jetbrains.kotlin.jvm.abi:outputDir=%s")
-
-    kt_plugin_configs = [
+    kt_plugin_configs.append(
         _kt_plugin_config(
             jar = toolchain.jvm_abi_gen_plugin,
             outputs = [kt_ijar],
-            write_opts = write_opts_jvm_abi_gen,
+            write_opts = lambda args: (
+                args.add("-P", kt_ijar, format = "plugin:org.jetbrains.kotlin.jvm.abi:outputDir=%s"),
+            ),
         ),
-    ] + kt_plugin_configs
+    )
 
     inputs = depset(
         direct = (
@@ -456,11 +458,10 @@ def _run_kotlinc(
         kt_srcs + common_srcs,
     )
 
-    return JavaInfo(
+    return struct(
         output_jar = output,
         compile_jar = kt_ijar,
         source_jar = srcjar,
-        deps = [merged_deps],
     )
 
 def _get_original_kt_target_label(ctx):
@@ -795,7 +796,6 @@ def _kt_jvm_library(
     out_jars = []
     out_srcjars = []
     out_compilejars = []
-    kt_java_info = None
     kapt_outputs = struct(jar = None, manifest = None, srcjar = None)
 
     # Kotlin compilation requires two passes when annotation processing is
@@ -830,33 +830,37 @@ def _kt_jvm_library(
             compile_jar = kapt_outputs.jar,
         )])
 
-    kotlin_jdeps_output = None
+    kotlinc_result = None
     if kt_srcs or common_srcs:
-        main_compile_plugin_configs = list(kt_plugin_configs)
-
-        kt_jar = ctx.actions.declare_file(ctx.label.name + "-kt.jar")
-        kt_java_info = _run_kotlinc(
+        kotlinc_result = _run_kotlinc(
             ctx,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
             java_srcs_and_dirs = java_srcs + java_syncer.dirs,
-            output = kt_jar,
-            merged_deps = merged_deps,
+            output = ctx.actions.declare_file(ctx.label.name + "-kt.jar"),
             kotlincopts = kotlincopts,
             compile_jdeps = compile_jdeps,
             toolchain = kt_toolchain,
             classpath = full_classpath,
-            kt_plugin_configs = main_compile_plugin_configs,
+            kt_plugin_configs = kt_plugin_configs,
             friend_jars = friend_jars,
+            enforce_strict_deps = enforce_strict_deps,
             enforce_complete_jdeps = enforce_complete_jdeps,
         )
 
         # Use un-instrumented Jar at compile-time to avoid double-instrumenting inline functions
         # (see b/110763361 for the comparable Gradle issue)
-        out_compilejars.extend(kt_java_info.compile_jars.to_list())  # unpack singleton depset
+        out_compilejars.append(kotlinc_result.compile_jar)
+        out_srcjars.append(kotlinc_result.source_jar)
 
-        out_jars.append(kt_jar)
-        out_srcjars.extend(kt_java_info.source_jars)
+        # Apply coverage instrumentation if requested, and add dep on JaCoCo runtime to merged_deps.
+        # The latter helps jdeps computation (b/130747644) but could be runtime-only if we computed
+        # compile-time Jdeps based using the compile Jar (which doesn't contain instrumentation).
+        # See b/117897097 for why it's still useful to make the (runtime) dep explicit.
+        if ctx.coverage_instrumented():
+            pass
+        else:
+            out_jars.append(kotlinc_result.output_jar)
 
     javac_java_info = None
     java_native_headers_jar = None
@@ -870,7 +874,7 @@ def _kt_jvm_library(
             source_jars = java_syncer.srcjars,
             resources = classpath_resources,
             output = javac_out,
-            deps = ([kt_java_info] if kt_java_info else []) + [merged_deps],
+            deps = ([JavaInfo(**structs.to_dict(kotlinc_result))] if kotlinc_result else []) + [merged_deps],
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
