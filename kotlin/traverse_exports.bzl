@@ -14,8 +14,9 @@
 
 """Combined aspect for all rules_kotlin behaviours that need to traverse exports."""
 
-load(":forbidden_deps.bzl", "kt_forbidden_deps_visitor")
+load(":compiler_plugin.bzl", "kt_compiler_plugin_visitor")
 load(":direct_jdeps.bzl", "kt_direct_jdeps_visitor")
+load(":forbidden_deps.bzl", "kt_forbidden_deps_visitor")
 
 # java_xxx_proto_library don't populate java_outputs but we can get them through
 # required_aspect_providers from their proto_library deps.
@@ -40,6 +41,7 @@ _NO_SRCS_DEPS_AS_EXPORTS_RULES = [
 _VISITORS = [
     kt_forbidden_deps_visitor,
     kt_direct_jdeps_visitor,
+    kt_compiler_plugin_visitor,
 ]
 
 _KtTraverseExportsInfo = provider(

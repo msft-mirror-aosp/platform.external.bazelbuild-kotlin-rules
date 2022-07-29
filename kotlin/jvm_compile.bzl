@@ -72,7 +72,7 @@ def kt_jvm_compile(
       android_lint_plugins: List of targets. An list of android lint plugins to
         execute as a part of linting.
       resource_files: List of Files. The list of Android Resource files.
-      exported_plugins: List of exported javac plugins
+      exported_plugins: List of exported javac/kotlinc plugins
       manifest: A File. The raw Android manifest. Optional.
       merged_manifest: A File. The merged Android manifest. Optional.
       classpath_resources: List of Files. The list of classpath resources (kt_jvm_library only).
@@ -196,7 +196,7 @@ def kt_jvm_compile(
         coverage_srcs = coverage_srcs,
                 deps = r_java_info + java_infos,
         disable_lint_checks = disable_lint_checks,
-        exported_plugins = [e[JavaPluginInfo] for e in exported_plugins],
+        exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
         exports = r_java_info + [e[JavaInfo] for e in exports if JavaInfo in e],
         friend_jars = friend_jars,
@@ -212,7 +212,7 @@ def kt_jvm_compile(
         output = output,
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
-            java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins],
+            java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins if (JavaPluginInfo in plugin)],
             kt_plugin_configs = kt_plugin_configs,
         ),
         resource_files = resource_files,

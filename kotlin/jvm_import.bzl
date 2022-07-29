@@ -19,6 +19,7 @@ load(":traverse_exports.bzl", "kt_traverse_exports")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 
 def _kt_jvm_import_impl(ctx):
     kt_jvm_toolchain = kt_jvm_toolchains.get(ctx)
@@ -99,6 +100,16 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
                  must be included here. This is a stronger requirement than what is enforced for
                  `java_library`. Any build failures resulting from this requirement will include the
                  missing dependencies and a command to fix the rule.""",
+    ),
+    exported_plugins = attr.label_list(
+        providers = [[KtCompilerPluginInfo]],
+        cfg = "exec",
+        doc = """JVM plugins to export to users.
+
+
+                 Every plugin listed will run during compliations that depend on this target, as
+                 if it were listed directly in that target's `plugins` attribute. `java_*` targets
+                 will not run kotlinc plugins""",
     ),
     jars = attr.label_list(
         allow_files = common.JAR_FILE_TYPE,
