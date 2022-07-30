@@ -19,8 +19,8 @@ load("@//kotlin:jvm_compile.bzl", "compile")
 load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_dir", "create_file")
 load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
-load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load(":assert_failure_test.bzl", "assert_failure_test")
 
 def _impl(ctx):
     # As additional capabilites need to be tested, this rule should support
@@ -78,19 +78,6 @@ _kt_jvm_compile = rule(
         jar = "lib%{name}.jar",
     ),
     toolchains = [kt_jvm_toolchains.type],
-)
-
-def _failure_test_impl(ctx):
-    env = analysistest.begin(ctx)
-    asserts.expect_failure(env, ctx.attr.expected_failure_msg)
-    return analysistest.end(env)
-
-_failure_test = analysistest.make(
-    _failure_test_impl,
-    expect_failure = True,
-    attrs = {
-        "expected_failure_msg": attr.string(mandatory = True),
-    },
 )
 
 def _test_kt_jvm_compile_using_kt_jvm_compile_with_r_java():
@@ -181,10 +168,10 @@ fun bar(): String = "Bar"
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
         r_java = ":foo",
     )
-    _failure_test(
+    assert_failure_test(
         name = test_name,
         target_under_test = ":kt_jvm_compile_with_illegal_r_java",
-        expected_failure_msg = "illegal dependency provided for r_java",
+        msg_contains = "illegal dependency provided for r_java",
     )
     return test_name
 
@@ -355,10 +342,10 @@ def _test_kt_jvm_compile_unsupported_src_artifacts():
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
 
-    _failure_test(
+    assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_unexpected_lib",
-        expected_failure_msg = "/src.unexpected",
+        msg_contains = "/src.unexpected",
     )
     return test_name
 

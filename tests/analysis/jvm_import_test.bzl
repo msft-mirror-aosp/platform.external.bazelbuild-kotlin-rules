@@ -18,6 +18,7 @@ load("@//kotlin:jvm_import.bzl", "kt_jvm_import")
 load("@//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
+load(":assert_failure_test.bzl", "assert_failure_test")
 
 def _impl(ctx):
     env = analysistest.begin(ctx)
@@ -34,19 +35,6 @@ def _impl(ctx):
     return analysistest.end(env)
 
 _test = analysistest.make(_impl)
-
-def _failure_test_impl(ctx):
-    env = analysistest.begin(ctx)
-    asserts.expect_failure(env, ctx.attr.expected_failure_msg)
-    return analysistest.end(env)
-
-_failure_test = analysistest.make(
-    _failure_test_impl,
-    expect_failure = True,
-    attrs = {
-        "expected_failure_msg": attr.string(mandatory = True),
-    },
-)
 
 def _test_kt_jvm_import():
     test_name = "kt_jvm_import_test"

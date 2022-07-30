@@ -18,6 +18,7 @@ load("@//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action_arg")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load(":assert_failure_test.bzl", "assert_failure_test")
 
 def _test_impl(ctx):
     env = analysistest.begin(ctx)
@@ -132,19 +133,6 @@ _coverage_test = analysistest.make(
         "//command_line_option:collect_code_coverage": "1",
         "//command_line_option:instrument_test_targets": "1",
         "//command_line_option:instrumentation_filter": "+tests/analysis[:/]",
-    },
-)
-
-def _failure_test_impl(ctx):
-    env = analysistest.begin(ctx)
-    asserts.expect_failure(env, ctx.attr.expected_failure_msg)
-    return analysistest.end(env)
-
-_failure_test = analysistest.make(
-    _failure_test_impl,
-    expect_failure = True,
-    attrs = {
-        "expected_failure_msg": attr.string(mandatory = True),
     },
 )
 
@@ -849,10 +837,10 @@ def _test_forbidden_nano_dep():
         srcs = [],
                 tags = ["nano_proto_library"],
     )
-    _failure_test(
+    assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_failure_msg = test_name + "_fake_nano_proto_lib : nano_proto_library",
+        msg_contains = test_name + "_fake_nano_proto_lib : nano_proto_library",
     )
     return test_name
 
@@ -877,10 +865,10 @@ def _test_forbidden_nano_export():
         srcs = [],
                 tags = ["nano_proto_library"],
     )
-    _failure_test(
+    assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_failure_msg = test_name + "_fake_nano_proto_lib : nano_proto_library",
+        msg_contains = test_name + "_fake_nano_proto_lib : nano_proto_library",
     )
     return test_name
 
@@ -895,10 +883,10 @@ def _test_kt_jvm_library_with_no_sources():
         ],
     )
     tut_label = str(Label("@//tests/analysis:kt_jvm_library_with_no_sources_test_tut"))
-    _failure_test(
+    assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_failure_msg = "srcs attribute or common_srcs attribute of rule " + tut_label + " must be non empty",
+        msg_contains = "srcs attribute or common_srcs attribute of rule " + tut_label + " must be non empty",
     )
     return test_name
 
