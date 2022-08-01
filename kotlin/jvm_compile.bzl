@@ -241,30 +241,29 @@ def _is_eligible_friend(ctx, friend):
       friend: (Target) A potential friend of `ctx`
     """
 
+    ctx_pkg = ctx.label.package + "/"
+    friend_pkg = friend.label.package + "/"
+
     if not (JavaInfo in friend):
         fail("Friend eligibility should only ever be checked on targets with JavaInfo: %s" % friend.label)
 
-    if friend.label.package == ctx.label.package:
+    if ctx_pkg == friend_pkg:
         # Allow friends on targets in the same package
         return True
 
-    if "javatests/" in ctx.label.package and "java/" in friend.label.package:
+    if "javatests/" in ctx_pkg and "java/" in friend_pkg:
         # Allow friends from javatests/ on the parallel java/ package
-        rule_root = ctx.label.package.rsplit("javatests/", 1)[1]
-        friend_root = friend.label.package.rsplit("java/", 1)[1]
-        if rule_root == friend_root:
+        ctx_root = ctx_pkg.rsplit("javatests/", 1)[1]
+        friend_root = friend_pkg.rsplit("java/", 1)[1]
+        if ctx_root == friend_root:
             return True
 
-    if ("test/java/" in ctx.label.package and "main/java/" in friend.label.package and
+    if ("test/java/" in ctx_pkg and "main/java/" in friend_pkg and
         True):
-        # Allow friends from test/java on the parallel main/java package
-        rule_split = ctx.label.package.rsplit("test/java/", 1)
-        friend_split = friend.label.package.rsplit("main/java/", 1)
-        rule_base_dir = rule_split[0]
-        rule_package_name = rule_split[1]
-        friend_base_dir = friend_split[0]
-        friend_package_name = friend_split[1]
-        if rule_base_dir == friend_base_dir and rule_package_name == friend_package_name:
+        # Allow friends from test/java/ on the parallel main/java/ package
+        ctx_split = ctx_pkg.rsplit("test/java/", 1)
+        friend_split = friend_pkg.rsplit("main/java/", 1)
+        if ctx_split == friend_split:
             return True
 
     return False
