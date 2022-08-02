@@ -353,6 +353,20 @@ def _derive_gen_class_jar(
 
     return result
 
+def _kt_plugins_map(
+        java_plugin_infos = [],
+        kt_compiler_plugin_infos = []):
+    """A struct containing all the plugin types understood by rules_kotlin.
+
+    Args:
+      java_plugin_infos: (list[JavaPluginInfo])
+      kt_compiler_plugin_infos: (list[KtCompilerPluginInfo])
+    """
+    return struct(
+        java_plugin_infos = java_plugin_infos,
+        kt_compiler_plugin_infos = kt_compiler_plugin_infos,
+    )
+
 def _run_kotlinc(
         ctx,
         output,
@@ -364,43 +378,16 @@ def _run_kotlinc(
         toolchain = None,
         classpath = [],
         directdep_jars = depset(),
-        kt_plugin_configs = [],
+        plugins = _kt_plugins_map(),
         friend_jars = depset(),
         enforce_strict_deps = False,
         enforce_complete_jdeps = False):
     if output.extension != "jar":
         fail("Expect to output a Jar but got %s" % output)
 
-    kt_plugin_configs = list(kt_plugin_configs)
-
-    kt_ijar = ctx.actions.declare_file(output.basename[:-4] + "-ijar.jar", sibling = output)
-    kt_plugin_configs.append(
-        _kt_plugin_config(
-            jar = toolchain.jvm_abi_gen_plugin,
-            outputs = [kt_ijar],
-            write_opts = lambda args: (
-                args.add("-P", kt_ijar, format = "plugin:org.jetbrains.kotlin.jvm.abi:outputDir=%s"),
-            ),
-        ),
-    )
-
-    inputs = depset(
-        direct = (
-            kt_srcs +
-            common_srcs +
-            java_srcs_and_dirs +
-            [config.jar for config in kt_plugin_configs]
-        ),
-        transitive = [
-            # friend_jars # These are always a subset of the classpath
-            # directdep_jars # These are always a subset of the classpath
-            classpath,
-            compile_jdeps,
-        ],
-    )
-    outputs = [output]
-    for config in kt_plugin_configs:
-        outputs.extend(config.outputs)
+    direct_inputs = []
+    transitive_inputs = []
+    outputs = []
 
     # Args to kotlinc.
     #
@@ -412,26 +399,41 @@ def _run_kotlinc(
 
     kotlinc_args.add_all(_common_kapt_and_kotlinc_args(ctx, toolchain))
     kotlinc_args.add_joined("-cp", classpath, join_with = ":")
+    transitive_inputs.append(classpath)
     kotlinc_args.add_all(kotlincopts)
-    for config in kt_plugin_configs:
-        kotlinc_args.add(config.jar, format = "-Xplugin=%s")
-        config.write_opts(kotlinc_args)
+
+    kotlinc_args.add(toolchain.jvm_abi_gen_plugin, format = "-Xplugin=%s")
+    direct_inputs.append(toolchain.jvm_abi_gen_plugin)
+    kt_ijar = ctx.actions.declare_file(output.basename[:-4] + "-ijar.jar", sibling = output)
+    kotlinc_args.add("-P", kt_ijar, format = "plugin:org.jetbrains.kotlin.jvm.abi:outputDir=%s")
+    outputs.append(kt_ijar)
+
+    for p in plugins.kt_compiler_plugin_infos:
+        kotlinc_args.add(p.jar, format = "-Xplugin=%s")
+        direct_inputs.append(p.jar)
+        kotlinc_args.add_all(p.args, before_each = "-P")
 
     # Common sources must also be specified as -Xcommon-sources= in addition to appearing in the
     # source list.
     if common_srcs:
         kotlinc_args.add("-Xmulti-platform=true")
         kotlinc_args.add_all(common_srcs, format_each = "-Xcommon-sources=%s")
+        direct_inputs.extend(common_srcs)
 
     kotlinc_args.add("-d", output)
+    outputs.append(output)
     kotlinc_args.add_all(kt_srcs)
+    direct_inputs.extend(kt_srcs)
     kotlinc_args.add_all(common_srcs)
+    direct_inputs.extend(common_srcs)
 
     if java_srcs_and_dirs:
         # This expands any directories into their contained files
         kotlinc_args.add_all(java_srcs_and_dirs)
+        direct_inputs.extend(java_srcs_and_dirs)
 
     kotlinc_args.add_joined(friend_jars, format_joined = "-Xfriend-paths=%s", join_with = ",")
+    transitive_inputs.append(friend_jars)
 
     # Do not change the "shape" or mnemonic of this action without consulting Kythe team
     # (kythe-eng@), to avoid breaking the Kotlin Kythe extractor which "shadows" this action.  In
@@ -441,7 +443,7 @@ def _run_kotlinc(
     ctx.actions.run(
         executable = toolchain.kotlin_compiler,
         arguments = [kotlinc_args],
-        inputs = inputs,
+        inputs = depset(direct = direct_inputs, transitive = transitive_inputs),
         outputs = outputs,
         mnemonic = "Kt2JavaCompile",
         progress_message = "Compiling Kotlin For Java Runtime: %s" % _get_original_kt_target_label(ctx),
@@ -471,42 +473,6 @@ def _get_original_kt_target_label(ctx):
         label = label.relative(":%s" % label.name[0:label.name.find("_DO_NOT_DEPEND")])
 
     return label
-
-def _empty_fn(*_, **__):
-    return None
-
-def _kt_plugin_config(
-        jar,
-        outputs = [],
-        write_opts = _empty_fn):
-    """A struct representing a kotlinc plugin.
-
-    Args:
-      jar: [File] The JAR that contains/declares the plugin
-      outputs: [List<File>] The files the plugin outputs
-      write_opts: [function(Args): None] A function that writes plugin options to an Args
-          object. Using a function allows efficiently setting/storing/reusing options.
-    """
-    return struct(
-        _type = "kt_plugin_config",
-        jar = jar,
-        outputs = outputs,
-        write_opts = write_opts,
-    )
-
-def _kt_plugins_map(
-        java_plugin_infos = [],
-        kt_plugin_configs = []):
-    """A struct containing all the plugin types understood by rules_kotlin.
-
-    Args:
-      java_plugin_infos: (list[JavaPluginInfo])
-      kt_plugin_configs: (list[kt_plugin_config])
-    """
-    return struct(
-        java_plugin_infos = java_plugin_infos,
-        kt_plugin_configs = kt_plugin_configs,
-    )
 
 def _check_deps(
         ctx,
@@ -849,7 +815,7 @@ def _kt_jvm_library(
             compile_jdeps = compile_jdeps,
             toolchain = kt_toolchain,
             classpath = full_classpath,
-            kt_plugin_configs = plugins.kt_plugin_configs,
+            plugins = plugins,
             friend_jars = friend_jars,
             enforce_strict_deps = enforce_strict_deps,
             enforce_complete_jdeps = enforce_complete_jdeps,
@@ -1079,6 +1045,5 @@ common = struct(
     is_kt_src = _is_kt_src,
     kt_jvm_import = _kt_jvm_import,
     kt_jvm_library = _kt_jvm_library,
-    kt_plugin_config = _kt_plugin_config,
     kt_plugins_map = _kt_plugins_map,
 )

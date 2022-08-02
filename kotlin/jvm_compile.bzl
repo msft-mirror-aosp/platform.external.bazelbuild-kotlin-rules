@@ -16,9 +16,9 @@
 
 load(":common.bzl", "common")
 load(":traverse_exports.bzl", "kt_traverse_exports")
+load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 
 _RULE_FAMILY = common.RULE_FAMILY
-_PARCELIZE_V2_RUNTIME = "@kotlinc//:parcelize_runtime"
 
 def kt_jvm_compile(
         ctx,
@@ -109,9 +109,7 @@ def kt_jvm_compile(
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
 
     java_infos = []
-    use_compose = False
     use_flogger = False
-    use_parcelize = False
 
     friend_jars = depset(transitive = [
         _select_friend_jars(dep)
@@ -129,45 +127,16 @@ def kt_jvm_compile(
         if JavaInfo in dep:
             java_infos.append(dep[JavaInfo])
 
-            use_parcelize = use_parcelize or str(dep.label) == _PARCELIZE_V2_RUNTIME
-
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
 
     java_infos.extend(kt_toolchain.kotlin_libs)
 
-    # TODO: Create a rule for defining kotlinc plugins
-    kt_plugin_configs = []
-
+    # TODO: Inject the runtime library from the flogger API target
     if use_flogger:
-        if not flogger_runtime or not flogger_plugin:
-            fail("Dependency on flogger exists, but flogger_runtime/flogger_plugin not passed")
+        if not flogger_runtime:
+            fail("Dependency on flogger exists, but flogger_runtime not passed")
         java_infos.append(flogger_runtime)
-        kt_plugin_configs.append(common.kt_plugin_config(jar = flogger_plugin))
-
-    if use_parcelize:
-        if not parcelize_plugin_v2:
-            fail("Internal Error: Dependency on %s exists, but parcelize_plugin_v2 not passed" % (_PARCELIZE_V2_RUNTIME))
-        kt_plugin_configs.append(common.kt_plugin_config(jar = parcelize_plugin_v2))
-
-    if use_compose:
-        if not compose_plugin:
-            fail("Dependency on compose exists, but compose_plugin not passed")
-
-        if "-Xuse-old-backend" in kotlincopts:
-            fail("Jetpack Compose requires use of Kotlin IR backend but -Xuse-old-backend is set")
-
-        if "1.3" in kotlincopts or "1.4" in kotlincopts:
-            fail("Jetpack Compose requires Kotlin language version 1.5+")
-
-        def write_opts_compose_plugin(args):
-            args.add("-P", "plugin:androidx.compose.compiler.plugins.kotlin:suppressKotlinVersionCompatibilityCheck=true")
-
-        # Disable compatibility check so we can use newer compatible compiler versions easily
-        kt_plugin_configs.append(common.kt_plugin_config(
-            jar = compose_plugin,
-            write_opts = write_opts_compose_plugin,
-        ))
 
     if kotlincopts != None and "-Werror" in kotlincopts:
         fail("Flag -Werror is not permitted")
@@ -213,7 +182,11 @@ def kt_jvm_compile(
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
             java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins if (JavaPluginInfo in plugin)],
-            kt_plugin_configs = kt_plugin_configs,
+            kt_compiler_plugin_infos = kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
+                plugin[KtCompilerPluginInfo]
+                for plugin in plugins
+                if (KtCompilerPluginInfo in plugin)
+            ],
         ),
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
