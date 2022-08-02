@@ -46,13 +46,11 @@ def kt_jvm_compile(
         r_java = None,
         output_srcjar = None,
         flogger_runtime = None,
-        flogger_plugin = None,
-        parcelize_plugin_v2 = None,
-        compose_plugin = None,
         rule_family = _RULE_FAMILY.UNKNOWN,
         annotation_processor_additional_outputs = [],
         annotation_processor_additional_inputs = [],
-        coverage_srcs = []):
+        coverage_srcs = [],
+        **_kwargs):
     """
     The Kotlin JVM Compile method.
 
@@ -89,9 +87,6 @@ def kt_jvm_compile(
         Android R.java within an android_library rule.
       output_srcjar: Target output file for generated source jar. Default filename used if None.
       flogger_runtime: JavaInfo, Flogger runtime. Optional
-      flogger_plugin: File pointing to Flogger plugin. Optional
-      parcelize_plugin_v2: File pointing to Parcelize Plugin. Optional
-      compose_plugin: File pointing to Jetpack Compose Plugin. Optional
       rule_family: The family of the rule calling this function. Element of common.RULE_FAMILY.
         May be used to enable/disable some features.
       annotation_processor_additional_outputs: sequence of Files. A list of
@@ -100,6 +95,7 @@ def kt_jvm_compile(
         files consumed by an annotation processor.
       coverage_srcs: Files to use as the basis when computing code coverage. These are typically
         handwritten files that were inputs to generated `srcs`. Should be disjoint with `srcs`.
+      **_kwargs: Unused kwargs so that parameters are easy to add and remove.
 
     Returns:
       A struct that carries the following fields: java_info and validations.
