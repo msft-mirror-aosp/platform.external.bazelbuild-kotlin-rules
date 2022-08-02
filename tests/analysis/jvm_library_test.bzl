@@ -20,6 +20,8 @@ load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(":assert_failure_test.bzl", "assert_failure_test")
 
+_DEFAULT_LIST = ["__default__"]
+
 def _test_impl(ctx):
     env = analysistest.begin(ctx)
     actions = analysistest.target_actions(env)
@@ -82,13 +84,9 @@ def _test_impl(ctx):
         actual[JavaInfo].plugins.processor_classes.to_list(),
     )
 
-    friend_paths_arg = get_action_arg(actions, "Kt2JavaCompile", "-Xfriend-paths=")
-    if len(ctx.attr.expected_friend_jar_names) == 0:
-        asserts.true(env, friend_paths_arg == None, "Expected no -Xfriend-paths=")
-    elif ctx.attr.expected_friend_jar_names[0] == "DISABLED":
-        pass  # Nothing to assert
-    else:
-        friend_jar_names = [p.rsplit("/", 1)[1] for p in friend_paths_arg.split(",")]
+    if ctx.attr.expected_friend_jar_names != _DEFAULT_LIST:
+        friend_paths_arg = get_action_arg(actions, "Kt2JavaCompile", "-Xfriend-paths=")
+        friend_jar_names = [p.rsplit("/", 1)[1] for p in friend_paths_arg.split(",")] if friend_paths_arg else []
         asserts.set_equals(env, sets.make(ctx.attr.expected_friend_jar_names), sets.make(friend_jar_names))
 
     return analysistest.end(env)
@@ -106,11 +104,13 @@ _test = analysistest.make(
         ),
         expected_friend_jar_names = attr.string_list(
             doc = "Names of all -Xfriend-paths= JARs",
-            default = ["DISABLED"],
+            default = _DEFAULT_LIST,
         ),
         expect_processor_classpath = attr.bool(),
     ),
 )
+
+jvm_library_test = _test
 
 def _coverage_test_impl(ctx):
     env = analysistest.begin(ctx)
@@ -690,136 +690,6 @@ fun greeting(): String = "Hello World!"
     )
     return test_name
 
-def _test_kt_jvm_library_with_friend():
-    test_name = "kt_jvm_library_with_friend_test"
-
-    kt_jvm_library(
-        name = test_name + "_kt_friend",
-        srcs = [
-            create_file(
-                name = test_name + "/Friend.kt",
-                content = """
-package test
-
-internal fun internalHello(): String = "Hello friend!"
-""",
-            ),
-        ],
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        testonly = 1,
-        srcs = [
-            create_file(
-                name = test_name + "/FriendHello.kt",
-                content = """
-package test
-
-fun friendHello(): String = internalHello()
-""",
-            ),
-        ],
-        deps = [test_name + "_kt_friend"],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-        expected_friend_jar_names = [test_name + "_kt_friend-compile.jar"],
-    )
-    return test_name
-
-def _test_kt_jvm_library_exports_are_not_befriended():
-    test_name = "kt_jvm_library_exports_are_not_befriended"
-
-    kt_jvm_library(
-        name = test_name + "_A",
-        srcs = [
-            create_file(
-                name = test_name + "/A.kt",
-                content = """
-package foo
-
-internal fun internalToA() = "A"
-""",
-            ),
-        ],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    )
-
-    kt_jvm_library(
-        name = test_name + "_B",
-        srcs = [
-            create_file(
-                name = test_name + "/B.kt",
-                content = """
-package foo
-
-internal fun internalToB() = "B"
-""",
-            ),
-        ],
-        exports = [
-            test_name + "_A",
-        ],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    )
-
-    kt_jvm_library(
-        name = test_name + "_C",
-        srcs = [
-            create_file(
-                name = test_name + "/C.kt",
-                content = """
-package foo
-
-val X = internalToA() + internalToB()
-""",
-            ),
-        ],
-        deps = [test_name + "_B"],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    )
-
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_C",
-        expected_friend_jar_names = [test_name + "_B-compile.jar"],
-    )
-
-    return test_name
-
-def _test_kt_jvm_library_with_java_library_friend():
-    test_name = "kt_jvm_library_with_java_library_friend_test"
-
-    native.java_library(
-        name = test_name + "_java_friend",
-        srcs = [
-            "testinputs/Foo.java",
-        ],
-            )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        testonly = 1,
-        srcs = [
-            create_file(
-                name = test_name + "/FriendHello.kt",
-                content = """
-package test
-
-fun friendHello(): String = internalHello()
-""",
-            ),
-        ],
-        deps = [test_name + "_java_friend"],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-        expected_friend_jar_names = ["lib" + test_name + "_java_friend-hjar.jar"],
-    )
-    return test_name
-
 def _test_forbidden_nano_dep():
     test_name = "kt_jvm_library_forbidden_nano_test"
 
@@ -945,7 +815,6 @@ def test_suite(name):
             _test_forbidden_nano_dep(),
             _test_forbidden_nano_export(),
             _test_kt_jvm_library_dep_on_exported_plugin(),
-            _test_kt_jvm_library_exports_are_not_befriended(),
             _test_kt_jvm_library_java_dep_on_exported_plugin(),
             _test_kt_jvm_library_no_deps(),
             _test_kt_jvm_library_no_java_srcs(),
@@ -956,9 +825,7 @@ def test_suite(name):
             _test_kt_jvm_library_with_export_that_exports_plugin(),
             _test_kt_jvm_library_with_exported_plugin(),
             _test_kt_jvm_library_with_exports(),
-            _test_kt_jvm_library_with_friend(),
             _test_kt_jvm_library_with_java_export_that_exports_plugin(),
-            _test_kt_jvm_library_with_java_library_friend(),
             _test_kt_jvm_library_with_no_sources(),
             _test_kt_jvm_library_with_non_processor_plugin(),
             _test_kt_jvm_library_with_only_common_srcs(),
