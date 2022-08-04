@@ -24,16 +24,32 @@ package(
 licenses(["notice"])
 
 jvm_library_test(
-    name = "no_java_exported_friend_in_package_test",
-    expected_friend_jar_names = [
-        "libjava_exports_friend-hjar.jar",
-        # Absent # "friend-compile.jar"
-    ],
-    target_under_test = ":no_java_exported_friend_in_package",
+    name = "no_kt_exported_friend_trans_package_test",
+    expected_friend_jar_names = [],
+    target_under_test = ":no_kt_exported_friend_trans_package",
 )
 
 kt_jvm_library(
-    name = "no_java_exported_friend_in_package",
+    name = "no_kt_exported_friend_trans_package",
+    srcs = ["Input.kt"],
+    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+    deps = [
+        # Exports :friend from this package
+        "@//tests/analysis/jvm_library/friends/sub:kt_exports_friend",
+    ],
+)
+
+jvm_library_test(
+    name = "has_java_exported_friend_in_package_test",
+    expected_friend_jar_names = [
+        "libjava_exports_friend-hjar.jar",
+        "friend-compile.jar",
+    ],
+    target_under_test = ":has_java_exported_friend_in_package",
+)
+
+kt_jvm_library(
+    name = "has_java_exported_friend_in_package",
     srcs = ["Input.kt"],
     tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     deps = [":java_exports_friend"],
@@ -47,16 +63,16 @@ java_library(
 )
 
 jvm_library_test(
-    name = "no_kt_exported_friend_in_package_test",
+    name = "has_kt_exported_friend_in_package_test",
     expected_friend_jar_names = [
         "kt_exports_friend-compile.jar",
-        # Absent # "friend-compile.jar"
+        "friend-compile.jar",
     ],
-    target_under_test = ":no_kt_exported_friend_in_package",
+    target_under_test = ":has_kt_exported_friend_in_package",
 )
 
 kt_jvm_library(
-    name = "no_kt_exported_friend_in_package",
+    name = "has_kt_exported_friend_in_package",
     srcs = ["Input.kt"],
     tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     deps = [":kt_exports_friend"],

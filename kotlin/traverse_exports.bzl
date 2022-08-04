@@ -17,6 +17,7 @@
 load(":compiler_plugin.bzl", "kt_compiler_plugin_visitor")
 load(":direct_jdeps.bzl", "kt_direct_jdeps_visitor")
 load(":forbidden_deps.bzl", "kt_forbidden_deps_visitor")
+load(":friend_jars.bzl", "kt_friend_jars_visitor")
 
 # java_xxx_proto_library don't populate java_outputs but we can get them through
 # required_aspect_providers from their proto_library deps.
@@ -33,8 +34,8 @@ _NO_SRCS_DEPS_AS_EXPORTS_RULES = [
 
 # visitor = struct[T](
 #     name = string,
-#     visit_target = function(Target, ctx): list[T],
-#     filter_export = None|(function(Target): bool),
+#     visit_target = function(Target, ctx.rule): list[T],
+#     filter_edge = None|(function(src: ?, dest: Target): bool),
 #     process_unvisited_target = None|(function(Target): list[T]),
 #     finish_expansion = None|(function(depset[T]): depset[T]),
 # )
@@ -42,6 +43,7 @@ _VISITORS = [
     kt_forbidden_deps_visitor,
     kt_direct_jdeps_visitor,
     kt_compiler_plugin_visitor,
+    kt_friend_jars_visitor,
 ]
 
 _KtTraverseExportsInfo = provider(
@@ -73,11 +75,11 @@ def _aspect_impl(target, ctx):
 
     return _KtTraverseExportsInfo(**{
         v.name: depset(
-            direct = v.visit_target(target, ctx),
+            direct = v.visit_target(target, ctx.rule),
             transitive = [
-                getattr(t[_KtTraverseExportsInfo], v.name)
-                for t in exports
-                if (not v.filter_export or v.filter_export(t))
+                getattr(e[_KtTraverseExportsInfo], v.name)
+                for e in exports
+                if (not v.filter_edge or v.filter_edge(target, e))
             ],
         )
         for v in _VISITORS
@@ -93,14 +95,15 @@ _aspect = aspect(
 )
 
 def _create_visitor_expand(visitor):
-    def _visitor_expand(targets):
+    def _visitor_expand(targets, root = None):
         direct = []
         transitive = []
         for t in targets:
-            if _KtTraverseExportsInfo in t:
-                transitive.append(getattr(t[_KtTraverseExportsInfo], visitor.name))
-            elif visitor.process_unvisited_target:
-                direct.extend(visitor.process_unvisited_target(t))
+            if (not visitor.filter_edge or visitor.filter_edge(root, t)):
+                if _KtTraverseExportsInfo in t:
+                    transitive.append(getattr(t[_KtTraverseExportsInfo], visitor.name))
+                elif visitor.process_unvisited_target:
+                    direct.extend(visitor.process_unvisited_target(t))
 
         expanded_set = depset(direct = direct, transitive = transitive)
         return visitor.finish_expansion(expanded_set) if visitor.finish_expansion else expanded_set

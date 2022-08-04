@@ -107,12 +107,6 @@ def kt_jvm_compile(
     java_infos = []
     use_flogger = False
 
-    friend_jars = depset(transitive = [
-        _select_friend_jars(dep)
-        for dep in deps
-        if _is_eligible_friend(ctx, dep)
-    ])
-
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
     has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
@@ -164,7 +158,7 @@ def kt_jvm_compile(
         exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
         exports = r_java_info + [e[JavaInfo] for e in exports if JavaInfo in e],
-        friend_jars = friend_jars,
+        friend_jars = kt_traverse_exports.expand_friend_jars(deps, root = ctx),
         java_toolchain = java_toolchain,
         javacopts = javacopts,
         kotlincopts = kotlincopts,
@@ -195,49 +189,3 @@ def kt_jvm_compile(
 
 # TODO Delete this
 compile = kt_jvm_compile
-
-def _is_eligible_friend(ctx, friend):
-    """
-    Determines if `ctx` is allowed to call `friend` a friend (and use its `internal` members).
-
-    To be eligibile, `ctx` must be one of:
-      - in the parallel `java/` package from a `javatests/` package
-      - in the parallel `main/java` package from a `test/java` package
-      - another target in the same `BUILD` file
-
-    Args:
-      ctx: (ctx) The current target
-      friend: (Target) A potential friend of `ctx`
-    """
-
-    ctx_pkg = ctx.label.package + "/"
-    friend_pkg = friend.label.package + "/"
-
-    if not (JavaInfo in friend):
-        fail("Friend eligibility should only ever be checked on targets with JavaInfo: %s" % friend.label)
-
-    if ctx_pkg == friend_pkg:
-        # Allow friends on targets in the same package
-        return True
-
-    if "javatests/" in ctx_pkg and "java/" in friend_pkg:
-        # Allow friends from javatests/ on the parallel java/ package
-        ctx_root = ctx_pkg.rsplit("javatests/", 1)[1]
-        friend_root = friend_pkg.rsplit("java/", 1)[1]
-        if ctx_root == friend_root:
-            return True
-
-    if ("test/java/" in ctx_pkg and "main/java/" in friend_pkg and
-        True):
-        # Allow friends from test/java/ on the parallel main/java/ package
-        ctx_split = ctx_pkg.rsplit("test/java/", 1)
-        friend_split = friend_pkg.rsplit("main/java/", 1)
-        if ctx_split == friend_split:
-            return True
-
-    return False
-
-def _select_friend_jars(friend):
-    # We can't simply use `JavaInfo.compile_jars` because we only want the JARs directly created by
-    # `friend`, and not JARs from its `exports`
-    return depset([output.compile_jar for output in friend[JavaInfo].java_outputs if output.compile_jar])

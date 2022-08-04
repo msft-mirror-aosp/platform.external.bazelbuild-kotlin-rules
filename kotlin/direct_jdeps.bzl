@@ -14,13 +14,13 @@
 
 """kt_traverse_exports visitor for exposing jdeps files from direct deps."""
 
-def _get_jdeps(target, _ctx):
+def _get_jdeps(target, _ctx_rule):
     return [out.compile_jdeps for out in target[JavaInfo].java_outputs if out.compile_jdeps]
 
 kt_direct_jdeps_visitor = struct(
     name = "direct_jdeps",
     visit_target = _get_jdeps,
-    filter_export = None,
+    filter_edge = None,
     process_unvisited_target = None,
     finish_expansion = None,
 )

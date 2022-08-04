@@ -29,15 +29,15 @@ def _error(target, msg):
 def _is_exempt(target):
     return sets.contains(EXEMPT_DEPS, str(target.label))
 
-def _check_forbidden(target, ctx):
+def _check_forbidden(target, ctx_rule):
     if _is_exempt(target):
         return []
 
-    if sets.contains(FORBIDDEN_DEP_PACKAGES, ctx.label.package):
+    if sets.contains(FORBIDDEN_DEP_PACKAGES, target.label.package):
         return [_error(target, "Forbidden package")]
 
     # Identify nano protos using tag (b/122083175)
-    for tag in ctx.rule.attr.tags:
+    for tag in ctx_rule.attr.tags:
         if "nano_proto_library" == tag:
             return [_error(target, "nano_proto_library")]
 
@@ -59,7 +59,7 @@ def _validate_deps(error_set):
 kt_forbidden_deps_visitor = struct(
     name = "forbidden_deps",
     visit_target = _check_forbidden,
-    filter_export = None,
+    filter_edge = None,
     process_unvisited_target = _if_not_checked,
     finish_expansion = _validate_deps,
 )
