@@ -34,3 +34,9 @@ java_plugin(
     processor_class = "com.google.auto.value.processor.AutoValueProcessor",
     deps = ["@maven//:com_google_auto_value_auto_value"],
 )
+
+java_binary(
+    name = "jacoco_cli",
+    main_class = "org.jacoco.cli.internal.Main",
+    runtime_deps = ["@maven//:org_jacoco_org_jacoco_cli"],
+)

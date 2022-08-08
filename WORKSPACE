@@ -88,6 +88,8 @@ maven_install(
         "com.google.truth:truth:1.1.3",
         "javax.inject:jsr330-api:0.9",
         "junit:junit:4.13.2",
+        "org.jacoco:org.jacoco.agent:0.8.8",
+        "org.jacoco:org.jacoco.cli:0.8.8",
         "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.4.2",
         "org.mockito:mockito-core:4.5.1",
     ],

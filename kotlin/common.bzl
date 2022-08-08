@@ -517,6 +517,29 @@ def _check_deps(
         ),
     )
 
+def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
+    paths_for_coverage_file = ctx.actions.declare_file(ctx.label.name + "-kt-paths-for-coverage.txt")
+    paths = ctx.actions.args()
+    paths.set_param_file_format("multiline")  # don't shell-quote, just list file names
+    paths.add_all([src for src in srcs if src.is_source])
+    ctx.actions.write(paths_for_coverage_file, paths)
+
+    result = ctx.actions.declare_file(ctx.label.name + "-instrumented.jar")
+    args = ctx.actions.args()
+    args.add(jar)
+    args.add(result)
+    args.add(paths_for_coverage_file)
+    ctx.actions.run(
+        executable = toolchain.coverage_instrumenter,
+        arguments = [args],
+        inputs = [jar, paths_for_coverage_file],
+        outputs = [result],
+        mnemonic = "KtJaCoCoInstrument",
+        progress_message = "Instrumenting Kotlin for coverage collection: %s" % _get_original_kt_target_label(ctx),
+    )
+
+    return result
+
 def _singlejar(
         ctx,
         inputs,
@@ -831,7 +854,13 @@ def _kt_jvm_library(
         # compile-time Jdeps based using the compile Jar (which doesn't contain instrumentation).
         # See b/117897097 for why it's still useful to make the (runtime) dep explicit.
         if ctx.coverage_instrumented():
-            pass
+            out_jars.append(_offline_instrument_jar(
+                ctx,
+                kt_toolchain,
+                kotlinc_result.output_jar,
+                kt_srcs + common_srcs + coverage_srcs,
+            ))
+            merged_deps = java_common.merge([merged_deps, kt_toolchain.coverage_runtime])
         else:
             out_jars.append(kotlinc_result.output_jar)
 

@@ -85,6 +85,9 @@ def _common_kotlinc_flags(ctx):
 def _kt_jvm_toolchain_impl(ctx):
     kt_jvm_toolchain = dict(
         build_marker = ctx.file.build_marker,
+        coverage_instrumenter = ctx.attr.coverage_instrumenter[DefaultInfo].files_to_run,
+        # Don't require JavaInfo provider for integration test convenience.
+        coverage_runtime = ctx.attr.coverage_runtime[JavaInfo] if JavaInfo in ctx.attr.coverage_runtime else None,
         genclass = ctx.file.genclass,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
@@ -111,6 +114,14 @@ _kt_jvm_toolchain_internal = rule(
         build_marker = attr.label(
             default = "@//tools:build_marker",
             allow_single_file = [".jar"],
+        ),
+        coverage_instrumenter = attr.label(
+            default = "@//tools/coverage:offline_instrument",
+            cfg = "exec",
+            executable = True,
+        ),
+        coverage_runtime = attr.label(
+            default = "@maven//:org_jacoco_org_jacoco_agent",
         ),
         enable_turbine_direct = attr.bool(
             # If disabled, the value of turbine_direct will be ignored.

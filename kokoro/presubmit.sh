@@ -42,3 +42,13 @@ cd "${workspace_root}"
     --verbose_failures \
     --experimental_google_legacy_api \
     //tests/...
+
+# Testing with code coverage
+"$bazel" test \
+    --sandbox_tmpfs_path="$hsperfdata_dir" \
+    --verbose_failures \
+    --experimental_google_legacy_api \
+    --collect_code_coverage=1 \
+    //tests/analysis:kt_jvm_compile_using_kt_jvm_compile_with_r_java_test \
+    //tests/analysis:kt_jvm_compile_with_r_java_as_first_dep_test \
+    //tests/analysis:kt_jvm_compile_without_srcs_and_with_exports_test
