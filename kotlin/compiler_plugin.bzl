@@ -53,6 +53,7 @@ kt_compiler_plugin = rule(
             doc = "JAR that provides the plugin implementation",
             mandatory = True,
             allow_single_file = [".jar"],
+            cfg = "exec",
         ),
         args = attr.string_dict(
             doc = """Args to pass to the plugin

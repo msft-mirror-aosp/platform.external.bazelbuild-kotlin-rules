@@ -31,7 +31,7 @@ assert_compiler_plugin_test = analysistest.make(
     impl = _test_impl,
     attrs = dict(
         expected_id = attr.string(),
-        expected_jar = attr.label(allow_single_file = True),
+        expected_jar = attr.label(allow_single_file = True, cfg = "exec"),
         expected_args = attr.string_list(),
     ),
 )
