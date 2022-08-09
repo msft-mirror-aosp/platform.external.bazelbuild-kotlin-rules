@@ -160,7 +160,10 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         doc = """A list of lint checks to be skipped for this target.""",
     ),
     exported_plugins = attr.label_list(
-        providers = [[JavaPluginInfo], [KtCompilerPluginInfo]],
+        providers = [
+            [JavaPluginInfo],
+            [KtCompilerPluginInfo],
+        ],
         cfg = "exec",
         doc = """JVM plugins to export to users.
 
@@ -186,7 +189,10 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                      rule.""",
     ),
     plugins = attr.label_list(
-        providers = [[JavaPluginInfo], [KtCompilerPluginInfo]],
+        providers = [
+            [JavaPluginInfo],
+            [KtCompilerPluginInfo],
+        ],
         cfg = "exec",
         doc = """JVM plugins to run during compilation.
 
