@@ -18,6 +18,7 @@ load(":compiler_plugin.bzl", "kt_compiler_plugin_visitor")
 load(":direct_jdeps.bzl", "kt_direct_jdeps_visitor")
 load(":forbidden_deps.bzl", "kt_forbidden_deps_visitor")
 load(":friend_jars.bzl", "kt_friend_jars_visitor")
+load(":java_plugin.internal.bzl", "java_plugin_visitor")
 
 # java_xxx_proto_library don't populate java_outputs but we can get them through
 # required_aspect_providers from their proto_library deps.
@@ -44,6 +45,7 @@ _VISITORS = [
     kt_direct_jdeps_visitor,
     kt_compiler_plugin_visitor,
     kt_friend_jars_visitor,
+    java_plugin_visitor,
 ]
 
 _KtTraverseExportsInfo = provider(
