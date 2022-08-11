@@ -104,6 +104,8 @@ def kt_jvm_compile(
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
 
+    srcs = list(srcs)
+    classpath_resources = list(classpath_resources)
     java_infos = []
     use_flogger = False
 
