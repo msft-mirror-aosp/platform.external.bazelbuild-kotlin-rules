@@ -25,7 +25,7 @@ readonly tmp_dir="$(mktemp -d)"
 trap "rm -rf ${tmp_dir}" EXIT
 
 readonly jacoco="$(ls ${current_dir}/rules_kotlin/bazel/jacoco_cli)"
-readonly jar="$(ls ${current_dir}/*jdk*/bin/jar)"
+readonly jar="$(which jar)"
 
 # Unzip input Jar and run JaCoCo over it
 mkdir "${tmp_dir}/classes"
