@@ -627,6 +627,57 @@ def _create_zip(ctx, zipper, out_zip, inputs, file_extensions = None):
 
     return out_zip
 
+def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
+    """Packs a sequence of tree artifacts into a single jar.
+
+    Given the following file directory structure,
+        /usr/home/a/x/1.txt
+        /usr/home/b/y/1.txt
+    with an input_dirs as [
+        "/usr/home/a",
+        "/usr/home/b",
+    ],
+    The tool produces a jar with in-archive structure of,
+        x/1.txt
+        y/1.txt
+
+    The function fails on the duplicate jar entry case. e.g. if we pass an
+    input_dirs as [
+        "/usr/home/a/x",
+        "/usr/home/b/y",
+    ],
+    then the blaze action would fail with an error message.
+         "java.util.zip.ZipException: duplicate entry: 1.txt"
+
+    Args:
+        ctx: The build rule context.
+        jar_tool: A Unix-API-compatible jar tool.
+        output_jar: The jar to be produced by this action.
+        input_dirs: A sequence of tree artifacts to be zipped.
+
+    Returns:
+        The generated output jar, i.e. output_jar
+    """
+
+    args = ctx.actions.args()
+
+    args.add("cf", output_jar)
+    for in_dir in input_dirs:
+        if not in_dir.is_directory:
+            fail("Expected a directory input, but got {}.".format(in_dir))
+        args.add("-C", in_dir.path)
+        args.add(".")
+
+    ctx.actions.run(
+        executable = jar_tool,
+        inputs = input_dirs,
+        outputs = [output_jar],
+        arguments = [args],
+        mnemonic = "KtJarActionFromTreeArtifacts",
+        progress_message = "Create Jar %{output}",
+    )
+    return output_jar
+
 def _DirSrcjarSyncer(ctx, kt_toolchain, name):
     _dirs = []
     _srcjars = []
@@ -864,6 +915,20 @@ def _kt_jvm_library(
         else:
             out_jars.append(kotlinc_result.output_jar)
 
+    classpath_resources_dirs, classpath_resources_non_dirs = _partition(
+        classpath_resources,
+        filter = lambda res: res.is_directory,
+    )
+    if classpath_resources_dirs:
+        out_jars.append(
+            _create_jar_from_tree_artifacts(
+                ctx,
+                kt_toolchain.jar_tool,
+                ctx.actions.declare_file(ctx.label.name + "-dir-res.jar"),
+                classpath_resources_dirs,
+            ),
+        )
+
     javac_java_info = None
     java_native_headers_jar = None
     java_gensrcjar = None
@@ -874,7 +939,7 @@ def _kt_jvm_library(
             ctx,
             source_files = java_srcs,
             source_jars = java_syncer.srcjars,
-            resources = classpath_resources,
+            resources = classpath_resources_non_dirs,
             output = javac_out,
             deps = ([JavaInfo(**structs.to_dict(kotlinc_result))] if kotlinc_result else []) + [merged_deps],
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
@@ -1059,6 +1124,15 @@ def _enable_complete_jdeps_extra_run(ctx):
     if hasattr(ctx.attr, "_enable_complete_jdeps_extra_run"):
         return ctx.attr._enable_complete_jdeps_extra_run[BuildSettingInfo].value
     return False
+
+def _partition(sequence, filter):
+    pos, neg = [], []
+    for element in sequence:
+        if filter(element):
+            pos.append(element)
+        else:
+            neg.append(element)
+    return pos, neg
 
 common = struct(
     ALLOWED_ANDROID_RULES = _ALLOWED_ANDROID_RULES,

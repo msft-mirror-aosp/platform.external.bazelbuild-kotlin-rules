@@ -89,6 +89,7 @@ def _kt_jvm_toolchain_impl(ctx):
         # Don't require JavaInfo provider for integration test convenience.
         coverage_runtime = ctx.attr.coverage_runtime[JavaInfo] if JavaInfo in ctx.attr.coverage_runtime else None,
         genclass = ctx.file.genclass,
+        jar_tool = ctx.attr.jar_tool[DefaultInfo].files_to_run,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
         kotlin_annotation_processing = ctx.file.kotlin_annotation_processing,
@@ -132,6 +133,12 @@ _kt_jvm_toolchain_internal = rule(
             default = "@bazel_tools//tools/jdk:GenClass_deploy.jar",
             cfg = "exec",
             allow_single_file = True,
+        ),
+        jar_tool = attr.label(
+            default = "@bazel_tools//tools/jdk:jar",
+            executable = True,
+            allow_files = True,
+            cfg = "exec",
         ),
         java_runtime = attr.label(
             default = "@bazel_tools//tools/jdk:current_java_runtime",
