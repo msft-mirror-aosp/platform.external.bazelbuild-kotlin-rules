@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("@//kotlin:rules.bzl", "kt_jvm_test")
-load("@//tests/analysis:util.bzl", "create_dir")
+load("@//tests/analysis:util.bzl", "create_dir", "create_file")
 
 package(default_testonly = 1)
 
@@ -28,6 +28,9 @@ kt_jvm_test(
         ":JavaSrcjar_gen",
         ":dir/java",
         ":dir/kotlin",
+    ],
+    resources = [
+        ":dir/resources",
     ],
     test_class = "srcartifacts.SrcArtifactsTest",
     deps = [
@@ -50,6 +53,17 @@ create_dir(
         "KtInKotlinDir.kt",
     ],
     subdir = "srcartifacts",
+)
+
+create_dir(
+    name = "dir/resources",
+    srcs = [
+        create_file(
+            name = "resources_in_resources_dir.txt",
+            content = "Test resource content.",
+        ),
+    ],
+    subdir = "resources",
 )
 
 genrule(

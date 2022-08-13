@@ -17,6 +17,7 @@
 package srcartifacts
 
 import com.google.common.truth.Truth.assertThat
+import java.nio.charset.StandardCharsets
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -43,5 +44,15 @@ class SrcArtifactsTest {
       val instance = artifact.getDeclaredConstructor().newInstance()
       assertThat(instance.getAllSrcArtifacts()).isEqualTo(allSrcArtifacts)
     }
+  }
+
+  @Test
+  fun resourceFileContent() {
+    val fileContent =
+      javaClass.classLoader
+        .getResourceAsStream("resources/resources_in_resources_dir.txt")
+        .use { it.readAllBytes() }
+        .toString(StandardCharsets.UTF_8)
+    assertThat(fileContent).isEqualTo("Test resource content.\n")
   }
 }

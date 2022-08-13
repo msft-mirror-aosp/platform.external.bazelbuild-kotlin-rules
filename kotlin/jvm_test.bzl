@@ -30,6 +30,7 @@ def kt_jvm_test(
         plugins = None,
         runtime_deps = None,
         srcs = None,
+        resources = None,
         tags = None,
         **kwargs):
     """Wrapper around kt_jvm_library and java_test to conveniently declare tests written in Kotlin.
@@ -56,6 +57,7 @@ def kt_jvm_test(
         kt_jvm_library(
             name = _lib_name(name),
             srcs = srcs,
+            resources = resources,
             deps = deps,
             plugins = plugins,
             javacopts = javacopts,
