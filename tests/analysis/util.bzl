@@ -18,8 +18,8 @@
 ONLY_FOR_ANALYSIS_TEST_TAGS = ["manual", "nobuilder", "only_for_analysis_test"]
 
 def create_file(name, content):
-    if content:
-        content = content.split("\n", 1)[1]
+    if content.startswith("\n"):
+        content = content[1:-1]
 
     native.genrule(
         name = "gen_" + name,
