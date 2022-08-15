@@ -102,7 +102,6 @@ def _kt_jvm_toolchain_impl(ctx):
         turbine = ctx.file.turbine,
         turbine_direct = ctx.file.turbine_direct if ctx.attr.enable_turbine_direct else None,
         turbine_jsa = ctx.file.turbine_jsa,
-        zipper = ctx.executable.zipper,
     )
     return [
         platform_common.ToolchainInfo(**kt_jvm_toolchain),
@@ -213,12 +212,6 @@ _kt_jvm_toolchain_internal = rule(
         ),
         turbine_jsa = attr.label(
             cfg = "exec",
-            allow_single_file = True,
-        ),
-        zipper = attr.label(
-            default = "@bazel_tools//tools/zip:zipper",
-            cfg = "exec",
-            executable = True,
             allow_single_file = True,
         ),
     ),
