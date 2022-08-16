@@ -110,7 +110,7 @@ def kt_jvm_compile(
     use_flogger = False
 
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
-    has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
+    has_kt_srcs = any([common.is_kt_src(src) for src in srcs + common_srcs])
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
         kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
@@ -122,7 +122,8 @@ def kt_jvm_compile(
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
 
-    java_infos.extend(kt_toolchain.kotlin_libs)
+    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
+        java_infos.extend(kt_toolchain.kotlin_libs)
 
     # TODO: Inject the runtime library from the flogger API target
     if use_flogger:
