@@ -17,6 +17,7 @@
 load(":common.bzl", "common")
 load(":traverse_exports.bzl", "kt_traverse_exports")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 
 _RULE_FAMILY = common.RULE_FAMILY
 
@@ -107,6 +108,7 @@ def kt_jvm_compile(
     srcs = list(srcs)
     classpath_resources = list(classpath_resources)
     java_infos = []
+    pre_processed_java_plugin_processors = sets.make([])
     use_flogger = False
 
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
@@ -174,12 +176,14 @@ def kt_jvm_compile(
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
             java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins if (JavaPluginInfo in plugin)],
-            kt_compiler_plugin_infos = kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
-                plugin[KtCompilerPluginInfo]
-                for plugin in plugins
-                if (KtCompilerPluginInfo in plugin)
-            ],
+            kt_compiler_plugin_infos =
+                kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
+                    plugin[KtCompilerPluginInfo]
+                    for plugin in plugins
+                    if (KtCompilerPluginInfo in plugin)
+                ],
         ),
+        pre_processed_java_plugin_processors = pre_processed_java_plugin_processors,
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,

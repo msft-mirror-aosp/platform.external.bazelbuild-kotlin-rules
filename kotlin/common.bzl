@@ -781,6 +781,7 @@ def _kt_jvm_library(
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
         plugins = _kt_plugins_map(),
+        pre_processed_java_plugin_processors = sets.make([]),
         exported_plugins = [],
         android_lint_plugins = [],
         android_lint_rules_jars = depset(),  # Depset with standalone Android Lint rules Jars
@@ -837,7 +838,12 @@ def _kt_jvm_library(
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
     java_plugin_datas = [info.plugins for info in plugins.java_plugin_infos] + [dep.plugins for dep in deps]
-    plugin_processors = [cls for p in java_plugin_datas for cls in p.processor_classes.to_list()]
+    plugin_processors = [
+        cls
+        for p in java_plugin_datas
+        for cls in p.processor_classes.to_list()
+        if not sets.contains(pre_processed_java_plugin_processors, cls)
+    ]
     plugin_classpaths = depset(transitive = [p.processor_jars for p in java_plugin_datas])
 
     out_jars = []
@@ -1145,8 +1151,10 @@ common = struct(
     SRCJAR_FILE_TYPES = _SRCJAR_FILE_TYPES,
     collect_proguard_specs = _collect_proguard_specs,
     collect_providers = _collect_providers,
+    create_jar_from_tree_artifacts = _create_jar_from_tree_artifacts,
     is_kt_src = _is_kt_src,
     kt_jvm_import = _kt_jvm_import,
     kt_jvm_library = _kt_jvm_library,
     kt_plugins_map = _kt_plugins_map,
+    partition = _partition,
 )
