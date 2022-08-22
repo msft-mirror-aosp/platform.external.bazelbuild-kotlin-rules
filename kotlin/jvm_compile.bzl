@@ -124,7 +124,8 @@ def kt_jvm_compile(
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
 
-    java_infos.extend(kt_toolchain.kotlin_libs)
+    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or srcs or common_srcs:
+        java_infos.extend(kt_toolchain.kotlin_libs)
 
     # TODO: Inject the runtime library from the flogger API target
     if use_flogger:
