@@ -21,7 +21,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
-load(":jvm_compile.bzl", "compile")
+load(":jvm_compile.bzl", "kt_jvm_compile")
 
 # TODO: Use this function in all Kotlin rules
 def _make_default_info(ctx, direct_files, propagated_attrs):
@@ -53,7 +53,7 @@ def _jvm_library_impl(ctx):
     if not ctx.files.srcs and not ctx.files.common_srcs:
         fail("srcs attribute or common_srcs attribute of rule %s must be non empty" % ctx.label)
 
-    compile_result = compile(
+    compile_result = kt_jvm_compile(
         ctx,
         output = ctx.outputs.jar,
         srcs = ctx.files.srcs,
