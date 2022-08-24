@@ -30,7 +30,8 @@ kt_jvm_test(
         ":dir/kotlin",
     ],
     resources = [
-        ":dir/resources",
+        "dir/empty",
+        "dir/resources",
     ],
     test_class = "srcartifacts.SrcArtifactsTest",
     deps = [
@@ -53,6 +54,12 @@ create_dir(
         "KtInKotlinDir.kt",
     ],
     subdir = "srcartifacts",
+)
+
+create_dir(
+    name = "dir/empty",
+    srcs = [],
+    subdir = "srcartifacts/empty",
 )
 
 create_dir(

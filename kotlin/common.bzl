@@ -661,18 +661,32 @@ def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
 
     args = ctx.actions.args()
 
-    args.add("cf", output_jar)
     for in_dir in input_dirs:
         if not in_dir.is_directory:
             fail("Expected a directory input, but got {}.".format(in_dir))
-        args.add("-C", in_dir.path)
-        args.add(".")
+        args.add(in_dir.path)
 
-    ctx.actions.run(
-        executable = jar_tool,
+    ctx.actions.run_shell(
+        command = """
+            JAR_TOOL={}
+            OUT_JAR={}
+            OUT_DIR="$(dirname $OUT_JAR)"
+            RES_DIR=$OUT_DIR/META-INF
+            mkdir $RES_DIR
+            $JAR_TOOL cf $OUT_JAR $RES_DIR
+            rmdir $RES_DIR
+            for INPUT_DIR in $@
+            do
+                if [ -d $INPUT_DIR ]
+                then
+                    $JAR_TOOL uf $OUT_JAR -C $INPUT_DIR .
+                fi
+            done
+        """.format(jar_tool.executable.path, output_jar.path),
+        arguments = [args],
         inputs = input_dirs,
         outputs = [output_jar],
-        arguments = [args],
+        tools = [jar_tool],
         mnemonic = "KtJarActionFromTreeArtifacts",
         progress_message = "Create Jar %{output}",
     )
