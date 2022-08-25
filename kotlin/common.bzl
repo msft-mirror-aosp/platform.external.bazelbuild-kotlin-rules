@@ -673,7 +673,7 @@ def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
             OUT_DIR="$(dirname $OUT_JAR)"
             RES_DIR=$OUT_DIR/META-INF
             mkdir $RES_DIR
-            $JAR_TOOL cf $OUT_JAR $RES_DIR
+            $JAR_TOOL cf $OUT_JAR -C $RES_DIR .
             rmdir $RES_DIR
             for INPUT_DIR in $@
             do
