@@ -622,7 +622,7 @@ def _create_jar(ctx, jar_tool, out_jar, inputs, file_extensions = None):
         outputs = [out_jar],
         arguments = [args],
         mnemonic = "KtJar",
-        progress_message = "Create Jar %{output}",
+        progress_message = "Create Jar (kotlin/common.bzl): %{output}",
     )
 
     return out_jar
@@ -702,7 +702,7 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, name):
 
         _dirs.extend(dirs)
         _srcjars.append(
-            _create_jar(
+            _create_jar_from_tree_artifacts(
                 ctx,
                 kt_toolchain.jar_tool,
                 ctx.actions.declare_file(

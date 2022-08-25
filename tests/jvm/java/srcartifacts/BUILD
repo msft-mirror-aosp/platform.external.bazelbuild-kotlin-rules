@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//kotlin:rules.bzl", "kt_jvm_test")
+load("@//kotlin:rules.bzl", "kt_jvm_library", "kt_jvm_test")
 load("@//tests/analysis:util.bzl", "create_dir", "create_file")
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
 package(default_testonly = 1)
 
@@ -84,4 +85,22 @@ java_library(
     name = "JavaSrcjar_lib",
     srcs = ["JavaSrcjar.java"],
     tags = ["manual"],
+)
+
+create_dir(
+    name = "dir/empty_java/java",
+    srcs = [],
+    subdir = "srcartifacts",
+)
+
+kt_jvm_library(
+    name = "empty_java_tree_artifact",
+    srcs = ["dir/empty_java/java"],
+)
+
+build_test(
+    name = "build_test",
+    targets = [
+        "empty_java_tree_artifact",
+    ],
 )
