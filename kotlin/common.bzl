@@ -16,7 +16,6 @@
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:structs.bzl", "structs")
-load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("@//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 
@@ -554,8 +553,7 @@ def _singlejar(
     args.add("--normalize")
     args.add("--add_missing_directories")  # make output more similar to jar tool (b/114414678)
     args.add("--exclude_build_data")
-    if not _enable_complete_jdeps_extra_run(ctx):
-        args.add("--no_duplicates")  # No Kt/Java classname collisions (b/216841985)
+    args.add("--no_duplicates")  # No Kt/Java classname collisions (b/216841985)
     args.add("--output")
     args.add(output)
     args.add("--sources")
@@ -1139,11 +1137,6 @@ def _collect_proguard_specs(
 def _collect_providers(provider, deps):
     """Collects the requested provider from the given list of deps."""
     return [dep[provider] for dep in deps if provider in dep]
-
-def _enable_complete_jdeps_extra_run(ctx):
-    if hasattr(ctx.attr, "_enable_complete_jdeps_extra_run"):
-        return ctx.attr._enable_complete_jdeps_extra_run[BuildSettingInfo].value
-    return False
 
 def _partition(sequence, filter):
     pos, neg = [], []
