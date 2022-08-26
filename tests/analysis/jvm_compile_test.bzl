@@ -16,6 +16,7 @@
 
 load("@//kotlin:traverse_exports.bzl", "kt_traverse_exports")
 load("@//kotlin:jvm_compile.bzl", "kt_jvm_compile")
+load("@//kotlin:common.bzl", "common")
 load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_dir", "create_file")
 load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
@@ -29,7 +30,7 @@ def _impl(ctx):
         ctx,
         output = ctx.outputs.jar,
         srcs = ctx.files.srcs,
-        common_srcs = [],
+        common_srcs = ctx.files.common_srcs,
         deps = ctx.attr.deps,
         plugins = [],
         exported_plugins = [],
@@ -43,6 +44,7 @@ def _impl(ctx):
         manifest = None,
         merged_manifest = None,
         resource_files = [],
+        rule_family = ctx.attr.rule_family,
         kt_toolchain = kt_jvm_toolchains.get(ctx),
         java_toolchain = java_toolchains.get(ctx),
         disable_lint_checks = [],
@@ -56,6 +58,9 @@ _kt_jvm_compile = rule(
         srcs = attr.label_list(
             allow_files = True,
         ),
+        common_srcs = attr.label_list(
+            allow_files = True,
+        ),
         deps = attr.label_list(
             aspects = [kt_traverse_exports.aspect],
             providers = [JavaInfo],
@@ -63,6 +68,9 @@ _kt_jvm_compile = rule(
         exports = attr.label_list(
             aspects = [kt_traverse_exports.aspect],
             providers = [JavaInfo],
+        ),
+        rule_family = attr.int(
+            default = common.RULE_FAMILY.UNKNOWN,
         ),
         r_java = attr.label(
             providers = [JavaInfo],
@@ -237,20 +245,38 @@ fun aString(): String = "a_string=" + a_string
     )
     return test_name
 
-def _test_kt_jvm_compile_without_srcs():
-    test_name = "kt_jvm_compile_without_srcs_test"
+def _test_kt_jvm_compile_without_srcs_for_android():
+    test_name = "kt_jvm_compile_without_srcs_for_android_test"
 
     # This is a common case for rules like android_library where Kotlin sources
     # could be empty, due to the rule being used for resource processing. For
     # this scenario, historically, rules continue to produce empty Jars.
     _kt_jvm_compile(
-        name = "kt_jvm_compile_without_srcs",
+        name = "kt_jvm_compile_without_srcs_for_android",
+        rule_family = common.RULE_FAMILY.ANDROID_LIBRARY,
     )
 
     # If a failure occurs, it will be at build time.
     build_test(
         name = test_name,
-        targets = [":kt_jvm_compile_without_srcs"],
+        targets = [":kt_jvm_compile_without_srcs_for_android"],
+    )
+    return test_name
+
+def _test_kt_jvm_compile_without_srcs_for_jvm():
+    test_name = "kt_jvm_compile_without_srcs_for_jvm_test"
+
+    _kt_jvm_compile(
+        name = "kt_jvm_compile_without_srcs_for_jvm",
+        srcs = [],
+        common_srcs = [],
+        exports = [],
+        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+    )
+    assert_failure_test(
+        name = test_name,
+        target_under_test = ":kt_jvm_compile_without_srcs_for_jvm",
+        msg_contains = "Expected one of (srcs, common_srcs, exports) is not empty",
     )
     return test_name
 
@@ -357,7 +383,8 @@ def test_suite(name = None):
             _test_kt_jvm_compile_using_kt_jvm_compile_with_r_java(),
             _test_kt_jvm_compile_with_illegal_r_java(),
             _test_kt_jvm_compile_with_r_java_as_first_dep(),
-            _test_kt_jvm_compile_without_srcs(),
+            _test_kt_jvm_compile_without_srcs_for_android(),
+            _test_kt_jvm_compile_without_srcs_for_jvm(),
             _test_kt_jvm_compile_without_srcs_and_with_exports(),
         ],
     )

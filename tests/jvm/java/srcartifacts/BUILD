@@ -87,20 +87,32 @@ java_library(
     tags = ["manual"],
 )
 
-create_dir(
-    name = "dir/empty_java/java",
-    srcs = [],
-    subdir = "srcartifacts",
+kt_jvm_library(
+    name = "empty_java_tree_artifact",
+    srcs = [
+        create_dir(
+            name = "dir/empty_java/java",
+            srcs = [],
+            subdir = "srcartifacts",
+        ),
+    ],
 )
 
 kt_jvm_library(
-    name = "empty_java_tree_artifact",
-    srcs = ["dir/empty_java/java"],
+    name = "empty_kotlin_tree_artifact",
+    srcs = [
+        create_dir(
+            name = "dir/empty_kotlin/kotlin",
+            srcs = [],
+            subdir = "srcartifacts",
+        ),
+    ],
 )
 
 build_test(
-    name = "build_test",
+    name = "empty_dirs_build_test",
     targets = [
         "empty_java_tree_artifact",
+        "empty_kotlin_tree_artifact",
     ],
 )

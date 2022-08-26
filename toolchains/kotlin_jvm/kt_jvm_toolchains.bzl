@@ -73,6 +73,9 @@ def _common_kotlinc_flags(ctx):
 
         # Don't complain when using old builds or release candidate builds
         "-Xskip-prerelease-check",
+
+        # Allows a no source files to create an empty jar.
+        "-Xallow-no-source-files",
     ]
 
     # --define=extra_kt_jvm_opts is for overriding from command line.

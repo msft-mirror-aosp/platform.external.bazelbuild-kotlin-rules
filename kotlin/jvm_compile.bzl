@@ -101,6 +101,15 @@ def kt_jvm_compile(
     Returns:
       A struct that carries the following fields: java_info and validations.
     """
+    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY and not (srcs + common_srcs + exports):
+        # Demands either of the following to be present.
+        # - Source-type artifacts, srcs or common_srcs, including an empty
+        #   tree-artifact (a directory) or a srcjar without jar entries.
+        # - Exporting targets, exports. It is typically used by a library author
+        #   to publish one user-facing target with direct exposure to its
+        # dependent libraries.
+        fail("Expected one of (srcs, common_srcs, exports) is not empty for kotlin/jvm_compile on target: {}".format(ctx.label))
+
     if type(java_toolchain) != "JavaToolchainInfo":
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
