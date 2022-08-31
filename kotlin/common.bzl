@@ -97,7 +97,7 @@ def _derive_module_name(ctx):
     return name_part
 
 def _common_kapt_and_kotlinc_args(ctx, toolchain):
-    return toolchain.kotlin_compiler_common_flags + [
+    return toolchain.kotlinc_cli_flags + [
         # Set module name so module-level metadata is preserved when merging Jars (b/139403883)
         "-module-name",
         _derive_module_name(ctx),

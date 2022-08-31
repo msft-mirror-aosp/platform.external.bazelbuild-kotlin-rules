@@ -24,7 +24,7 @@ KT_LANG_VERSION = "1.7"
 # Kotlin JVM toolchain type label
 _TYPE = Label("@//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
 
-def _common_kotlinc_flags(ctx):
+def _kotlinc_common_flags(ctx, other_flags):
     """Returns kotlinc flags to use in all compilations."""
     args = [
         # We're supplying JDK in bootclasspath explicitly instead
@@ -76,7 +76,7 @@ def _common_kotlinc_flags(ctx):
 
         # Allows a no source files to create an empty jar.
         "-Xallow-no-source-files",
-    ]
+    ] + other_flags
 
     # --define=extra_kt_jvm_opts is for overriding from command line.
     # (Last wins in repeated --define=foo= use, so use --define=bar= instead.)
@@ -84,6 +84,15 @@ def _common_kotlinc_flags(ctx):
     if extra_kt_jvm_opts:
         args.extend([o for o in extra_kt_jvm_opts.split(" ") if o])
     return args
+
+def _kotlinc_ide_flags(ctx):
+    return _kotlinc_common_flags(ctx, other_flags = [])
+
+def _kotlinc_cli_flags(ctx):
+    return _kotlinc_common_flags(ctx, other_flags = [
+        # Silence all warning-level diagnostics
+        "-nowarn",
+    ])
 
 def _kt_jvm_toolchain_impl(ctx):
     kt_jvm_toolchain = dict(
@@ -97,10 +106,11 @@ def _kt_jvm_toolchain_impl(ctx):
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
         kotlin_annotation_processing = ctx.file.kotlin_annotation_processing,
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
-        kotlin_compiler_common_flags = _common_kotlinc_flags(ctx),
         kotlin_language_version = ctx.attr.kotlin_language_version,
         kotlin_libs = [JavaInfo(compile_jar = jar, output_jar = jar) for jar in ctx.files.kotlin_libs],
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
+        kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
+        kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         turbine = ctx.file.turbine,
         turbine_direct = ctx.file.turbine_direct if ctx.attr.enable_turbine_direct else None,
