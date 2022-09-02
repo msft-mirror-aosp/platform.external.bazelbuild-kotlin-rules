@@ -989,6 +989,7 @@ def _kt_jvm_library(
 
     jdeps_output = None
     compile_jdeps_output = None
+    manifest_proto = None
 
     # TODO: Move severity overrides to config file when possible again
     blocking_action_outs = []
@@ -1025,6 +1026,7 @@ def _kt_jvm_library(
         exports = exports,
         exported_plugins = exported_plugins,
         runtime_deps = runtime_deps,
+        manifest_proto = manifest_proto,
         neverlink = neverlink,
         jdeps = jdeps_output,
         compile_jdeps = compile_jdeps_output,
