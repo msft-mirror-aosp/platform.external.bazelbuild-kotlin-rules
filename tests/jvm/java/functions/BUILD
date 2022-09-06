@@ -15,7 +15,7 @@
 # This package tests importing extension functions.
 load("@//kotlin:rules.bzl", "kt_jvm_import", "kt_jvm_library")
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 kt_jvm_library(
     name = "car_demo_src_lib",

@@ -19,7 +19,7 @@ load(
 )
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 build_test(
     name = "kapt_regressions",

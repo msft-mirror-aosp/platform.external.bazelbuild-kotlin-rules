@@ -14,7 +14,7 @@
 
 load("@//kotlin:rules.bzl", "kt_jvm_library")
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 package(default_testonly = 1)
 

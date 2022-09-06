@@ -16,7 +16,7 @@ load("@//kotlin:rules.bzl", "kt_jvm_library")
 
 package(default_visibility = ["@//tests/jvm/java/functions:__subpackages__"])
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 # Make Jar files produced by helper targets visible to tests in parent package
 filegroup(

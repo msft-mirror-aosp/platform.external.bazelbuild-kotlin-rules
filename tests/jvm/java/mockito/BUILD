@@ -16,7 +16,7 @@ load("@//kotlin:rules.bzl", "kt_jvm_test")
 
 package(default_testonly = 1)
 
-licenses(["notice"])  # Apache 2.0
+licenses(["notice"])
 
 kt_jvm_test(
     name = "MockitoTest",
