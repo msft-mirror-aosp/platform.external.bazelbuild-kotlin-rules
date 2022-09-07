@@ -50,8 +50,9 @@ def _jvm_library_impl(ctx):
         elif CcInfo not in target:
             fail("Unexpected runtime dependency (must provide JavaInfo or CcInfo): " + str(target.label))
 
-    if not ctx.files.srcs and not ctx.files.common_srcs:
-        fail("srcs attribute or common_srcs attribute of rule %s must be non empty" % ctx.label)
+    if not ctx.files.srcs and not ctx.files.common_srcs and not ctx.attr.exports and not ctx.attr.exported_plugins:
+        fail("Expected a source-bearing or an export-oriented target:\n" +
+             "One of {srcs, common_srcs, exports, exported_plugins} of target %s must be non empty" % ctx.label)
 
     compile_result = kt_jvm_compile(
         ctx,

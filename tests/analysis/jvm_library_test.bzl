@@ -756,7 +756,7 @@ def _test_kt_jvm_library_with_no_sources():
     assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        msg_contains = "srcs attribute or common_srcs attribute of rule " + tut_label + " must be non empty",
+        msg_contains = "One of {srcs, common_srcs, exports, exported_plugins} of target " + tut_label + " must be non empty",
     )
     return test_name
 
