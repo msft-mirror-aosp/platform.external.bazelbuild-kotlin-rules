@@ -14,10 +14,10 @@
 
 """Kotlin kt_jvm_import rule tests."""
 
-load("@//kotlin:jvm_import.bzl", "kt_jvm_import")
-load("@//kotlin:jvm_library.bzl", "kt_jvm_library")
+load("//kotlin:jvm_import.bzl", "kt_jvm_import")
+load("//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
-load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
 load(":assert_failure_test.bzl", "assert_failure_test")
 
 def _impl(ctx):

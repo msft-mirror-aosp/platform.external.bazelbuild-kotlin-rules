@@ -21,7 +21,7 @@ Currently this system recognizes:
 """
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
-load("@//bazel:stubs.bzl", "EXEMPT_DEPS", "FORBIDDEN_DEP_PACKAGES")
+load("//bazel:stubs.bzl", "EXEMPT_DEPS", "FORBIDDEN_DEP_PACKAGES")
 
 def _error(target, msg):
     return (str(target.label), msg)

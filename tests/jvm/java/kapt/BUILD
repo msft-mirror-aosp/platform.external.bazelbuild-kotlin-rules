@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load(
-    "@//kotlin:rules.bzl",
+    "//kotlin:rules.bzl",
     "kt_jvm_library",
     "kt_jvm_test",
 )
@@ -169,7 +169,7 @@ java_library(
     srcs = ["AP.java"],
     deps = [
         ":anno",
-        "@//bazel:auto_service",
+        "//bazel:auto_service",
     ],
 )
 
@@ -185,7 +185,7 @@ java_plugin(
     name = "ignored_failing_processor",
     srcs = ["FailingProcessor.java"],
     deps = [
-        "@//bazel:auto_service",
+        "//bazel:auto_service",
     ],
 )
 
@@ -223,7 +223,7 @@ kt_jvm_library(
         "ProcessorWithData.kt",
     ],
     deps = [
-        "@//bazel:auto_service",
+        "//bazel:auto_service",
     ],
 )
 
@@ -243,7 +243,7 @@ kt_jvm_library(
     name = "generates_services",
     srcs = ["GeneratesServices.kt"],
     deps = [
-        "@//bazel:auto_service",
+        "//bazel:auto_service",
     ],
 )
 

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//kotlin:compiler_plugin.bzl", "kt_compiler_plugin")
-load("@//tests/analysis:util.bzl", "create_file")
+load("//kotlin:compiler_plugin.bzl", "kt_compiler_plugin")
+load("//tests/analysis:util.bzl", "create_file")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(":assert_compiler_plugin_test.bzl", "assert_compiler_plugin_test")
 
@@ -25,7 +25,7 @@ assert_compiler_plugin_test(
         "plugin:com.google.example:key=value",
     ],
     expected_id = "com.google.example",
-    expected_jar = "@//tests/analysis/compiler_plugin:empty_jar",
+    expected_jar = "//tests/analysis/compiler_plugin:empty_jar",
     target_under_test = ":example_plugin",
 )
 
@@ -53,6 +53,6 @@ kt_compiler_plugin(
     args = {
         "key": "value",
     },
-    jar = "@//tests/analysis/compiler_plugin:empty_jar",
+    jar = "//tests/analysis/compiler_plugin:empty_jar",
     plugin_id = "com.google.example",
 )

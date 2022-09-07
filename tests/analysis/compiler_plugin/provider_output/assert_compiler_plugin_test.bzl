@@ -14,7 +14,7 @@
 
 """An assertion on kt_compiler_plugin analysis."""
 
-load("@//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
+load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 
 def _test_impl(ctx):

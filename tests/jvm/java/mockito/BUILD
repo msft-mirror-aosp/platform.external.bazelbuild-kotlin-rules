@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//kotlin:rules.bzl", "kt_jvm_test")
+load("//kotlin:rules.bzl", "kt_jvm_test")
 
 package(default_testonly = 1)
 

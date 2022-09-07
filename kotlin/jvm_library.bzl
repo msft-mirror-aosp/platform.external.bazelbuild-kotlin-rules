@@ -15,7 +15,7 @@
 """Kotlin kt_jvm_library rule."""
 
 load(":jvm_library.internal.bzl", "kt_jvm_library_helper")
-load("@//bazel:stubs.bzl", "register_extension_info")
+load("//bazel:stubs.bzl", "register_extension_info")
 
 def kt_jvm_library(
         name,
@@ -30,7 +30,7 @@ def kt_jvm_library(
         exported_plugins = None,
         resources = None,
         tags = None,
-        testonly = None,  # None to not override Blaze's default for //javatests, b/112708042
+        testonly = None,  # None to preserve Blaze's defaults, b/112708042
         javacopts = None,
         custom_kotlincopts = None,
         disable_lint_checks = None,

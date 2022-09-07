@@ -16,7 +16,7 @@
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
-load("@//kotlin:traverse_exports.bzl", "kt_traverse_exports")
+load("//kotlin:traverse_exports.bzl", "kt_traverse_exports")
 
 def _assert_propagation_impl(ctx):
     expected_ids = sets.make(ctx.attr.expected_plugin_ids)
@@ -45,7 +45,7 @@ _assert_propagation = rule(
         deps = attr.label_list(aspects = [kt_traverse_exports.aspect]),
         _empty_jar = attr.label(
             allow_single_file = True,
-            default = "@//tests/analysis/compiler_plugin:empty_jar",
+            default = "//tests/analysis/compiler_plugin:empty_jar",
         ),
     ),
 )

@@ -22,7 +22,7 @@ KT_VERSION = "v1_7_10"
 KT_LANG_VERSION = "1.7"
 
 # Kotlin JVM toolchain type label
-_TYPE = Label("@//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
+_TYPE = Label("//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
 
 def _kotlinc_common_flags(ctx, other_flags):
     """Returns kotlinc flags to use in all compilations."""
@@ -125,11 +125,11 @@ _kt_jvm_toolchain_internal = rule(
     name = "kt_jvm_toolchain",
     attrs = dict(
         build_marker = attr.label(
-            default = "@//tools:build_marker",
+            default = "//tools:build_marker",
             allow_single_file = [".jar"],
         ),
         coverage_instrumenter = attr.label(
-            default = "@//tools/coverage:offline_instrument",
+            default = "//tools/coverage:offline_instrument",
             cfg = "exec",
             executable = True,
         ),
@@ -244,7 +244,7 @@ _ATTRS = dict(
     _toolchain = attr.label(
         # TODO: Delete this attr when fixed.
         doc = "Magic attribute name for DexArchiveAspect (b/78647825)",
-        default = "@//toolchains/kotlin_jvm:kt_jvm_toolchain_impl",
+        default = "//toolchains/kotlin_jvm:kt_jvm_toolchain_impl",
     ),
 )
 

@@ -14,9 +14,9 @@
 
 """Kotlin rules."""
 
-load("@//kotlin:jvm_import.bzl", _kt_jvm_import = "kt_jvm_import")
-load("@//kotlin:jvm_library.bzl", _kt_jvm_library = "kt_jvm_library")
-load("@//kotlin:jvm_test.bzl", _kt_jvm_test = "kt_jvm_test")
+load("//kotlin:jvm_import.bzl", _kt_jvm_import = "kt_jvm_import")
+load("//kotlin:jvm_library.bzl", _kt_jvm_library = "kt_jvm_library")
+load("//kotlin:jvm_test.bzl", _kt_jvm_test = "kt_jvm_test")
 
 kt_jvm_import = _kt_jvm_import
 

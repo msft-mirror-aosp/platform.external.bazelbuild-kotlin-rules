@@ -15,7 +15,7 @@
 """Kotlin macro for building and running tests on a JVM."""
 
 load(":jvm_library.bzl", "kt_jvm_library")
-load("@//bazel:stubs.bzl", "register_extension_info")
+load("//bazel:stubs.bzl", "register_extension_info")
 
 def _lib_name(name):
     return "%s_DO_NOT_DEPEND_LIB" % name

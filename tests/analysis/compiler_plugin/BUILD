@@ -19,5 +19,5 @@ genrule(
     outs = ["empty.jar"],
     cmd = """$(location @bazel_tools//tools/zip:zipper) c $@ "assets/_empty=" """,
     tools = ["@bazel_tools//tools/zip:zipper"],
-    visibility = ["@//tests/analysis/compiler_plugin:__subpackages__"],
+    visibility = ["//tests/analysis/compiler_plugin:__subpackages__"],
 )

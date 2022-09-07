@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//kotlin:compiler_plugin.bzl", "kt_compiler_plugin")
+load("//kotlin:compiler_plugin.bzl", "kt_compiler_plugin")
 load(":assert_propagation_test.bzl", "assert_propagation_test")
 
 licenses(["notice"])
@@ -62,18 +62,18 @@ assert_propagation_test(
 
 kt_compiler_plugin(
     name = "1",
-    jar = "@//tests/analysis/compiler_plugin:empty_jar",
+    jar = "//tests/analysis/compiler_plugin:empty_jar",
     plugin_id = "1",
 )
 
 kt_compiler_plugin(
     name = "2",
-    jar = "@//tests/analysis/compiler_plugin:empty_jar",
+    jar = "//tests/analysis/compiler_plugin:empty_jar",
     plugin_id = "2",
 )
 
 kt_compiler_plugin(
     name = "3",
-    jar = "@//tests/analysis/compiler_plugin:empty_jar",
+    jar = "//tests/analysis/compiler_plugin:empty_jar",
     plugin_id = "3",
 )

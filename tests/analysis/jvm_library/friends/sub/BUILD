@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//kotlin:rules.bzl", "kt_jvm_library")
-load("@//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
-load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
+load("//kotlin:rules.bzl", "kt_jvm_library")
+load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 
 package(
     default_testonly = True,
-    default_visibility = ["@//tests/analysis/jvm_library/friends:__subpackages__"],
+    default_visibility = ["//tests/analysis/jvm_library/friends:__subpackages__"],
 )
 
 licenses(["notice"])
@@ -43,7 +43,7 @@ kt_jvm_library(
     name = "kt_exports_friend",
     srcs = ["Input.kt"],
     tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    exports = ["@//tests/analysis/jvm_library/friends:friend"],
+    exports = ["//tests/analysis/jvm_library/friends:friend"],
 )
 
 jvm_library_test(
@@ -56,5 +56,5 @@ kt_jvm_library(
     name = "no_direct_friend_cross_package",
     srcs = ["Input.kt"],
     tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    deps = ["@//tests/analysis/jvm_library/friends:friend"],
+    deps = ["//tests/analysis/jvm_library/friends:friend"],
 )

@@ -14,8 +14,8 @@
 
 """Kotlin kt_jvm_library rule tests."""
 
-load("@//kotlin:jvm_library.bzl", "kt_jvm_library")
-load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action_arg")
+load("//kotlin:jvm_library.bzl", "kt_jvm_library")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action_arg")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(":assert_failure_test.bzl", "assert_failure_test")
@@ -415,7 +415,7 @@ fun greeting(): String = "Hello World!"
             test_name + "/Salutations.kt",
         ],
         # Need a working plugin so it can run for the test.
-        plugins = ["@//bazel:auto_value_plugin"],
+        plugins = ["//bazel:auto_value_plugin"],
     )
 
     _test(
@@ -752,7 +752,7 @@ def _test_kt_jvm_library_with_no_sources():
             "nobuilder",
         ],
     )
-    tut_label = str(Label("@//tests/analysis:kt_jvm_library_with_no_sources_test_tut"))
+    tut_label = str(Label("//tests/analysis:kt_jvm_library_with_no_sources_test_tut"))
     assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",

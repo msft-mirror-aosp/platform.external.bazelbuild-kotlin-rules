@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//tests/analysis:assert_failure_test.bzl", "assert_failure_test")
-load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
+load("//tests/analysis:assert_failure_test.bzl", "assert_failure_test")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 load(":fake_compiler_plugin.bzl", "kt_fake_compiler_plugin")
 
 licenses(["notice"])

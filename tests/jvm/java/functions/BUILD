@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # This package tests importing extension functions.
-load("@//kotlin:rules.bzl", "kt_jvm_import", "kt_jvm_library")
+load("//kotlin:rules.bzl", "kt_jvm_import", "kt_jvm_library")
 
 licenses(["notice"])
 
@@ -21,7 +21,7 @@ kt_jvm_library(
     name = "car_demo_src_lib",
     srcs = ["CarDemo.kt"],
     deps = [
-        "@//tests/jvm/java/functions/car:car_lib",
+        "//tests/jvm/java/functions/car:car_lib",
     ],
 )
 
@@ -37,7 +37,7 @@ java_test(
 
 java_import(
     name = "car-jar",
-    jars = ["@//tests/jvm/java/functions/car:car_lib-jar"],
+    jars = ["//tests/jvm/java/functions/car:car_lib-jar"],
 )
 
 kt_jvm_library(
@@ -63,8 +63,8 @@ java_test(
 kt_jvm_import(
     name = "car-inline-jar",
     jars = [
-        "@//tests/jvm/java/functions/car:car_inline_lib-jar",
-        "@//tests/jvm/java/functions/car:car_extra_lib-jar",
+        "//tests/jvm/java/functions/car:car_inline_lib-jar",
+        "//tests/jvm/java/functions/car:car_extra_lib-jar",
     ],
     deps = [
         ":car-jar",

@@ -14,7 +14,7 @@
 
 """A fake impl of kt_compiler_plugin."""
 
-load("@//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
+load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 
 def _kt_fake_compiler_plugin_impl(ctx):
     return [
@@ -30,7 +30,7 @@ kt_fake_compiler_plugin = rule(
     attrs = dict(
         _jar = attr.label(
             allow_single_file = True,
-            default = "@//tests/analysis/compiler_plugin:empty_jar",
+            default = "//tests/analysis/compiler_plugin:empty_jar",
         ),
     ),
     provides = [KtCompilerPluginInfo],

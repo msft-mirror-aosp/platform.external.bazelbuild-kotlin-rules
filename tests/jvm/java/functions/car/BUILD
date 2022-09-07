@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//kotlin:rules.bzl", "kt_jvm_library")
+load("//kotlin:rules.bzl", "kt_jvm_library")
 
-package(default_visibility = ["@//tests/jvm/java/functions:__subpackages__"])
+package(default_visibility = ["//tests/jvm/java/functions:__subpackages__"])
 
 licenses(["notice"])
 

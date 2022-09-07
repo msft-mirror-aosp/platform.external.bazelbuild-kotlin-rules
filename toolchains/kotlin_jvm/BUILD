@@ -19,7 +19,7 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
-package(default_visibility = ["@//:internal"])
+package(default_visibility = ["//:internal"])
 
 toolchain_type(name = kt_jvm_toolchains.name)
 

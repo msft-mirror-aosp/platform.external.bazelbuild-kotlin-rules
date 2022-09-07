@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load(
-    "@//kotlin:rules.bzl",
+    "//kotlin:rules.bzl",
     "kt_jvm_library",
     "kt_jvm_test",
 )
@@ -25,7 +25,7 @@ licenses(["notice"])
 kt_jvm_library(
     name = "NativeApiKt",
     srcs = ["NativeApi.kt"],
-    visibility = ["@//tests:__subpackages__"],
+    visibility = ["//tests:__subpackages__"],
     runtime_deps = [":jni_NativeApi"],
 )
 

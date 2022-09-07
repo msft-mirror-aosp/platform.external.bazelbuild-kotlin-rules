@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@//kotlin:rules.bzl", "kt_jvm_library")
-load("@//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
-load("@//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
+load("//kotlin:rules.bzl", "kt_jvm_library")
+load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 
 package(
     default_testonly = True,
-    default_visibility = ["@//tests/analysis/jvm_library/friends:__subpackages__"],
+    default_visibility = ["//tests/analysis/jvm_library/friends:__subpackages__"],
 )
 
 licenses(["notice"])
@@ -35,7 +35,7 @@ kt_jvm_library(
     tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     deps = [
         # Exports :friend from this package
-        "@//tests/analysis/jvm_library/friends/sub:kt_exports_friend",
+        "//tests/analysis/jvm_library/friends/sub:kt_exports_friend",
     ],
 )
 

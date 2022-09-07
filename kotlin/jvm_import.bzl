@@ -16,8 +16,8 @@
 
 load(":common.bzl", "common")
 load(":traverse_exports.bzl", "kt_traverse_exports")
-load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
-load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
+load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
+load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 

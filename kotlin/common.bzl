@@ -16,8 +16,8 @@
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:structs.bzl", "structs")
-load("@//bazel:stubs.bzl", "BASE_JVMOPTS")
-load("@//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
+load("//bazel:stubs.bzl", "BASE_JVMOPTS")
+load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 
 # TODO: Remove the _ALLOWED_*_RULES lists to determine which rules
 # are accepted dependencies to Kotlin rules as the approach does not scale
@@ -90,7 +90,7 @@ def _is_kt_src(src):
 # Compute module name based on target (b/139403883), similar to Swift
 def _derive_module_name(ctx):
     label = _get_original_kt_target_label(ctx)
-    package_part = label.package.replace("/", ".")  # .package has no leading //
+    package_part = label.package.replace("/", ".")  # .package has no leading '//'
     name_part = label.name
     if package_part:
         return package_part + "_" + name_part

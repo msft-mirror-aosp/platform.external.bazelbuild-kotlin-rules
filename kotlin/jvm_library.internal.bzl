@@ -14,9 +14,9 @@
 
 """Kotlin kt_jvm_library rule."""
 
-load("@//kotlin:compiler_opt.bzl", "kotlincopts_attrs", "merge_kotlincopts")
-load("@//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
-load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
+load("//kotlin:compiler_opt.bzl", "kotlincopts_attrs", "merge_kotlincopts")
+load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
+load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
@@ -231,8 +231,6 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
             [JavaInfo],
         ],
         cfg = "exec",
-        doc = """Additional Android Lint checks to run at compile-time.  Checks must use
-                     //java/com/google/android/tools/lint/registration to work.""",
     ),
 )
 

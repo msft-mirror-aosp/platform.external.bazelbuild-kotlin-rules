@@ -16,7 +16,7 @@
 
 licenses(["notice"])
 
-package(default_visibility = ["@//:internal"])
+package(default_visibility = ["//:internal"])
 
 # JAR that contains a marker entry, for identifying apps built by rules_kotlin.
 genrule(

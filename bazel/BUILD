@@ -14,7 +14,7 @@
 
 licenses(["notice"])  # Apache 2.0
 
-package(default_visibility = ["@//:internal"])
+package(default_visibility = ["//:internal"])
 
 java_library(
     name = "auto_service",
