@@ -110,6 +110,9 @@ def kt_jvm_compile(
         # dependent libraries.
         fail("Expected one of (srcs, common_srcs, exports) is not empty for kotlin/jvm_compile on target: {}".format(ctx.label))
 
+    if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
+        fail("resources attribute only allowed for jvm libraries")
+
     if type(java_toolchain) != "JavaToolchainInfo":
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
@@ -144,9 +147,6 @@ def kt_jvm_compile(
 
     if kotlincopts != None and "-Werror" in kotlincopts:
         fail("Flag -Werror is not permitted")
-
-    if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
-        fail("resources attribute only allowed for jvm libraries")
 
     # The r_java field only support Android resources Jar files. For now, verify
     # that the name of the jar matches "_resources.jar". This check does not to
