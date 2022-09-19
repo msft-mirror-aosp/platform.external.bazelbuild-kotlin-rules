@@ -29,7 +29,6 @@ _DEPS_AS_EXPORTS_RULES = [
 ]
 
 _NO_SRCS_DEPS_AS_EXPORTS_RULES = [
-    "android_library",
     "proto_library",
 ]
 
