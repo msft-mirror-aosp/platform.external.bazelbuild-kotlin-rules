@@ -140,7 +140,7 @@ def kt_jvm_compile(
         java_infos.extend(kt_toolchain.kotlin_libs)
 
     # TODO: Inject the runtime library from the flogger API target
-    if use_flogger:
+    if use_flogger and has_kt_srcs:
         if not flogger_runtime:
             fail("Dependency on flogger exists, but flogger_runtime not passed")
         java_infos.append(flogger_runtime)
