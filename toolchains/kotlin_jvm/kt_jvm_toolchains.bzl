@@ -121,8 +121,7 @@ def _kt_jvm_toolchain_impl(ctx):
         KtJvmToolchainInfo(**kt_jvm_toolchain),
     ]
 
-_kt_jvm_toolchain_internal = rule(
-    name = "kt_jvm_toolchain",
+_kt_jvm_toolchain = rule(
     attrs = dict(
         build_marker = attr.label(
             default = "//tools:build_marker",
@@ -232,8 +231,8 @@ _kt_jvm_toolchain_internal = rule(
     implementation = _kt_jvm_toolchain_impl,
 )
 
-def _kt_jvm_toolchain(**kwargs):
-    _kt_jvm_toolchain_internal(
+def _declare(**kwargs):
+    _kt_jvm_toolchain(
         jvm_target = select({
             "//conditions:default": "11",
         }),
@@ -252,6 +251,6 @@ kt_jvm_toolchains = struct(
     name = _TYPE.name,
     get = lambda ctx: ctx.toolchains[_TYPE],
     type = str(_TYPE),
-    declare = _kt_jvm_toolchain,
+    declare = _declare,
     attrs = _ATTRS,
 )
