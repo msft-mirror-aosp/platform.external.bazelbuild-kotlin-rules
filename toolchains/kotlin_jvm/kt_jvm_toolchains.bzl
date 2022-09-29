@@ -112,6 +112,7 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
         kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
+        source_jar_zipper = ctx.file.source_jar_zipper,
         turbine = ctx.file.turbine,
         turbine_direct = ctx.file.turbine_direct if ctx.attr.enable_turbine_direct else None,
         turbine_jsa = ctx.file.turbine_jsa,
@@ -211,6 +212,11 @@ kt_jvm_toolchain = rule(
             ],
             cfg = "target",
             doc = "The Kotlin runtime libraries grouped into one attribute.",
+        ),
+        source_jar_zipper = attr.label(
+            default = "//tools/bin:source_jar_zipper_binary",
+            cfg = "exec",
+            allow_single_file = [".jar"],
         ),
         turbine = attr.label(
             default = "@bazel_tools//tools/jdk:turbine_direct",

@@ -86,6 +86,7 @@ maven_install(
         "com.google.auto.value:auto-value:1.9",
         "com.google.testing.compile:compile-testing:0.19",
         "com.google.truth:truth:1.1.3",
+        "info.picocli:picocli:4.6.3",
         "javax.inject:jsr330-api:0.9",
         "junit:junit:4.13.2",
         "org.jacoco:org.jacoco.agent:0.8.8",

@@ -142,10 +142,10 @@ def _kapt(
         # mostly to filter out non-.java stub outputs, e.g. .kapt_metadata.
         stub_srcjars.append(_create_jar(
             ctx,
-            toolchain.jar_tool,
+            toolchain,
             ctx.actions.declare_file("stubs-srcjar.jar", sibling = stubs_dir),
-            [stubs_dir],
-            file_extensions = ["java"],
+            kt_inputs = [stubs_dir],
+            ignore_not_allowed_files = True,
         ))
 
     output_jar = ctx.actions.declare_file(ctx.label.name + "-kapt.jar")
@@ -451,12 +451,12 @@ def _run_kotlinc(
         },
     )
 
-    # TODO: Normalize paths to match package declarations in source files.
     srcjar = _create_jar(
         ctx,
-        toolchain.jar_tool,
+        toolchain,
         ctx.actions.declare_file(ctx.label.name + "-kt-src.jar"),
-        kt_srcs + common_srcs,
+        kt_inputs = kt_srcs,
+        common_inputs = common_srcs,
     )
 
     return struct(
@@ -592,39 +592,46 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, output_suffix = ""):
 
     return merged_jdeps_file
 
-def _expand_zip(ctx, dir, input, extra_args = []):
-    ctx.actions.run_shell(
-        outputs = [dir],
+def _expand_zip(ctx, toolchain, dir, input):
+    args = ctx.actions.args()
+    args.add("unzip", input)
+    args.add(dir.path)
+
+    _actions_run_deploy_jar(
+        ctx = ctx,
+        java_runtime = toolchain.java_runtime,
+        deploy_jar = toolchain.source_jar_zipper,
         inputs = [input],
-        command = "unzip -q {input} -d {dir} {args} 2> /dev/null || mkdir -p {dir}".format(
-            input = input.path,
-            dir = dir.path,
-            args = " ".join(extra_args),
-        ),
+        outputs = [dir],
+        args = [args],
+        mnemonic = "SrcJarUnzip",
     )
+
     return dir
 
-def _create_jar(ctx, jar_tool, out_jar, inputs, file_extensions = None):
-    def file_filter(file):
-        return file.path if (
-            file_extensions == None or (file.extension in file_extensions)
-        ) else None
-
+def _create_jar(ctx, toolchain, out_jar, kt_inputs = [], common_inputs = [], ignore_not_allowed_files = False):
     args = ctx.actions.args()
-    args.add("cf", out_jar)
-    args.add_all(inputs, map_each = file_filter, allow_closure = True)
+    args.add("zip")
+    args.add(out_jar)
+    args.add_joined("--kotlin_srcs", kt_inputs, join_with = ",")
+    args.add_joined("--common_srcs", common_inputs, join_with = ",")
+    if ignore_not_allowed_files:
+        args.add("-i")
 
-    ctx.actions.run(
-        executable = jar_tool,
-        inputs = inputs,
+    _actions_run_deploy_jar(
+        ctx = ctx,
+        java_runtime = toolchain.java_runtime,
+        deploy_jar = toolchain.source_jar_zipper,
+        inputs = kt_inputs + common_inputs,
         outputs = [out_jar],
-        arguments = [args],
+        args = [args],
         mnemonic = "KtJar",
         progress_message = "Create Jar (kotlin/common.bzl): %{output}",
     )
 
     return out_jar
 
+# TODO: move this functionality into `source_jar_zipper`
 def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
     """Packs a sequence of tree artifacts into a single jar.
 
@@ -718,11 +725,11 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, name):
             _dirs.append(
                 _expand_zip(
                     ctx,
+                    kt_toolchain,
                     ctx.actions.declare_directory(
                         "%s/%s%s.expand" % (ctx.label.name, name, len(_dirs)),
                     ),
                     srcjar,
-                    extra_args = ["*.java", "*.kt"],
                 ),
             )
         _srcjars.extend(srcjars)
