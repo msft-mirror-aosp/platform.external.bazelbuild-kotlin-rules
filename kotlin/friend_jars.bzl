@@ -64,3 +64,14 @@ kt_friend_jars_visitor = struct(
     finish_expansion = None,
     process_unvisited_target = None,
 )
+
+def _get_output_labels(target, _):
+    return [target.label]
+
+kt_friend_labels_visitor = struct(
+    name = "friend_labels",
+    visit_target = _get_output_labels,
+    filter_edge = _is_eligible_friend,
+    finish_expansion = None,
+    process_unvisited_target = None,
+)
