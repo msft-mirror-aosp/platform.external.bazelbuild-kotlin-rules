@@ -89,8 +89,8 @@ class Zip : Runnable {
 
     // Validating files and getting paths for resulting .jar in one cycle
     // for each _srcs list
-    val sourcePathToKtZipPath = mutableMapOf<Path, Path>()
-    val sourcePathToCommonZipPath = mutableMapOf<Path, Path>()
+    val ktZipPathToSourcePath = mutableMapOf<Path, Path>()
+    val commonZipPathToSourcePath = mutableMapOf<Path, Path>()
     val errors = mutableListOf<String>()
 
     fun Path.getPackagePath(): Path {
@@ -99,9 +99,10 @@ class Zip : Runnable {
           val line = stream.readLine() ?: return this.fileName
 
           if (line.startsWith(PACKAGE_SPACE)) {
-            // Kotlin allows usage of reserved words in package names framing them 
+            // Kotlin allows usage of reserved words in package names framing them
             // with backquote symbol "`"
-            val packageName = line.substring(PACKAGE_SPACE.length).trim().replace(";", "").replace("`", "")
+            val packageName =
+              line.substring(PACKAGE_SPACE.length).trim().replace(";", "").replace("`", "")
             if (!SourceVersion.isName(packageName)) {
               errors.add("${this} contains an invalid package name")
               return this.fileName
@@ -126,19 +127,31 @@ class Zip : Runnable {
       }
     }
 
+    fun MutableMap<Path, Path>.setZipPathToSourcePath(zipPath: Path, sourcePath: Path) {
+      val duplicatedSourcePath: Path? = this[zipPath]
+      if (duplicatedSourcePath == null) {
+        this[zipPath] = sourcePath
+      } else {
+        errors.add(
+          "${sourcePath} has the same file and package names as ${duplicatedSourcePath}! " +
+            "If it is intended behavior rename one or both of them."
+        )
+      }
+    }
+
     for (sourcePath in kotlinSrcs) {
       if (sourcePath.validateFile()) {
-        sourcePathToKtZipPath[sourcePath] = sourcePath.getPackagePath()
+        ktZipPathToSourcePath.setZipPathToSourcePath(sourcePath.getPackagePath(), sourcePath)
       }
     }
 
     for (sourcePath in commonSrcs) {
       if (sourcePath.validateFile()) {
-        sourcePathToCommonZipPath[sourcePath] = sourcePath.getPackagePath()
+        commonZipPathToSourcePath.setZipPathToSourcePath(sourcePath.getPackagePath(), sourcePath)
       }
     }
 
-    if (sourcePathToKtZipPath.isEmpty() && sourcePathToCommonZipPath.isEmpty()) {
+    if (ktZipPathToSourcePath.isEmpty() && commonZipPathToSourcePath.isEmpty()) {
       errors.add("Expected at least one valid source file .kt or .java")
     }
     check(errors.isEmpty()) { errors.joinToString("\n") }
@@ -147,7 +160,7 @@ class Zip : Runnable {
       zipper: ZipOutputStream,
       prefix: String = "",
     ) {
-      for ((sourcePath, zipPath) in this) {
+      for ((zipPath, sourcePath) in this) {
         BufferedInputStream(Files.newInputStream(sourcePath)).use { inputStream ->
           val entry = ZipEntry(Paths.get(prefix).resolve(zipPath).toString())
           entry.time = 0
@@ -158,8 +171,8 @@ class Zip : Runnable {
     }
 
     ZipOutputStream(BufferedOutputStream(Files.newOutputStream(outputJar))).use { zipper ->
-      sourcePathToKtZipPath.writeToStream(zipper)
-      sourcePathToCommonZipPath.writeToStream(zipper, "common-srcs")
+      ktZipPathToSourcePath.writeToStream(zipper)
+      commonZipPathToSourcePath.writeToStream(zipper, "common-srcs")
     }
   }
 }
