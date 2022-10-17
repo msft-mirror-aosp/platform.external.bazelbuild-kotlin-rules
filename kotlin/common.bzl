@@ -303,9 +303,12 @@ def _run_turbine(
             progress_message = progress_message,
         )
     else:
+        java_runtime = toolchain.turbine_java_runtime
+        if not java_runtime:
+            java_runtime = toolchain.java_runtime
         _actions_run_deploy_jar(
             ctx = ctx,
-            java_runtime = toolchain.java_runtime,
+            java_runtime = java_runtime,
             deploy_jar = toolchain.turbine,
             deploy_jsa = toolchain.turbine_jsa,
             inputs = inputs,

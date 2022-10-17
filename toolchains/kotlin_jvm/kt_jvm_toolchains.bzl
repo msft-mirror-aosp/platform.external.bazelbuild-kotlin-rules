@@ -116,6 +116,7 @@ def _kt_jvm_toolchain_impl(ctx):
         turbine = ctx.file.turbine,
         turbine_direct = ctx.file.turbine_direct if ctx.attr.enable_turbine_direct else None,
         turbine_jsa = ctx.file.turbine_jsa,
+        turbine_java_runtime = ctx.attr.turbine_java_runtime,
     )
     return [
         platform_common.ToolchainInfo(**kt_jvm_toolchain),
@@ -231,6 +232,9 @@ kt_jvm_toolchain = rule(
         turbine_jsa = attr.label(
             cfg = "exec",
             allow_single_file = True,
+        ),
+        turbine_java_runtime = attr.label(
+            cfg = "exec",
         ),
     ),
     provides = [platform_common.ToolchainInfo],
