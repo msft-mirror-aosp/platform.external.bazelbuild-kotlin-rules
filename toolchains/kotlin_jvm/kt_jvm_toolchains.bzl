@@ -17,7 +17,7 @@
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_7_10"
+KT_VERSION = "v1_7_20"
 
 KT_LANG_VERSION = "1.7"
 
