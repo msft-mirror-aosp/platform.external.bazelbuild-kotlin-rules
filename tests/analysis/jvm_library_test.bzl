@@ -112,6 +112,14 @@ _test = analysistest.make(
 
 jvm_library_test = _test
 
+def kt_jvm_library_under_test(name, **kwargs):
+    kt_jvm_library(
+        name = name,
+        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+        **kwargs
+    )
+    return name
+
 def _coverage_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)

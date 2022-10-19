@@ -16,12 +16,13 @@
 
 def is_eligible_friend(target, friend):
     """
-    Determines if `target` is allowed to call `friend` a friend (and use its `internal` members).
+    Determines if `target` is allowed to use `internal` members of `friend`
 
-    To be eligible, `target` must be one of:
-      - in the parallel `java/` package from a `javatests/` package
-      - in the parallel `main/java` package from a `test/java` package
-      - another target in the same `BUILD` file
+    To be eligible, one of:
+      1. `target` and `friend` in same pkg
+      2. `target` in `testing/` subpkg of `friend` pkg
+      3. `target` in `javatests/` pkg, `friend` in parallel `java/` pkg
+      4. `target` in `test/java/` pkg, `friend` in parallel `main/java/` pkg
 
     Args:
       target: (target) The current target
@@ -35,11 +36,15 @@ def is_eligible_friend(target, friend):
     friend_pkg = friend.label.package + "/"
 
     if target_pkg == friend_pkg:
-        # Allow friends on targets in the same package
+        # Case 1
+        return True
+
+    if target_pkg.removesuffix("testing/") == friend_pkg:
+        # Case 2
         return True
 
     if "javatests/" in target_pkg and "java/" in friend_pkg:
-        # Allow friends from javatests/ on the parallel java/ package
+        # Case 3
         target_java_pkg = target_pkg.rsplit("javatests/", 1)[1]
         friend_java_pkg = friend_pkg.rsplit("java/", 1)[1]
         if target_java_pkg == friend_java_pkg:
@@ -47,7 +52,7 @@ def is_eligible_friend(target, friend):
 
     if ("test/java/" in target_pkg and "main/java/" in friend_pkg and
         True):
-        # Allow friends from test/java on the parallel main/java package
+        # Case 4
         target_split = target_pkg.rsplit("test/java/", 1)
         friend_split = friend_pkg.rsplit("main/java/", 1)
         if target_split == friend_split:
