@@ -14,7 +14,7 @@
 
 """TODO: Write module docstring."""
 
-def _is_eligible_friend(target, friend):
+def is_eligible_friend(target, friend):
     """
     Determines if `target` is allowed to call `friend` a friend (and use its `internal` members).
 
@@ -26,6 +26,9 @@ def _is_eligible_friend(target, friend):
     Args:
       target: (target) The current target
       friend: (Target) A potential friend of `target`
+
+    Returns:
+      True if `friend` is an eligible friend of `target`.
     """
 
     target_pkg = target.label.package + "/"
@@ -60,7 +63,7 @@ def _get_output_jars(target, _ctx_rule):
 kt_friend_jars_visitor = struct(
     name = "friend_jars",
     visit_target = _get_output_jars,
-    filter_edge = _is_eligible_friend,
+    filter_edge = is_eligible_friend,
     finish_expansion = None,
     process_unvisited_target = None,
 )
@@ -71,7 +74,7 @@ def _get_output_labels(target, _):
 kt_friend_labels_visitor = struct(
     name = "friend_labels",
     visit_target = _get_output_labels,
-    filter_edge = _is_eligible_friend,
+    filter_edge = is_eligible_friend,
     finish_expansion = None,
     process_unvisited_target = None,
 )
