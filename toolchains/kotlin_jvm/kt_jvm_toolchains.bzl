@@ -14,6 +14,8 @@
 
 """Kotlin toolchain."""
 
+load("//bazel:stubs.bzl", "select_java_language_version")
+
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
@@ -104,6 +106,7 @@ def _kt_jvm_toolchain_impl(ctx):
         jar_tool = ctx.attr.jar_tool[DefaultInfo].files_to_run,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
+        jvm_target = ctx.attr.jvm_target,
         kotlin_annotation_processing = ctx.file.kotlin_annotation_processing,
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
@@ -243,9 +246,11 @@ kt_jvm_toolchain = rule(
 
 def _declare(**kwargs):
     kt_jvm_toolchain(
-        jvm_target = select({
-            "//conditions:default": "11",
-        }),
+        jvm_target = select_java_language_version(
+            java8 = "1.8",
+            java11 = "11",
+            java_head = "18",  # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
+        ),
         **kwargs
     )
 
