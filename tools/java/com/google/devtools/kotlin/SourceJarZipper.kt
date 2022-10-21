@@ -25,7 +25,6 @@ import java.nio.file.StandardCopyOption
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import javax.lang.model.SourceVersion
 import kotlin.system.exitProcess
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -80,6 +79,7 @@ class Zip : Runnable {
 
   companion object {
     const val PACKAGE_SPACE = "package "
+    val PACKAGE_NAME_REGEX = "[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)*".toRegex()
   }
 
   override fun run() {
@@ -103,7 +103,7 @@ class Zip : Runnable {
             // with backquote symbol "`"
             val packageName =
               line.substring(PACKAGE_SPACE.length).trim().replace(";", "").replace("`", "")
-            if (!SourceVersion.isName(packageName)) {
+            if (!PACKAGE_NAME_REGEX.matches(packageName)) {
               errors.add("${this} contains an invalid package name")
               return this.fileName
             }
