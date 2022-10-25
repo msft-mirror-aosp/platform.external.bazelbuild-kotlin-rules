@@ -476,7 +476,7 @@ def _get_original_kt_target_label(ctx):
 
     return label
 
-def _check_deps(
+def _run_import_deps_checker(
         ctx,
         jars_to_check = [],
         merged_deps = None,
@@ -825,6 +825,9 @@ def _kt_jvm_library(
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
 
+    if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
+        deps += kt_toolchain.kotlin_libs
+
     merged_deps = java_common.merge(deps)
 
     # Split sources, as java requires a separate compile step.
@@ -1053,21 +1056,26 @@ def _kt_jvm_library(
 
 def _kt_jvm_import(
         ctx,
+        kt_toolchain,
         jars = [],
         srcjar = None,
         deps = [],
         runtime_deps = [],
         neverlink = False,
-        java_toolchain = None,
+                java_toolchain = None,
         deps_checker = None):
     if not java_toolchain:
         fail("Missing or invalid java_toolchain")
+    if not jars:
+        fail("Must import at least one JAR")
+
+    deps += kt_toolchain.kotlin_libs
     merged_deps = java_common.merge(deps)
 
     # Check that any needed deps are declared unless neverlink, in which case Jars won't be used
     # at runtime so we skip the check, though we'll populate jdeps either way.
     jdeps_output = ctx.actions.declare_file(ctx.label.name + ".jdeps")
-    _check_deps(
+    _run_import_deps_checker(
         ctx,
         jars_to_check = jars,
         merged_deps = merged_deps,
@@ -1076,9 +1084,6 @@ def _kt_jvm_import(
         deps_checker = deps_checker,
         java_toolchain = java_toolchain,
     )
-
-    if not jars:
-        fail("Must provide a Jar to use kt_jvm_import")
 
     java_info = java_common.merge([
         JavaInfo(

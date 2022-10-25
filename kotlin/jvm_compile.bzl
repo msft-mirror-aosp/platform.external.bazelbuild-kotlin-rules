@@ -132,18 +132,8 @@ def kt_jvm_compile(
         # Collect JavaInfo providers and info about plugins (JavaPluginData).
         if JavaInfo in dep:
             java_infos.append(dep[JavaInfo])
-
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
-
-    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or srcs or common_srcs:
-        java_infos.extend(kt_toolchain.kotlin_libs)
-
-    # TODO: Inject the runtime library from the flogger API target
-    if use_flogger and has_kt_srcs:
-        if not flogger_runtime:
-            fail("Dependency on flogger exists, but flogger_runtime not passed")
-        java_infos.append(flogger_runtime)
 
     if kotlincopts != None and "-Werror" in kotlincopts:
         fail("Flag -Werror is not permitted")

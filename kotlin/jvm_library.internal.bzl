@@ -45,9 +45,7 @@ def _jvm_library_impl(ctx):
     kt_jvm_toolchain = kt_jvm_toolchains.get(ctx)
 
     for target in ctx.attr.runtime_deps:
-        if JavaInfo in target:
-            pass
-        elif CcInfo not in target:
+        if (JavaInfo not in target) and (CcInfo not in target):
             fail("Unexpected runtime dependency (must provide JavaInfo or CcInfo): " + str(target.label))
 
     if not ctx.files.srcs and not ctx.files.common_srcs and not ctx.attr.exports and not ctx.attr.exported_plugins:
