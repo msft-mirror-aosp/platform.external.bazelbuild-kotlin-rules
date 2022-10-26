@@ -192,6 +192,3 @@ def kt_jvm_compile(
         annotation_processor_additional_outputs = annotation_processor_additional_outputs,
         annotation_processor_additional_inputs = annotation_processor_additional_inputs,
     )
-
-# TODO Delete this
-compile = kt_jvm_compile
