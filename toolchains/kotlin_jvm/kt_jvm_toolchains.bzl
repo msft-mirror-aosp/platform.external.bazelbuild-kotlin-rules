@@ -15,7 +15,6 @@
 """Kotlin toolchain."""
 
 load("//bazel:stubs.bzl", "select_java_language_version")
-load("@bazel_tools//tools/jdk:select_java_language_level.bzl", "select_java_language_level")
 
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
