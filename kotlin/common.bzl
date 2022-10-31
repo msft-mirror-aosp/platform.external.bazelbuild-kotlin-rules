@@ -371,9 +371,10 @@ def _kt_plugins_map(
 
 def _run_kotlinc(
         ctx,
-        output,
+        output_basename,
         kt_srcs = [],
         common_srcs = [],
+        coverage_srcs = [],
         java_srcs_and_dirs = [],
         kotlincopts = [],
         compile_jdeps = depset(),
@@ -384,9 +385,6 @@ def _run_kotlinc(
         friend_jars = depset(),
         enforce_strict_deps = False,
         enforce_complete_jdeps = False):
-    if output.extension != "jar":
-        fail("Expect to output a Jar but got %s" % output)
-
     direct_inputs = []
     transitive_inputs = []
     outputs = []
@@ -406,7 +404,7 @@ def _run_kotlinc(
 
     kotlinc_args.add(toolchain.jvm_abi_gen_plugin, format = "-Xplugin=%s")
     direct_inputs.append(toolchain.jvm_abi_gen_plugin)
-    kt_ijar = ctx.actions.declare_file(output.basename[:-4] + "-ijar.jar", sibling = output)
+    kt_ijar = ctx.actions.declare_file(output_basename + "-ijar.jar")
     kotlinc_args.add("-P", kt_ijar, format = "plugin:org.jetbrains.kotlin.jvm.abi:outputDir=%s")
     outputs.append(kt_ijar)
 
@@ -422,6 +420,7 @@ def _run_kotlinc(
         kotlinc_args.add_all(common_srcs, format_each = "-Xcommon-sources=%s")
         direct_inputs.extend(common_srcs)
 
+    output = ctx.actions.declare_file(output_basename + ".jar")
     kotlinc_args.add("-d", output)
     outputs.append(output)
     kotlinc_args.add_all(kt_srcs)
@@ -457,10 +456,18 @@ def _run_kotlinc(
     srcjar = _create_jar(
         ctx,
         toolchain,
-        ctx.actions.declare_file(ctx.label.name + "-kt-src.jar"),
+        ctx.actions.declare_file(output_basename + "-kt-src.jar"),
         kt_inputs = kt_srcs,
         common_inputs = common_srcs,
     )
+
+    if ctx.coverage_instrumented():
+        output = _offline_instrument_jar(
+            ctx,
+            toolchain,
+            output,
+            kt_srcs + common_srcs + coverage_srcs,
+        )
 
     return struct(
         output_jar = output,
@@ -520,27 +527,31 @@ def _run_import_deps_checker(
     )
 
 def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
-    paths_for_coverage_file = ctx.actions.declare_file(ctx.label.name + "-kt-paths-for-coverage.txt")
+    if not jar.basename.endswith(".jar"):
+        fail("Expect JAR input but got %s" % jar)
+    output_basename = jar.basename[:-4]
+
+    paths_for_coverage_file = ctx.actions.declare_file(output_basename + "-kt-paths-for-coverage.txt", sibling = jar)
     paths = ctx.actions.args()
     paths.set_param_file_format("multiline")  # don't shell-quote, just list file names
     paths.add_all([src for src in srcs if src.is_source])
     ctx.actions.write(paths_for_coverage_file, paths)
 
-    result = ctx.actions.declare_file(ctx.label.name + "-instrumented.jar")
+    output = ctx.actions.declare_file(output_basename + "-instrumented.jar", sibling = jar)
     args = ctx.actions.args()
     args.add(jar)
-    args.add(result)
+    args.add(output)
     args.add(paths_for_coverage_file)
     ctx.actions.run(
         executable = toolchain.coverage_instrumenter,
         arguments = [args],
         inputs = [jar, paths_for_coverage_file],
-        outputs = [result],
+        outputs = [output],
         mnemonic = "KtJaCoCoInstrument",
         progress_message = "Instrumenting Kotlin for coverage collection: %s" % _get_original_kt_target_label(ctx),
     )
 
-    return result
+    return output
 
 def _singlejar(
         ctx,
@@ -914,8 +925,9 @@ def _kt_jvm_library(
             ctx,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
+            coverage_srcs = coverage_srcs,
             java_srcs_and_dirs = java_srcs + java_syncer.dirs,
-            output = ctx.actions.declare_file(ctx.label.name + "-kt.jar"),
+            output_basename = ctx.label.name + "-kt",
             kotlincopts = kotlincopts,
             compile_jdeps = compile_jdeps,
             toolchain = kt_toolchain,
@@ -930,21 +942,14 @@ def _kt_jvm_library(
         # (see b/110763361 for the comparable Gradle issue)
         out_compilejars.append(kotlinc_result.compile_jar)
         out_srcjars.append(kotlinc_result.source_jar)
+        out_jars.append(kotlinc_result.output_jar)
 
-        # Apply coverage instrumentation if requested, and add dep on JaCoCo runtime to merged_deps.
+        # Add dep on JaCoCo runtime to merged_deps.
         # The latter helps jdeps computation (b/130747644) but could be runtime-only if we computed
         # compile-time Jdeps based using the compile Jar (which doesn't contain instrumentation).
         # See b/117897097 for why it's still useful to make the (runtime) dep explicit.
         if ctx.coverage_instrumented():
-            out_jars.append(_offline_instrument_jar(
-                ctx,
-                kt_toolchain,
-                kotlinc_result.output_jar,
-                kt_srcs + common_srcs + coverage_srcs,
-            ))
             merged_deps = java_common.merge([merged_deps, kt_toolchain.coverage_runtime])
-        else:
-            out_jars.append(kotlinc_result.output_jar)
 
     classpath_resources_dirs, classpath_resources_non_dirs = _partition(
         classpath_resources,
