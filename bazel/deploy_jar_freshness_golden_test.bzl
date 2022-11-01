@@ -14,9 +14,9 @@
 
 """Test on *_deploy.jar freshness"""
 
-def _deploy_jar_golden_test_impl(ctx):
+def _deploy_jar_freshness_golden_test_impl(ctx):
     test_command = """
-      if ! cmp -l $1 $2 ; then
+      if ! cmp $1 $2 ; then
           echo "$1 needs to be rebuilt"
           echo "exit 1" > $3
           exit 0
@@ -40,8 +40,8 @@ def _deploy_jar_golden_test_impl(ctx):
 
     return [DefaultInfo(executable = dummy_test_script)]
 
-deploy_jar_golden_test = rule(
-    implementation = _deploy_jar_golden_test_impl,
+deploy_jar_freshness_golden_test = rule(
+    implementation = _deploy_jar_freshness_golden_test_impl,
     attrs = dict(
         newly_built_jar = attr.label(
             doc = "Newly built target deploy.jar",

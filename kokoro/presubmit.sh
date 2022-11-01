@@ -46,3 +46,10 @@ cd "${workspace_root}"
     --experimental_google_legacy_api \
     --instrumentation_filter=-//tests/jvm/java/multijarimport[/:],-//tests/jvm/java/functions[/:] \
     //tests/...
+
+# For a specific test //tools:source_jar_zipper_freshness_test run test only
+"$bazel" test \
+    --sandbox_tmpfs_path="$hsperfdata_dir" \
+    --verbose_failures \
+    --experimental_google_legacy_api \
+    //tools:source_jar_zipper_freshness_test
