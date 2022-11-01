@@ -975,14 +975,19 @@ def _kt_jvm_library(
     java_native_headers_jar = None
     java_gensrcjar = None
     java_genjar = None
+    is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
     if java_srcs or java_syncer.srcjars or classpath_resources:
-        javac_out = ctx.actions.declare_file(ctx.label.name + "-java.jar")
+        javac_out = output if is_android_library_without_kt_srcs else ctx.actions.declare_file(ctx.label.name + "-java.jar")
         javac_java_info = java_common.compile(
             ctx,
             source_files = java_srcs,
             source_jars = java_syncer.srcjars,
             resources = classpath_resources_non_dirs,
+            # For targets that are not android_library with java-only srcs, exports will be passed
+            # to the final constructed JavaInfo.
+            exports = exports if is_android_library_without_kt_srcs else [],
             output = javac_out,
+            exported_plugins = exported_plugins,
             deps = ([JavaInfo(**structs.to_dict(kotlinc_result))] if kotlinc_result else []) + [merged_deps],
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
             # all sources of default flags (for Ellipsis builds, see b/125452475).
@@ -997,6 +1002,15 @@ def _kt_jvm_library(
             annotation_processor_additional_outputs = annotation_processor_additional_outputs,
             annotation_processor_additional_inputs = annotation_processor_additional_inputs,
         )
+
+        # Directly return the JavaInfo from java.compile() for java-only andorid_library targets
+        # to avoid creating a new JavaInfo. See b/239847857 for additional context.
+        if is_android_library_without_kt_srcs:
+            return struct(
+                java_info = javac_java_info,
+                validations = [],
+            )
+
         out_jars.append(javac_out)
         out_srcjars.extend(javac_java_info.source_jars)
         out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
