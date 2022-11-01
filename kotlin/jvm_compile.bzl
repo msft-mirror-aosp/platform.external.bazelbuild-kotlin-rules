@@ -46,7 +46,6 @@ def kt_jvm_compile(
         disable_lint_checks = [],
         r_java = None,
         output_srcjar = None,
-        flogger_runtime = None,
         rule_family = _RULE_FAMILY.UNKNOWN,
         annotation_processor_additional_outputs = [],
         annotation_processor_additional_inputs = [],
@@ -121,7 +120,6 @@ def kt_jvm_compile(
     classpath_resources = list(classpath_resources)
     java_infos = []
     pre_processed_java_plugin_processors = sets.make([])
-    use_flogger = False
 
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
     has_kt_srcs = any([common.is_kt_src(src) for src in srcs])

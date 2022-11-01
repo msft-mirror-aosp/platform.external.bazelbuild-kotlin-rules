@@ -836,10 +836,7 @@ def _kt_jvm_library(
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
 
-    if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
-        deps += kt_toolchain.kotlin_libs
-
-    merged_deps = java_common.merge(deps)
+    deps = list(deps)  # Defensive copy
 
     # Split sources, as java requires a separate compile step.
     kt_srcs = [s for s in srcs if _is_kt_src(s)]
@@ -852,6 +849,15 @@ def _kt_jvm_library(
     unexpected_srcs = sets.difference(sets.make(srcs), expected_srcs)
     if sets.length(unexpected_srcs) != 0:
         fail("Unexpected srcs: %s" % sets.to_list(unexpected_srcs))
+
+    # TODO: Remove this special case
+    if kt_srcs and ("flogger" in [p.plugin_id for p in plugins.kt_compiler_plugin_infos]):
+        deps.append(kt_toolchain.flogger_runtime)
+
+    if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
+        deps.extend(kt_toolchain.kotlin_libs)
+
+    merged_deps = java_common.merge(deps)
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
