@@ -26,8 +26,8 @@ licenses(["notice"])
 jvm_library_test(
     name = "has_kt_exported_friend_impl_package_test",
     expected_friend_jar_names = [
-        "kt_exports_friend-compile.jar",
-        "friend-compile.jar",
+        "libkt_exports_friend-compile.jar",
+        "libfriend-compile.jar",
     ],
     target_under_test = kt_jvm_library_under_test(
         name = "has_kt_exported_friend_impl_package",
@@ -39,7 +39,7 @@ jvm_library_test(
 jvm_library_test(
     name = "has_direct_friend_impl_package_test",
     expected_friend_jar_names = [
-        "friend-compile.jar",
+        "libfriend-compile.jar",
     ],
     target_under_test = kt_jvm_library_under_test(
         name = "has_direct_friend_impl_package",
@@ -51,7 +51,7 @@ jvm_library_test(
 jvm_library_test(
     name = "no_kt_exported_friend_sibling_package_test",
     expected_friend_jar_names = [
-        "kt_exports_subfriend-compile.jar",
+        "libkt_exports_subfriend-compile.jar",
         # Absent # "subfriend-compile.jar"
     ],
     target_under_test = kt_jvm_library_under_test(

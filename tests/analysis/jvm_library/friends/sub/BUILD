@@ -26,8 +26,8 @@ licenses(["notice"])
 jvm_library_test(
     name = "no_kt_exported_friend_cross_package_test",
     expected_friend_jar_names = [
-        "kt_exports_friend-compile.jar",
-        # Absent # "friend-compile.jar"
+        "libkt_exports_friend-compile.jar",
+        # Absent # "libfriend-compile.jar"
     ],
     target_under_test = kt_jvm_library_under_test(
         name = "no_kt_exported_friend_cross_package",

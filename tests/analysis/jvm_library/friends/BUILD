@@ -40,7 +40,7 @@ jvm_library_test(
     name = "has_java_exported_friend_in_package_test",
     expected_friend_jar_names = [
         "libjava_exports_friend-hjar.jar",
-        "friend-compile.jar",
+        "libfriend-compile.jar",
     ],
     target_under_test = kt_jvm_library_under_test(
         name = "has_java_exported_friend_in_package",
@@ -52,8 +52,8 @@ jvm_library_test(
 jvm_library_test(
     name = "has_kt_exported_friend_in_package_test",
     expected_friend_jar_names = [
-        "kt_exports_friend-compile.jar",
-        "friend-compile.jar",
+        "libkt_exports_friend-compile.jar",
+        "libfriend-compile.jar",
     ],
     target_under_test = kt_jvm_library_under_test(
         name = "has_kt_exported_friend_in_package",
@@ -84,7 +84,7 @@ jvm_library_test(
 
 jvm_library_test(
     name = "has_direct_friend_in_package_test",
-    expected_friend_jar_names = ["friend-compile.jar"],
+    expected_friend_jar_names = ["libfriend-compile.jar"],
     target_under_test = kt_jvm_library_under_test(
         name = "has_direct_friend_in_package",
         srcs = ["Input.kt"],
