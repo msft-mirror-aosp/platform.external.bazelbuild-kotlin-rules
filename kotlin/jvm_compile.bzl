@@ -86,7 +86,6 @@ def kt_jvm_compile(
         NOTE: This field accepts a JavaInfo, but should only be used for the
         Android R.java within an android_library rule.
       output_srcjar: Target output file for generated source jar. Default filename used if None.
-      flogger_runtime: JavaInfo, Flogger runtime. Optional
       rule_family: The family of the rule calling this function. Element of common.RULE_FAMILY.
         May be used to enable/disable some features.
       annotation_processor_additional_outputs: sequence of Files. A list of
@@ -150,7 +149,7 @@ def kt_jvm_compile(
 
     return common.kt_jvm_library(
         ctx,
-        android_lint_plugins = android_lint_plugins,  # List of JavaInfo
+        android_lint_plugins = [p[JavaInfo] for p in android_lint_plugins],
         android_lint_rules_jars = android_lint_rules_jars,
         classpath_resources = classpath_resources,
         common_srcs = common_srcs,

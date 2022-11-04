@@ -66,7 +66,7 @@ def _jvm_library_impl(ctx):
         kotlincopts = merge_kotlincopts(ctx),
         neverlink = False,
         testonly = ctx.attr.testonly,
-                android_lint_plugins = [p[JavaInfo] for p in ctx.attr._android_lint_plugins],
+                android_lint_plugins = ctx.attr._android_lint_plugins,
         manifest = None,
         merged_manifest = None,
         resource_files = [],
