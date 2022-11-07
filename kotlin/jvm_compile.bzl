@@ -15,8 +15,8 @@
 """Compile method that can compile kotlin or java sources"""
 
 load(":common.bzl", "common")
-load(":traverse_exports.bzl", "kt_traverse_exports")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
+load(":traverse_exports.bzl", "kt_traverse_exports")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 
 _RULE_FAMILY = common.RULE_FAMILY
@@ -126,8 +126,9 @@ def kt_jvm_compile(
         kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
     for dep in deps:
-        # Collect JavaInfo providers and info about plugins (JavaPluginData).
-        if JavaInfo in dep:
+        if False:
+            pass
+        elif JavaInfo in dep:
             java_infos.append(dep[JavaInfo])
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
