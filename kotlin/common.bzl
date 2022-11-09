@@ -43,6 +43,7 @@ _ALLOWED_JVM_RULES = [
     "java_proto_library",
     "java_wrap_cc",  # b/152799927
     "jvm_import",
+    "_kmp_library",
     "kt_grpc_library_helper",
     "kt_jvm_library_helper",
     "kt_jvm_import",
