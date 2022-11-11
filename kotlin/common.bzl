@@ -648,8 +648,7 @@ def _create_jar(ctx, toolchain, out_jar, kt_inputs = [], common_inputs = [], ign
 
     return out_jar
 
-# TODO: move this functionality into `source_jar_zipper`
-def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
+def _create_jar_from_tree_artifacts(ctx, toolchain, output_jar, input_dirs):
     """Packs a sequence of tree artifacts into a single jar.
 
     Given the following file directory structure,
@@ -669,11 +668,12 @@ def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
         "/usr/home/b/y",
     ],
     then the blaze action would fail with an error message.
-         "java.util.zip.ZipException: duplicate entry: 1.txt"
+        "java.lang.IllegalStateException: 1.txt has the same path as 1.txt!
+        If it is intended behavior rename one or both of them."
 
     Args:
         ctx: The build rule context.
-        jar_tool: A Unix-API-compatible jar tool.
+        toolchain: Toolchain containing the jar tool.
         output_jar: The jar to be produced by this action.
         input_dirs: A sequence of tree artifacts to be zipped.
 
@@ -682,36 +682,27 @@ def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
     """
 
     args = ctx.actions.args()
+    args.add("zip_resources")
+    args.add(output_jar)
+    args.add_joined(
+        "--input_dirs",
+        input_dirs,
+        join_with = ",",
+        omit_if_empty = False,
+        expand_directories = False,
+    )
 
-    for in_dir in input_dirs:
-        if not in_dir.is_directory:
-            fail("Expected a directory input, but got {}.".format(in_dir))
-        args.add(in_dir.path)
-
-    ctx.actions.run_shell(
-        command = """
-            JAR_TOOL={}
-            OUT_JAR={}
-            OUT_DIR="$(dirname $OUT_JAR)"
-            RES_DIR=$OUT_DIR/META-INF
-            mkdir $RES_DIR
-            $JAR_TOOL cf $OUT_JAR -C $RES_DIR .
-            rmdir $RES_DIR
-            for INPUT_DIR in $@
-            do
-                if [ -d $INPUT_DIR ]
-                then
-                    $JAR_TOOL uf $OUT_JAR -C $INPUT_DIR .
-                fi
-            done
-        """.format(jar_tool.executable.path, output_jar.path),
-        arguments = [args],
+    _actions_run_deploy_jar(
+        ctx = ctx,
+        java_runtime = toolchain.java_runtime,
+        deploy_jar = toolchain.source_jar_zipper,
         inputs = input_dirs,
         outputs = [output_jar],
-        tools = [jar_tool],
+        args = [args],
         mnemonic = "KtJarActionFromTreeArtifacts",
         progress_message = "Create Jar %{output}",
     )
+
     return output_jar
 
 def _DirSrcjarSyncer(ctx, kt_toolchain, file_factory):
@@ -726,7 +717,7 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, file_factory):
         _srcjars.append(
             _create_jar_from_tree_artifacts(
                 ctx,
-                kt_toolchain.jar_tool,
+                kt_toolchain,
                 file_factory.declare_file("%s.srcjar" % len(_srcjars)),
                 dirs,
             ),
@@ -966,7 +957,7 @@ def _kt_jvm_library(
         out_jars.append(
             _create_jar_from_tree_artifacts(
                 ctx,
-                kt_toolchain.jar_tool,
+                kt_toolchain,
                 file_factory.declare_file("-dir-res.jar"),
                 classpath_resources_dirs,
             ),

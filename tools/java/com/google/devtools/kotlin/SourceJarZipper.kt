@@ -36,19 +36,60 @@ import picocli.CommandLine.Spec
 
 @Command(
   name = "source-jar-zipper",
-  subcommands = [Unzip::class, Zip::class],
-  description = ["A tool to pack and unpack srcjar files"],
+  subcommands = [Unzip::class, Zip::class, ZipResources::class],
+  description = ["A tool to pack and unpack srcjar files, and to zip resource files"],
 )
 class SourceJarZipper : Runnable {
   @Spec private lateinit var spec: CommandSpec
   override fun run() {
-    throw ParameterException(spec.commandLine(), "Specify a command: zip or unzip")
+    throw ParameterException(spec.commandLine(), "Specify a command: zip, zip_resources or unzip")
   }
 }
 
 fun main(args: Array<String>) {
   val exitCode = CommandLine(SourceJarZipper()).execute(*args)
   exitProcess(exitCode)
+}
+
+/**
+ * Checks for duplicates and add an entry into [errors] if found any, otherwise adds a pair
+ * of [zipPath] and [sourcePath] to the receiver
+ * @receiver a mutable map of path to path, where keys are relative paths of files inside the
+ * resulting .jar, and values are full paths of files
+ * @param[zipPath] relative path inside the jar, built either from package name
+ * (e.g. package com.google.foo -> com/google/foo/FileName.kt) or by resolving the file name
+ * relatively the directory it came from (e.g. foo/bar/1/2.txt came from foo/bar -> 1/2.txt)
+ * @param[sourcePath] full path of file into its file system
+ * @param[errors] list of strings describing catched errors
+ */
+fun MutableMap<Path, Path>.checkForDuplicatesAndSetFilePathToPathInsideJar(
+  zipPath: Path,
+  sourcePath: Path,
+  errors: MutableList<String>,
+) {
+  val duplicatedSourcePath: Path? = this[zipPath]
+  if (duplicatedSourcePath == null) {
+    this[zipPath] = sourcePath
+  } else {
+    errors.add(
+      "${sourcePath} has the same path inside .jar as ${duplicatedSourcePath}! " +
+        "If it is intended behavior rename one or both of them."
+    )
+  }
+}
+
+fun MutableMap<Path, Path>.writeToStream(
+  zipper: ZipOutputStream,
+  prefix: String = "",
+) {
+  for ((zipPath, sourcePath) in this) {
+    BufferedInputStream(Files.newInputStream(sourcePath)).use { inputStream ->
+      val entry = ZipEntry(Paths.get(prefix).resolve(zipPath).toString())
+      entry.time = 0
+      zipper.putNextEntry(entry)
+      inputStream.copyTo(zipper, bufferSize = 1024)
+    }
+  }
 }
 
 @Command(name = "zip", description = ["Zip source files into a source jar file"])
@@ -127,27 +168,23 @@ class Zip : Runnable {
       }
     }
 
-    fun MutableMap<Path, Path>.setZipPathToSourcePath(zipPath: Path, sourcePath: Path) {
-      val duplicatedSourcePath: Path? = this[zipPath]
-      if (duplicatedSourcePath == null) {
-        this[zipPath] = sourcePath
-      } else {
-        errors.add(
-          "${sourcePath} has the same file and package names as ${duplicatedSourcePath}! " +
-            "If it is intended behavior rename one or both of them."
-        )
-      }
-    }
-
     for (sourcePath in kotlinSrcs) {
       if (sourcePath.validateFile()) {
-        ktZipPathToSourcePath.setZipPathToSourcePath(sourcePath.getPackagePath(), sourcePath)
+        ktZipPathToSourcePath.checkForDuplicatesAndSetFilePathToPathInsideJar(
+          sourcePath.getPackagePath(),
+          sourcePath,
+          errors,
+        )
       }
     }
 
     for (sourcePath in commonSrcs) {
       if (sourcePath.validateFile()) {
-        commonZipPathToSourcePath.setZipPathToSourcePath(sourcePath.getPackagePath(), sourcePath)
+        commonZipPathToSourcePath.checkForDuplicatesAndSetFilePathToPathInsideJar(
+          sourcePath.getPackagePath(),
+          sourcePath,
+          errors,
+        )
       }
     }
 
@@ -156,23 +193,9 @@ class Zip : Runnable {
     }
     check(errors.isEmpty()) { errors.joinToString("\n") }
 
-    fun MutableMap<Path, Path>.writeToStream(
-      zipper: ZipOutputStream,
-      prefix: String = "",
-    ) {
-      for ((zipPath, sourcePath) in this) {
-        BufferedInputStream(Files.newInputStream(sourcePath)).use { inputStream ->
-          val entry = ZipEntry(Paths.get(prefix).resolve(zipPath).toString())
-          entry.time = 0
-          zipper.putNextEntry(entry)
-          inputStream.copyTo(zipper, bufferSize = 1024)
-        }
-      }
-    }
-
     ZipOutputStream(BufferedOutputStream(Files.newOutputStream(outputJar))).use { zipper ->
-      ktZipPathToSourcePath.writeToStream(zipper)
       commonZipPathToSourcePath.writeToStream(zipper, "common-srcs")
+      ktZipPathToSourcePath.writeToStream(zipper)
     }
   }
 }
@@ -201,6 +224,51 @@ class Unzip : Runnable {
         if (!Files.exists(entryPath.parent)) Files.createDirectories(entryPath.parent)
         Files.copy(unzipper, entryPath, StandardCopyOption.REPLACE_EXISTING)
       }
+    }
+  }
+}
+
+@Command(name = "zip_resources", description = ["Zip resources"])
+class ZipResources : Runnable {
+
+  @Parameters(index = "0", paramLabel = "outputJar", description = ["Output jar"])
+  lateinit var outputJar: Path
+
+  @Option(
+    names = ["--input_dirs"],
+    split = ",",
+    description = ["Input files directories"],
+    required = true,
+  )
+  val inputDirs = mutableListOf<Path>()
+
+  override fun run() {
+    val filePathToOutputPath = mutableMapOf<Path, Path>()
+    val errors = mutableListOf<String>()
+
+    // inputDirs has filter checking if the dir exists, because some empty dirs generated by blaze
+    // may not exist from Kotlin compiler's side. It turned out to be safer to apply a filter then
+    // to rely that generated directories are always directories, not just path names
+    for (dirPath in inputDirs.filter { curDirPath -> Files.exists(curDirPath) }) {
+      if (!Files.isDirectory(dirPath)) {
+        errors.add("${dirPath} is not a directory")
+      } else {
+        Files.walk(dirPath)
+          .filter { fileOrDir -> !Files.isDirectory(fileOrDir) }
+          .forEach { filePath ->
+            filePathToOutputPath.checkForDuplicatesAndSetFilePathToPathInsideJar(
+              dirPath.relativize(filePath),
+              filePath,
+              errors
+            )
+          }
+      }
+    }
+
+    check(errors.isEmpty()) { errors.joinToString("\n") }
+
+    ZipOutputStream(BufferedOutputStream(Files.newOutputStream(outputJar))).use { zipper ->
+      filePathToOutputPath.writeToStream(zipper)
     }
   }
 }
