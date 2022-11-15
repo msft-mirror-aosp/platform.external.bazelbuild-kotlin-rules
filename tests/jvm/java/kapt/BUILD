@@ -25,6 +25,7 @@ build_test(
     name = "kapt_regressions",
     tags = ["darwin_x86_64_compatible"],
     targets = [
+        ":test_interface_with_default_impls",
         ":test_javac",
         ":test_kapt",
         ":test_javac",
@@ -49,6 +50,14 @@ kt_jvm_library(
     plugins = [
         ":non_service_processor",
     ],
+)
+
+kt_jvm_library(
+    name = "test_interface_with_default_impls",
+    srcs = [
+        "InterfaceWithDefaultImpls.kt",
+    ],
+    plugins = [":AP"],  # trigger kapt for regression test (b/121222399)
 )
 
 kt_jvm_library(
