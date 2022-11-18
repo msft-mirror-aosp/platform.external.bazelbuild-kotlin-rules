@@ -1196,6 +1196,7 @@ common = struct(
     collect_proguard_specs = _collect_proguard_specs,
     collect_providers = _collect_providers,
     create_jar_from_tree_artifacts = _create_jar_from_tree_artifacts,
+    common_kapt_and_kotlinc_args = _common_kapt_and_kotlinc_args,
     is_kt_src = _is_kt_src,
     kt_jvm_import = _kt_jvm_import,
     kt_jvm_library = _kt_jvm_library,
