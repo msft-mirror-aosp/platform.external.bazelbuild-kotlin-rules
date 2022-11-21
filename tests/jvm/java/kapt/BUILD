@@ -21,6 +21,10 @@ load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
 licenses(["notice"])
 
+package(default_visibility = [
+    "//tests/android/java/com/google/local_test:__subpackages__",
+])
+
 build_test(
     name = "kapt_regressions",
     tags = ["darwin_x86_64_compatible"],
@@ -200,6 +204,11 @@ java_plugin(
 
 java_library(
     name = "anno",
+    srcs = ["Count.java"],
+)
+
+java_library(
+    name = "anno-android",
     srcs = ["Count.java"],
 )
 
