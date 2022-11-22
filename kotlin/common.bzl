@@ -483,7 +483,9 @@ def _get_original_kt_target_label(ctx):
     if label.name.find("_DO_NOT_DEPEND") > 0:
         # Remove rule suffix added by kt_android_library
         label = label.relative(":%s" % label.name[0:label.name.find("_DO_NOT_DEPEND")])
-
+    elif hasattr(ctx.attr, "_kt_codegen_plugin_build_tool") and label.name.endswith("_processed_srcs"):
+        # Remove rule suffix added by kt_codegen_filegroup. b/259984258
+        label = label.relative(":{}".format(label.name.removesuffix("_processed_srcs")))
     return label
 
 def _run_import_deps_checker(
