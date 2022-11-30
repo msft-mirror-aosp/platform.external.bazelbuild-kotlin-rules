@@ -189,29 +189,6 @@ fun hi(): String = "Hi!"
     )
     return test_name
 
-def _test_kt_jvm_library_no_deps():
-    test_name = "kt_jvm_library_no_deps_test"
-    create_file(
-        name = test_name + "/Salutations.kt",
-        content = """
-package test
-
-fun greeting(): String = "Hello World!"
-""",
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            "testinputs/Bar.java",
-            test_name + "/Salutations.kt",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
 def _test_kt_jvm_library_with_only_common_srcs():
     test_name = "kt_jvm_library_only_common_srcs_test"
     create_file(
@@ -824,7 +801,6 @@ def test_suite(name):
             _test_forbidden_nano_export(),
             _test_kt_jvm_library_dep_on_exported_plugin(),
             _test_kt_jvm_library_java_dep_on_exported_plugin(),
-            _test_kt_jvm_library_no_deps(),
             _test_kt_jvm_library_no_java_srcs(),
             _test_kt_jvm_library_no_kt_srcs(),
             _test_kt_jvm_library_no_kt_srcs_with_plugin(),
