@@ -118,6 +118,20 @@ def kt_jvm_compile(
     srcs = list(srcs)
     classpath_resources = list(classpath_resources)
     java_infos = []
+    codegen_output_java_infos = []
+
+    # The r_java field only support Android resources Jar files. For now, verify
+    # that the name of the jar matches "_resources.jar". This check does not to
+    # prevent malicious use, the intent is to prevent accidental usage.
+    r_java_infos = []
+    if r_java:
+        for jar in r_java.outputs.jars:
+            if not jar.class_jar.path.endswith("_resources.jar"):
+                fail("Error, illegal dependency provided for r_java. This " +
+                     "only supports Android resource Jar files, " +
+                     "'*_resources.jar'.")
+        r_java_infos.append(r_java)
+
     pre_processed_java_plugin_processors = sets.make([])
 
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
@@ -136,18 +150,6 @@ def kt_jvm_compile(
     if kotlincopts != None and "-Werror" in kotlincopts:
         fail("Flag -Werror is not permitted")
 
-    # The r_java field only support Android resources Jar files. For now, verify
-    # that the name of the jar matches "_resources.jar". This check does not to
-    # prevent malicious use, the intent is to prevent accidental usage.
-    r_java_info = []
-    if r_java:
-        for jar in r_java.outputs.jars:
-            if not jar.class_jar.path.endswith("_resources.jar"):
-                fail("Error, illegal dependency provided for r_java. This " +
-                     "only supports Android resource Jar files, " +
-                     "'*_resources.jar'.")
-        r_java_info.append(r_java)
-
     return common.kt_jvm_library(
         ctx,
         android_lint_plugins = [p[JavaInfo] for p in android_lint_plugins],
@@ -155,11 +157,12 @@ def kt_jvm_compile(
         classpath_resources = classpath_resources,
         common_srcs = common_srcs,
         coverage_srcs = coverage_srcs,
-                deps = r_java_info + java_infos,
+                deps = r_java_infos + java_infos,
+        codegen_output_java_infos = codegen_output_java_infos,
         disable_lint_checks = disable_lint_checks,
         exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
-        exports = r_java_info + [e[JavaInfo] for e in exports if JavaInfo in e],
+        exports = r_java_infos + [e[JavaInfo] for e in exports if JavaInfo in e],
         friend_jars = kt_traverse_exports.expand_friend_jars(deps, root = ctx),
         java_toolchain = java_toolchain,
         javacopts = javacopts,

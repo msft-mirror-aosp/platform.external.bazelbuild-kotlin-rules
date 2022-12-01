@@ -802,6 +802,7 @@ def _kt_jvm_library(
         output = None,
         output_srcjar = None,  # Will derive default filename if not set.
         deps = [],
+        codegen_output_java_infos = [],  # JavaInfo sequence from kt_codegen_plugin.
         exports = [],  # passthrough for JavaInfo constructor
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
@@ -850,7 +851,7 @@ def _kt_jvm_library(
     if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
         deps.extend(kt_toolchain.kotlin_libs)
 
-    merged_deps = java_common.merge(deps)
+    merged_deps = java_common.merge(deps + codegen_output_java_infos)
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
