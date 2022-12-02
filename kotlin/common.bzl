@@ -15,7 +15,6 @@
 """Common Kotlin definitions."""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
-load("@bazel_skylib//lib:structs.bzl", "structs")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 load(":file_factory.bzl", "FileFactory")
@@ -173,6 +172,10 @@ def _kapt(
         jar = output_jar,
         manifest = output_manifest,
         srcjar = output_srcjar,
+        java_info = JavaInfo(
+            output_jar = output_jar,
+            compile_jar = output_jar,
+        ),
     )
 
 def _kapt_stubs(
@@ -472,10 +475,14 @@ def _run_kotlinc(
             kt_srcs + common_srcs + coverage_srcs,
         )
 
-    return struct(
+    result = dict(
         output_jar = output,
         compile_jar = kt_ijar,
         source_jar = srcjar,
+    )
+    return struct(
+        java_info = JavaInfo(**result),
+        **result
     )
 
 def _get_original_kt_target_label(ctx):
@@ -491,18 +498,14 @@ def _get_original_kt_target_label(ctx):
 def _run_import_deps_checker(
         ctx,
         jars_to_check = [],
-        merged_deps = None,
+        deps = [],
         enforce_strict_deps = True,
         jdeps_output = None,
         deps_checker = None,
         java_toolchain = None):
-    # Direct compile_jars before transitive not to confuse strict_deps (b/149107867)
-    full_classpath = depset(
-        order = "preorder",
-        transitive = [merged_deps.compile_jars, merged_deps.transitive_compile_time_jars],
-    )
     label = _get_original_kt_target_label(ctx)
     bootclasspath = java_toolchain.bootclasspath
+    full_classpath = _get_full_classpath(deps)
 
     args = ctx.actions.args()
     args.add("--jdeps_output", jdeps_output)
@@ -510,7 +513,10 @@ def _run_import_deps_checker(
     args.add_all(bootclasspath, before_each = "--bootclasspath_entry")
     args.add_all(full_classpath, before_each = "--classpath_entry")
     if enforce_strict_deps:
-        args.add_all(merged_deps.compile_jars, before_each = "--directdep")
+        args.add_all(
+            depset(transitive = [dep.compile_jars for dep in deps]),
+            before_each = "--directdep",
+        )
     args.add("--checking_mode=%s" % ("error" if enforce_strict_deps else "silence"))
     args.add("--nocheck_missing_members")  # compiler was happy so no need
     args.add("--rule_label")
@@ -830,7 +836,7 @@ def _kt_jvm_library(
         fail("Missing or invalid kt_toolchain")
 
     file_factory = FileFactory(ctx, output)
-    deps = list(deps)  # Defensive copy
+    deps = deps + codegen_output_java_infos  # Defensive copy
 
     # Split sources, as java requires a separate compile step.
     kt_srcs = [s for s in srcs if _is_kt_src(s)]
@@ -851,23 +857,15 @@ def _kt_jvm_library(
     if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
         deps.extend(kt_toolchain.kotlin_libs)
 
-    merged_deps = java_common.merge(deps + codegen_output_java_infos)
-
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
         _check_srcs_package(ctx.label.package, srcs, "srcs")
         _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
         _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
-    # Complete classpath including bootclasspath. Like for Javac, explicitly place direct
-    # compile_jars before transitive not to confuse strict_deps (b/149107867).
     full_classpath = depset(
         order = "preorder",
-        transitive = [
-            java_toolchain.bootclasspath,
-            merged_deps.compile_jars,
-            merged_deps.transitive_compile_time_jars,
-        ],
+        transitive = [java_toolchain.bootclasspath, _get_full_classpath(deps)],
     )
 
     # Collect all plugin data, including processors to run and all plugin classpaths,
@@ -885,7 +883,12 @@ def _kt_jvm_library(
     out_jars = []
     out_srcjars = []
     out_compilejars = []
-    kapt_outputs = struct(jar = None, manifest = None, srcjar = None)
+    kapt_outputs = struct(
+        jar = None,
+        manifest = None,
+        srcjar = None,
+        java_info = java_common.merge([]),
+    )
 
     # Kotlin compilation requires two passes when annotation processing is
     # required. The initial pass processes the annotations and generates
@@ -915,11 +918,6 @@ def _kt_jvm_library(
         out_jars.append(kapt_outputs.jar)
         java_syncer.add_srcjars([kapt_outputs.srcjar])
 
-        merged_deps = java_common.merge([merged_deps, JavaInfo(
-            output_jar = kapt_outputs.jar,
-            compile_jar = kapt_outputs.jar,
-        )])
-
     kotlinc_result = None
     if kt_srcs or common_srcs:
         kotlinc_result = _run_kotlinc(
@@ -945,13 +943,6 @@ def _kt_jvm_library(
         out_srcjars.append(kotlinc_result.source_jar)
         out_jars.append(kotlinc_result.output_jar)
 
-        # Add dep on JaCoCo runtime to merged_deps.
-        # The latter helps jdeps computation (b/130747644) but could be runtime-only if we computed
-        # compile-time Jdeps based using the compile Jar (which doesn't contain instrumentation).
-        # See b/117897097 for why it's still useful to make the (runtime) dep explicit.
-        if ctx.coverage_instrumented():
-            merged_deps = java_common.merge([merged_deps, kt_toolchain.coverage_runtime])
-
     classpath_resources_dirs, classpath_resources_non_dirs = _partition(
         classpath_resources,
         filter = lambda res: res.is_directory,
@@ -972,6 +963,16 @@ def _kt_jvm_library(
     java_genjar = None
     is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
     if java_srcs or java_syncer.srcjars or classpath_resources:
+        javac_deps = list(deps)
+        javac_deps.append(kapt_outputs.java_info)
+        if kotlinc_result:
+            javac_deps.append(kotlinc_result.java_info)
+            if ctx.coverage_instrumented():
+                # Helps jdeps computation (b/130747644) but could be runtime-only if we computed
+                # compile-time Jdeps based using the compile Jar (which doesn't contain instrumentation).
+                # See b/117897097 for why it's still useful to make the (runtime) dep explicit.
+                javac_deps.append(kt_toolchain.coverage_runtime)
+
         javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
         javac_java_info = java_common.compile(
             ctx,
@@ -983,7 +984,7 @@ def _kt_jvm_library(
             exports = exports if is_android_library_without_kt_srcs else [],
             output = javac_out,
             exported_plugins = exported_plugins,
-            deps = ([JavaInfo(**structs.to_dict(kotlinc_result))] if kotlinc_result else []) + [merged_deps],
+            deps = javac_deps,
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
@@ -1090,10 +1091,7 @@ def _kt_jvm_import(
         fail("Must import at least one JAR")
 
     file_factory = FileFactory(ctx, jars[0])
-    deps += list(deps)  # Defensive copy
-
-    deps.extend(kt_toolchain.kotlin_libs)
-    merged_deps = java_common.merge(deps)
+    deps = deps + kt_toolchain.kotlin_libs  # Defensive copy
 
     # Check that any needed deps are declared unless neverlink, in which case Jars won't be used
     # at runtime so we skip the check, though we'll populate jdeps either way.
@@ -1101,7 +1099,7 @@ def _kt_jvm_import(
     _run_import_deps_checker(
         ctx,
         jars_to_check = jars,
-        merged_deps = merged_deps,
+        deps = deps,
         enforce_strict_deps = not neverlink,
         jdeps_output = jdeps_output,
         deps_checker = deps_checker,
@@ -1177,6 +1175,16 @@ def _collect_proguard_specs(
 def _collect_providers(provider, deps):
     """Collects the requested provider from the given list of deps."""
     return [dep[provider] for dep in deps if provider in dep]
+
+def _get_full_classpath(deps):
+    return depset(
+        order = "preorder",
+        transitive = (
+            # Put direct compile_jars before transitive not to confuse strict_deps (b/149107867)
+            [dep.compile_jars for dep in deps] +
+            [dep.transitive_compile_time_jars for dep in deps]
+        ),
+    )
 
 def _partition(sequence, filter):
     pos, neg = [], []
