@@ -189,64 +189,6 @@ fun hi(): String = "Hi!"
     )
     return test_name
 
-def _test_kt_jvm_library_with_only_common_srcs():
-    test_name = "kt_jvm_library_only_common_srcs_test"
-    create_file(
-        name = test_name + "/Salutations.kt",
-        content = """
-package test
-
-fun greeting(): String = "Hello World!"
-""",
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        common_srcs = [
-            test_name + "/Salutations.kt",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_no_java_srcs():
-    test_name = "kt_jvm_library_no_java_srcs_test"
-    create_file(
-        name = test_name + "/Salutations.kt",
-        content = """
-package test
-
-fun greeting(): String = "Hello World!"
-""",
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            test_name + "/Salutations.kt",
-        ],
-            )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_no_kt_srcs():
-    test_name = "kt_jvm_library_no_kt_srcs_test"
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            "testinputs/Bar.java",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
 def _test_kt_jvm_library_with_runtime_deps():
     test_name = "kt_jvm_library_with_runtime_deps_test"
     create_file(
@@ -801,8 +743,6 @@ def test_suite(name):
             _test_forbidden_nano_export(),
             _test_kt_jvm_library_dep_on_exported_plugin(),
             _test_kt_jvm_library_java_dep_on_exported_plugin(),
-            _test_kt_jvm_library_no_java_srcs(),
-            _test_kt_jvm_library_no_kt_srcs(),
             _test_kt_jvm_library_no_kt_srcs_with_plugin(),
             _test_kt_jvm_library_with_data(),
             _test_kt_jvm_library_with_deps(),
@@ -812,7 +752,6 @@ def test_suite(name):
             _test_kt_jvm_library_with_java_export_that_exports_plugin(),
             _test_kt_jvm_library_with_no_sources(),
             _test_kt_jvm_library_with_non_processor_plugin(),
-            _test_kt_jvm_library_with_only_common_srcs(),
             _test_kt_jvm_library_with_plugin(),
             _test_kt_jvm_library_with_proguard_specs(),
             _test_kt_jvm_library_with_resources(),

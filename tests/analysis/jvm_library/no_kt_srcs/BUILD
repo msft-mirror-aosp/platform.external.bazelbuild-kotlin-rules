@@ -19,12 +19,11 @@ package(default_testonly = True)
 licenses(["notice"])
 
 jvm_library_test(
-    name = "nodeps_test",
+    name = "no_kt_srcs_test",
     target_under_test = kt_jvm_library_under_test(
-        name = "nodeps",
+        name = "no_kt_srcs",
         srcs = [
             "Input.java",
-            "Input.kt",
         ],
     ),
 )
