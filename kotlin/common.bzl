@@ -15,7 +15,6 @@
 """Common Kotlin definitions."""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
-load("@bazel_skylib//lib:structs.bzl", "structs")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 load(":file_factory.bzl", "FileFactory")
@@ -173,7 +172,18 @@ def _kapt(
         jar = output_jar,
         manifest = output_manifest,
         srcjar = output_srcjar,
+        java_info = JavaInfo(
+            output_jar = output_jar,
+            compile_jar = output_jar,
+        ),
     )
+
+_EMPTY_KAPT_OUTPUTS = struct(
+    jar = None,
+    manifest = None,
+    srcjar = None,
+    java_info = None,
+)
 
 def _kapt_stubs(
         ctx,
@@ -472,11 +482,12 @@ def _run_kotlinc(
             kt_srcs + common_srcs + coverage_srcs,
         )
 
-    return struct(
+    result = dict(
         output_jar = output,
         compile_jar = kt_ijar,
         source_jar = srcjar,
     )
+    return struct(java_info = JavaInfo(**result), **result)
 
 def _get_original_kt_target_label(ctx):
     label = ctx.label
@@ -885,7 +896,7 @@ def _kt_jvm_library(
     out_jars = []
     out_srcjars = []
     out_compilejars = []
-    kapt_outputs = struct(jar = None, manifest = None, srcjar = None)
+    kapt_outputs = _EMPTY_KAPT_OUTPUTS
 
     # Kotlin compilation requires two passes when annotation processing is
     # required. The initial pass processes the annotations and generates
@@ -914,11 +925,7 @@ def _kt_jvm_library(
 
         out_jars.append(kapt_outputs.jar)
         java_syncer.add_srcjars([kapt_outputs.srcjar])
-
-        merged_deps = java_common.merge([merged_deps, JavaInfo(
-            output_jar = kapt_outputs.jar,
-            compile_jar = kapt_outputs.jar,
-        )])
+        merged_deps = java_common.merge([merged_deps, kapt_outputs.java_info])
 
     kotlinc_result = None
     if kt_srcs or common_srcs:
@@ -983,7 +990,7 @@ def _kt_jvm_library(
             exports = exports if is_android_library_without_kt_srcs else [],
             output = javac_out,
             exported_plugins = exported_plugins,
-            deps = ([JavaInfo(**structs.to_dict(kotlinc_result))] if kotlinc_result else []) + [merged_deps],
+            deps = ([kotlinc_result.java_info] if kotlinc_result else []) + [merged_deps],
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
