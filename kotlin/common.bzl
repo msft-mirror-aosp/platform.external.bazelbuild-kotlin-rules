@@ -1097,10 +1097,7 @@ def _kt_jvm_import(
         fail("Must import at least one JAR")
 
     file_factory = FileFactory(ctx, jars[0])
-    deps += list(deps)  # Defensive copy
-
-    deps.extend(kt_toolchain.kotlin_libs)
-    merged_deps = java_common.merge(deps)
+    deps = java_common.merge(deps + kt_toolchain.kotlin_libs)
 
     # Check that any needed deps are declared unless neverlink, in which case Jars won't be used
     # at runtime so we skip the check, though we'll populate jdeps either way.
@@ -1108,7 +1105,7 @@ def _kt_jvm_import(
     _run_import_deps_checker(
         ctx,
         jars_to_check = jars,
-        merged_deps = merged_deps,
+        merged_deps = deps,
         enforce_strict_deps = not neverlink,
         jdeps_output = jdeps_output,
         deps_checker = deps_checker,
@@ -1120,7 +1117,7 @@ def _kt_jvm_import(
             output_jar = jar,
             compile_jar = jar,
             source_jar = srcjar,
-            deps = deps,
+            deps = [deps],
             runtime_deps = runtime_deps,
             neverlink = neverlink,
             # TODO: Set compile-time jdeps to help reduce Javac classpaths downstream
