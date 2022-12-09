@@ -14,10 +14,12 @@
 
 """Kotlin toolchain."""
 
+load("//bazel:stubs.bzl", "select_java_language_version")
+
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_7_10"
+KT_VERSION = "v1_7_21"
 
 KT_LANG_VERSION = "1.7"
 
@@ -102,8 +104,10 @@ def _kt_jvm_toolchain_impl(ctx):
         coverage_runtime = ctx.attr.coverage_runtime[JavaInfo] if JavaInfo in ctx.attr.coverage_runtime else None,
         genclass = ctx.file.genclass,
         jar_tool = ctx.attr.jar_tool[DefaultInfo].files_to_run,
+        java_language_version = ctx.attr.java_language_version,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
+        jvm_target = ctx.attr.jvm_target,
         kotlin_annotation_processing = ctx.file.kotlin_annotation_processing,
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
@@ -112,17 +116,18 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
         kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
+        source_jar_zipper = ctx.file.source_jar_zipper,
         turbine = ctx.file.turbine,
         turbine_direct = ctx.file.turbine_direct if ctx.attr.enable_turbine_direct else None,
         turbine_jsa = ctx.file.turbine_jsa,
+        turbine_java_runtime = ctx.attr.turbine_java_runtime,
     )
     return [
         platform_common.ToolchainInfo(**kt_jvm_toolchain),
         KtJvmToolchainInfo(**kt_jvm_toolchain),
     ]
 
-_kt_jvm_toolchain_internal = rule(
-    name = "kt_jvm_toolchain",
+kt_jvm_toolchain = rule(
     attrs = dict(
         build_marker = attr.label(
             default = "//tools:build_marker",
@@ -151,6 +156,9 @@ _kt_jvm_toolchain_internal = rule(
             executable = True,
             allow_files = True,
             cfg = "exec",
+        ),
+        java_language_version = attr.string(
+            default = "11",
         ),
         java_runtime = attr.label(
             default = "@bazel_tools//tools/jdk:current_java_runtime",
@@ -213,6 +221,11 @@ _kt_jvm_toolchain_internal = rule(
             cfg = "target",
             doc = "The Kotlin runtime libraries grouped into one attribute.",
         ),
+        source_jar_zipper = attr.label(
+            default = "//tools/bin:source_jar_zipper_binary",
+            cfg = "exec",
+            allow_single_file = [".jar"],
+        ),
         turbine = attr.label(
             default = "@bazel_tools//tools/jdk:turbine_direct",
             cfg = "exec",
@@ -227,16 +240,23 @@ _kt_jvm_toolchain_internal = rule(
             cfg = "exec",
             allow_single_file = True,
         ),
+        turbine_java_runtime = attr.label(
+            cfg = "exec",
+        ),
     ),
     provides = [platform_common.ToolchainInfo],
     implementation = _kt_jvm_toolchain_impl,
 )
 
-def _kt_jvm_toolchain(**kwargs):
-    _kt_jvm_toolchain_internal(
-        jvm_target = select({
-            "//conditions:default": "11",
-        }),
+def _declare(**kwargs):
+    kt_jvm_toolchain(
+        # TODO: use select_java_language_level() after support for Java 8 is dropped
+        jvm_target = select_java_language_version(
+            # The JVM bytecode version to output
+            java8 = "1.8",
+            java11 = "11",
+            java_head = "18",  # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
+        ),
         **kwargs
     )
 
@@ -252,6 +272,6 @@ kt_jvm_toolchains = struct(
     name = _TYPE.name,
     get = lambda ctx: ctx.toolchains[_TYPE],
     type = str(_TYPE),
-    declare = _kt_jvm_toolchain,
+    declare = _declare,
     attrs = _ATTRS,
 )

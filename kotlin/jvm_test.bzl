@@ -36,7 +36,7 @@ def kt_jvm_test(
     """Wrapper around kt_jvm_library and java_test to conveniently declare tests written in Kotlin.
 
     Use of this rule is discouraged for simple unit tests, which should instead use
-    go/junit-test-suites or other, more efficient ways of compiling and running unit tests.
+     go/junit_test_suites or other, more efficient ways of compiling and running unit tests.
 
     Args:
       name: Name of the target.
@@ -49,6 +49,7 @@ def kt_jvm_test(
       runtime_deps: A list of runtime dependencies.
       srcs: A list of sources to compile.
       tags: A list of string tags passed to generated targets.
+      resources: A list of data files to include in the jar file.
       **kwargs: Additional parameters to pass on to generated java_test, see go/be-java#java_test.
     """
     if srcs:
