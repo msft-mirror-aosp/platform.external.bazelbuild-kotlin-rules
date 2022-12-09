@@ -15,9 +15,9 @@
 """Common Kotlin definitions."""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load("@bazel_skylib//lib:structs.bzl", "structs")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
-load(":file_factory.bzl", "FileFactory")
 
 # TODO: Remove the _ALLOWED_*_RULES lists to determine which rules
 # are accepted dependencies to Kotlin rules as the approach does not scale
@@ -42,7 +42,6 @@ _ALLOWED_JVM_RULES = [
     "java_proto_library",
     "java_wrap_cc",  # b/152799927
     "jvm_import",
-    "_kmp_library",
     "kt_grpc_library_helper",
     "kt_jvm_library_helper",
     "kt_jvm_import",
@@ -107,7 +106,6 @@ def _common_kapt_and_kotlinc_args(ctx, toolchain):
 # Runs KAPT in two separate actions so annotation processors only rerun when Kotlin stubs changed.
 def _kapt(
         ctx,
-        file_factory,
         kt_srcs = [],
         common_srcs = [],
         java_srcs = [],
@@ -126,7 +124,7 @@ def _kapt(
     # just run turbine if there are no .kt sources.
     stub_srcjars = []
     if kt_srcs or common_srcs:
-        stubs_dir = file_factory.declare_directory("/kapt/gen/stubs")
+        stubs_dir = ctx.actions.declare_directory(ctx.label.name + "/kapt/gen/stubs")
         _kapt_stubs(
             ctx,
             stubs_dir,
@@ -144,15 +142,15 @@ def _kapt(
         # mostly to filter out non-.java stub outputs, e.g. .kapt_metadata.
         stub_srcjars.append(_create_jar(
             ctx,
-            toolchain,
-            file_factory.declare_file("stubs-srcjar.jar"),
-            kt_inputs = [stubs_dir],
-            ignore_not_allowed_files = True,
+            toolchain.jar_tool,
+            ctx.actions.declare_file("stubs-srcjar.jar", sibling = stubs_dir),
+            [stubs_dir],
+            file_extensions = ["java"],
         ))
 
-    output_jar = file_factory.declare_file("-kapt.jar")
-    output_srcjar = file_factory.declare_file("-kapt.srcjar")
-    output_manifest = file_factory.declare_file("-kapt.jar_manifest_proto")
+    output_jar = ctx.actions.declare_file(ctx.label.name + "-kapt.jar")
+    output_srcjar = ctx.actions.declare_file(ctx.label.name + "-kapt.srcjar")
+    output_manifest = ctx.actions.declare_file(ctx.label.name + "-kapt.jar_manifest_proto")
     _run_turbine(
         ctx,
         toolchain,
@@ -172,18 +170,7 @@ def _kapt(
         jar = output_jar,
         manifest = output_manifest,
         srcjar = output_srcjar,
-        java_info = JavaInfo(
-            output_jar = output_jar,
-            compile_jar = output_jar,
-        ),
     )
-
-_EMPTY_KAPT_OUTPUTS = struct(
-    jar = None,
-    manifest = None,
-    srcjar = None,
-    java_info = None,
-)
 
 def _kapt_stubs(
         ctx,
@@ -316,12 +303,9 @@ def _run_turbine(
             progress_message = progress_message,
         )
     else:
-        java_runtime = toolchain.turbine_java_runtime
-        if not java_runtime:
-            java_runtime = toolchain.java_runtime
         _actions_run_deploy_jar(
             ctx = ctx,
-            java_runtime = java_runtime,
+            java_runtime = toolchain.java_runtime,
             deploy_jar = toolchain.turbine,
             deploy_jsa = toolchain.turbine_jsa,
             inputs = inputs,
@@ -348,7 +332,7 @@ def _derive_gen_class_jar(
 
     # Run GenClass tool to derive gen_class_jar by filtering hand-written sources.
     # cf. Bazel's JavaCompilationHelper#createGenJarAction
-    result = FileFactory(ctx, javac_jar).declare_file("-gen.jar")
+    result = ctx.actions.declare_file(ctx.label.name + "-gen.jar")
 
     genclass_args = ctx.actions.args()
     genclass_args.add("--manifest_proto", manifest_proto)
@@ -384,10 +368,9 @@ def _kt_plugins_map(
 
 def _run_kotlinc(
         ctx,
-        file_factory,
+        output,
         kt_srcs = [],
         common_srcs = [],
-        coverage_srcs = [],
         java_srcs_and_dirs = [],
         kotlincopts = [],
         compile_jdeps = depset(),
@@ -398,6 +381,9 @@ def _run_kotlinc(
         friend_jars = depset(),
         enforce_strict_deps = False,
         enforce_complete_jdeps = False):
+    if output.extension != "jar":
+        fail("Expect to output a Jar but got %s" % output)
+
     direct_inputs = []
     transitive_inputs = []
     outputs = []
@@ -417,7 +403,7 @@ def _run_kotlinc(
 
     kotlinc_args.add(toolchain.jvm_abi_gen_plugin, format = "-Xplugin=%s")
     direct_inputs.append(toolchain.jvm_abi_gen_plugin)
-    kt_ijar = file_factory.declare_file("-ijar.jar")
+    kt_ijar = ctx.actions.declare_file(output.basename[:-4] + "-ijar.jar", sibling = output)
     kotlinc_args.add("-P", kt_ijar, format = "plugin:org.jetbrains.kotlin.jvm.abi:outputDir=%s")
     outputs.append(kt_ijar)
 
@@ -433,7 +419,6 @@ def _run_kotlinc(
         kotlinc_args.add_all(common_srcs, format_each = "-Xcommon-sources=%s")
         direct_inputs.extend(common_srcs)
 
-    output = file_factory.declare_file(".jar")
     kotlinc_args.add("-d", output)
     outputs.append(output)
     kotlinc_args.add_all(kt_srcs)
@@ -466,40 +451,29 @@ def _run_kotlinc(
         },
     )
 
+    # TODO: Normalize paths to match package declarations in source files.
     srcjar = _create_jar(
         ctx,
-        toolchain,
-        file_factory.declare_file("-kt-src.jar"),
-        kt_inputs = kt_srcs,
-        common_inputs = common_srcs,
+        toolchain.jar_tool,
+        ctx.actions.declare_file(ctx.label.name + "-kt-src.jar"),
+        kt_srcs + common_srcs,
     )
 
-    if ctx.coverage_instrumented():
-        output = _offline_instrument_jar(
-            ctx,
-            toolchain,
-            output,
-            kt_srcs + common_srcs + coverage_srcs,
-        )
-
-    result = dict(
+    return struct(
         output_jar = output,
         compile_jar = kt_ijar,
         source_jar = srcjar,
     )
-    return struct(java_info = JavaInfo(**result), **result)
 
 def _get_original_kt_target_label(ctx):
     label = ctx.label
     if label.name.find("_DO_NOT_DEPEND") > 0:
         # Remove rule suffix added by kt_android_library
         label = label.relative(":%s" % label.name[0:label.name.find("_DO_NOT_DEPEND")])
-    elif hasattr(ctx.attr, "_kt_codegen_plugin_build_tool") and label.name.endswith("_processed_srcs"):
-        # Remove rule suffix added by kt_codegen_filegroup. b/259984258
-        label = label.relative(":{}".format(label.name.removesuffix("_processed_srcs")))
+
     return label
 
-def _run_import_deps_checker(
+def _check_deps(
         ctx,
         jars_to_check = [],
         merged_deps = None,
@@ -543,31 +517,27 @@ def _run_import_deps_checker(
     )
 
 def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
-    if not jar.basename.endswith(".jar"):
-        fail("Expect JAR input but got %s" % jar)
-    file_factory = FileFactory(ctx, jar)
-
-    paths_for_coverage_file = file_factory.declare_file("-kt-paths-for-coverage.txt")
+    paths_for_coverage_file = ctx.actions.declare_file(ctx.label.name + "-kt-paths-for-coverage.txt")
     paths = ctx.actions.args()
     paths.set_param_file_format("multiline")  # don't shell-quote, just list file names
     paths.add_all([src for src in srcs if src.is_source])
     ctx.actions.write(paths_for_coverage_file, paths)
 
-    output = file_factory.declare_file("-instrumented.jar")
+    result = ctx.actions.declare_file(ctx.label.name + "-instrumented.jar")
     args = ctx.actions.args()
     args.add(jar)
-    args.add(output)
+    args.add(result)
     args.add(paths_for_coverage_file)
     ctx.actions.run(
         executable = toolchain.coverage_instrumenter,
         arguments = [args],
         inputs = [jar, paths_for_coverage_file],
-        outputs = [output],
+        outputs = [result],
         mnemonic = "KtJaCoCoInstrument",
         progress_message = "Instrumenting Kotlin for coverage collection: %s" % _get_original_kt_target_label(ctx),
     )
 
-    return output
+    return result
 
 def _singlejar(
         ctx,
@@ -602,8 +572,8 @@ def _singlejar(
         progress_message = "Merging %s: %s" % (content, label),
     )
 
-def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
-    merged_jdeps_file = file_factory.declare_file("-merged.jdeps")
+def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, output_suffix = ""):
+    merged_jdeps_file = ctx.actions.declare_file(ctx.label.name + output_suffix + ".jdeps")
 
     args = ctx.actions.args()
     args.add("--kind=jdeps")
@@ -622,46 +592,40 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
 
     return merged_jdeps_file
 
-def _expand_zip(ctx, toolchain, dir, input):
-    args = ctx.actions.args()
-    args.add("unzip", input)
-    args.add(dir.path)
-
-    _actions_run_deploy_jar(
-        ctx = ctx,
-        java_runtime = toolchain.java_runtime,
-        deploy_jar = toolchain.source_jar_zipper,
-        inputs = [input],
+def _expand_zip(ctx, dir, input, extra_args = []):
+    ctx.actions.run_shell(
         outputs = [dir],
-        args = [args],
-        mnemonic = "SrcJarUnzip",
+        inputs = [input],
+        command = "unzip -q {input} -d {dir} {args} 2> /dev/null || mkdir -p {dir}".format(
+            input = input.path,
+            dir = dir.path,
+            args = " ".join(extra_args),
+        ),
     )
-
     return dir
 
-def _create_jar(ctx, toolchain, out_jar, kt_inputs = [], common_inputs = [], ignore_not_allowed_files = False):
-    args = ctx.actions.args()
-    args.add("zip")
-    args.add(out_jar)
-    args.add_joined("--kotlin_srcs", kt_inputs, join_with = ",")
-    args.add_joined("--common_srcs", common_inputs, join_with = ",")
-    if ignore_not_allowed_files:
-        args.add("-i")
+def _create_jar(ctx, jar_tool, out_jar, inputs, file_extensions = None):
+    def file_filter(file):
+        return file.path if (
+            file_extensions == None or (file.extension in file_extensions)
+        ) else None
 
-    _actions_run_deploy_jar(
-        ctx = ctx,
-        java_runtime = toolchain.java_runtime,
-        deploy_jar = toolchain.source_jar_zipper,
-        inputs = kt_inputs + common_inputs,
+    args = ctx.actions.args()
+    args.add("cf", out_jar)
+    args.add_all(inputs, map_each = file_filter, allow_closure = True)
+
+    ctx.actions.run(
+        executable = jar_tool,
+        inputs = inputs,
         outputs = [out_jar],
-        args = [args],
+        arguments = [args],
         mnemonic = "KtJar",
         progress_message = "Create Jar (kotlin/common.bzl): %{output}",
     )
 
     return out_jar
 
-def _create_jar_from_tree_artifacts(ctx, toolchain, output_jar, input_dirs):
+def _create_jar_from_tree_artifacts(ctx, jar_tool, output_jar, input_dirs):
     """Packs a sequence of tree artifacts into a single jar.
 
     Given the following file directory structure,
@@ -681,12 +645,11 @@ def _create_jar_from_tree_artifacts(ctx, toolchain, output_jar, input_dirs):
         "/usr/home/b/y",
     ],
     then the blaze action would fail with an error message.
-        "java.lang.IllegalStateException: 1.txt has the same path as 1.txt!
-        If it is intended behavior rename one or both of them."
+         "java.util.zip.ZipException: duplicate entry: 1.txt"
 
     Args:
         ctx: The build rule context.
-        toolchain: Toolchain containing the jar tool.
+        jar_tool: A Unix-API-compatible jar tool.
         output_jar: The jar to be produced by this action.
         input_dirs: A sequence of tree artifacts to be zipped.
 
@@ -695,30 +658,39 @@ def _create_jar_from_tree_artifacts(ctx, toolchain, output_jar, input_dirs):
     """
 
     args = ctx.actions.args()
-    args.add("zip_resources")
-    args.add(output_jar)
-    args.add_joined(
-        "--input_dirs",
-        input_dirs,
-        join_with = ",",
-        omit_if_empty = False,
-        expand_directories = False,
-    )
 
-    _actions_run_deploy_jar(
-        ctx = ctx,
-        java_runtime = toolchain.java_runtime,
-        deploy_jar = toolchain.source_jar_zipper,
+    for in_dir in input_dirs:
+        if not in_dir.is_directory:
+            fail("Expected a directory input, but got {}.".format(in_dir))
+        args.add(in_dir.path)
+
+    ctx.actions.run_shell(
+        command = """
+            JAR_TOOL={}
+            OUT_JAR={}
+            OUT_DIR="$(dirname $OUT_JAR)"
+            RES_DIR=$OUT_DIR/META-INF
+            mkdir $RES_DIR
+            $JAR_TOOL cf $OUT_JAR -C $RES_DIR .
+            rmdir $RES_DIR
+            for INPUT_DIR in $@
+            do
+                if [ -d $INPUT_DIR ]
+                then
+                    $JAR_TOOL uf $OUT_JAR -C $INPUT_DIR .
+                fi
+            done
+        """.format(jar_tool.executable.path, output_jar.path),
+        arguments = [args],
         inputs = input_dirs,
         outputs = [output_jar],
-        args = [args],
+        tools = [jar_tool],
         mnemonic = "KtJarActionFromTreeArtifacts",
         progress_message = "Create Jar %{output}",
     )
-
     return output_jar
 
-def _DirSrcjarSyncer(ctx, kt_toolchain, file_factory):
+def _DirSrcjarSyncer(ctx, kt_toolchain, name):
     _dirs = []
     _srcjars = []
 
@@ -730,8 +702,10 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, file_factory):
         _srcjars.append(
             _create_jar_from_tree_artifacts(
                 ctx,
-                kt_toolchain,
-                file_factory.declare_file("%s.srcjar" % len(_srcjars)),
+                kt_toolchain.jar_tool,
+                ctx.actions.declare_file(
+                    "%s/%s%s.srcjar" % (ctx.label.name, name, len(_srcjars)),
+                ),
                 dirs,
             ),
         )
@@ -744,9 +718,11 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, file_factory):
             _dirs.append(
                 _expand_zip(
                     ctx,
-                    kt_toolchain,
-                    file_factory.declare_directory("%s.expand" % len(_dirs)),
+                    ctx.actions.declare_directory(
+                        "%s/%s%s.expand" % (ctx.label.name, name, len(_dirs)),
+                    ),
                     srcjar,
+                    extra_args = ["*.java", "*.kt"],
                 ),
             )
         _srcjars.extend(srcjars)
@@ -813,7 +789,6 @@ def _kt_jvm_library(
         output = None,
         output_srcjar = None,  # Will derive default filename if not set.
         deps = [],
-        codegen_output_java_infos = [],  # JavaInfo sequence from kt_codegen_plugin.
         exports = [],  # passthrough for JavaInfo constructor
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
@@ -840,13 +815,12 @@ def _kt_jvm_library(
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
 
-    file_factory = FileFactory(ctx, output)
-    deps = list(deps)  # Defensive copy
+    merged_deps = java_common.merge(deps)
 
     # Split sources, as java requires a separate compile step.
     kt_srcs = [s for s in srcs if _is_kt_src(s)]
     java_srcs = [s for s in srcs if s.path.endswith(_EXT.JAVA)]
-    java_syncer = _DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
+    java_syncer = _DirSrcjarSyncer(ctx, kt_toolchain, "java")
     java_syncer.add_dirs([s for s in srcs if _is_dir(s, "java")])
     java_syncer.add_srcjars([s for s in srcs if s.path.endswith(_EXT.SRCJAR)])
 
@@ -854,15 +828,6 @@ def _kt_jvm_library(
     unexpected_srcs = sets.difference(sets.make(srcs), expected_srcs)
     if sets.length(unexpected_srcs) != 0:
         fail("Unexpected srcs: %s" % sets.to_list(unexpected_srcs))
-
-    # TODO: Remove this special case
-    if kt_srcs and ("flogger" in [p.plugin_id for p in plugins.kt_compiler_plugin_infos]):
-        deps.append(kt_toolchain.flogger_runtime)
-
-    if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
-        deps.extend(kt_toolchain.kotlin_libs)
-
-    merged_deps = java_common.merge(deps + codegen_output_java_infos)
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
@@ -896,7 +861,7 @@ def _kt_jvm_library(
     out_jars = []
     out_srcjars = []
     out_compilejars = []
-    kapt_outputs = _EMPTY_KAPT_OUTPUTS
+    kapt_outputs = struct(jar = None, manifest = None, srcjar = None)
 
     # Kotlin compilation requires two passes when annotation processing is
     # required. The initial pass processes the annotations and generates
@@ -906,7 +871,6 @@ def _kt_jvm_library(
     if kt_srcs and plugin_processors:
         kapt_outputs = _kapt(
             ctx,
-            file_factory = file_factory,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
             java_srcs = java_srcs,
@@ -925,7 +889,11 @@ def _kt_jvm_library(
 
         out_jars.append(kapt_outputs.jar)
         java_syncer.add_srcjars([kapt_outputs.srcjar])
-        merged_deps = java_common.merge([merged_deps, kapt_outputs.java_info])
+
+        merged_deps = java_common.merge([merged_deps, JavaInfo(
+            output_jar = kapt_outputs.jar,
+            compile_jar = kapt_outputs.jar,
+        )])
 
     kotlinc_result = None
     if kt_srcs or common_srcs:
@@ -933,9 +901,8 @@ def _kt_jvm_library(
             ctx,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
-            coverage_srcs = coverage_srcs,
             java_srcs_and_dirs = java_srcs + java_syncer.dirs,
-            file_factory = file_factory.derive("-kt"),
+            output = ctx.actions.declare_file(ctx.label.name + "-kt.jar"),
             kotlincopts = kotlincopts,
             compile_jdeps = compile_jdeps,
             toolchain = kt_toolchain,
@@ -950,14 +917,21 @@ def _kt_jvm_library(
         # (see b/110763361 for the comparable Gradle issue)
         out_compilejars.append(kotlinc_result.compile_jar)
         out_srcjars.append(kotlinc_result.source_jar)
-        out_jars.append(kotlinc_result.output_jar)
 
-        # Add dep on JaCoCo runtime to merged_deps.
+        # Apply coverage instrumentation if requested, and add dep on JaCoCo runtime to merged_deps.
         # The latter helps jdeps computation (b/130747644) but could be runtime-only if we computed
         # compile-time Jdeps based using the compile Jar (which doesn't contain instrumentation).
         # See b/117897097 for why it's still useful to make the (runtime) dep explicit.
         if ctx.coverage_instrumented():
+            out_jars.append(_offline_instrument_jar(
+                ctx,
+                kt_toolchain,
+                kotlinc_result.output_jar,
+                kt_srcs + common_srcs + coverage_srcs,
+            ))
             merged_deps = java_common.merge([merged_deps, kt_toolchain.coverage_runtime])
+        else:
+            out_jars.append(kotlinc_result.output_jar)
 
     classpath_resources_dirs, classpath_resources_non_dirs = _partition(
         classpath_resources,
@@ -967,8 +941,8 @@ def _kt_jvm_library(
         out_jars.append(
             _create_jar_from_tree_artifacts(
                 ctx,
-                kt_toolchain,
-                file_factory.declare_file("-dir-res.jar"),
+                kt_toolchain.jar_tool,
+                ctx.actions.declare_file(ctx.label.name + "-dir-res.jar"),
                 classpath_resources_dirs,
             ),
         )
@@ -977,20 +951,15 @@ def _kt_jvm_library(
     java_native_headers_jar = None
     java_gensrcjar = None
     java_genjar = None
-    is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
     if java_srcs or java_syncer.srcjars or classpath_resources:
-        javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
+        javac_out = ctx.actions.declare_file(ctx.label.name + "-java.jar")
         javac_java_info = java_common.compile(
             ctx,
             source_files = java_srcs,
             source_jars = java_syncer.srcjars,
             resources = classpath_resources_non_dirs,
-            # For targets that are not android_library with java-only srcs, exports will be passed
-            # to the final constructed JavaInfo.
-            exports = exports if is_android_library_without_kt_srcs else [],
             output = javac_out,
-            exported_plugins = exported_plugins,
-            deps = ([kotlinc_result.java_info] if kotlinc_result else []) + [merged_deps],
+            deps = ([JavaInfo(**structs.to_dict(kotlinc_result))] if kotlinc_result else []) + [merged_deps],
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
@@ -1004,15 +973,6 @@ def _kt_jvm_library(
             annotation_processor_additional_outputs = annotation_processor_additional_outputs,
             annotation_processor_additional_inputs = annotation_processor_additional_inputs,
         )
-
-        # Directly return the JavaInfo from java.compile() for java-only andorid_library targets
-        # to avoid creating a new JavaInfo. See b/239847857 for additional context.
-        if is_android_library_without_kt_srcs:
-            return struct(
-                java_info = javac_java_info,
-                validations = [],
-            )
-
         out_jars.append(javac_out)
         out_srcjars.extend(javac_java_info.source_jars)
         out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
@@ -1035,8 +995,8 @@ def _kt_jvm_library(
     blocking_action_outs = []
 
     if output_srcjar == None:
-        output_srcjar = file_factory.declare_file("-src.jar")
-    compile_jar = file_factory.declare_file("-compile.jar")
+        output_srcjar = ctx.actions.declare_file("lib%s-src.jar" % ctx.label.name)
+    compile_jar = ctx.actions.declare_file(ctx.label.name + "-compile.jar")
     single_jar = java_toolchain.single_jar
     _singlejar(ctx, out_srcjars, output_srcjar, single_jar, mnemonic = "KtMergeSrcjar", content = "srcjar", preserve_compression = True)
 
@@ -1083,41 +1043,39 @@ def _kt_jvm_library(
 
 def _kt_jvm_import(
         ctx,
-        kt_toolchain,
         jars = [],
         srcjar = None,
         deps = [],
         runtime_deps = [],
         neverlink = False,
-                java_toolchain = None,
+        java_toolchain = None,
         deps_checker = None):
     if not java_toolchain:
         fail("Missing or invalid java_toolchain")
-    if not jars:
-        fail("Must import at least one JAR")
-
-    file_factory = FileFactory(ctx, jars[0])
-    deps = java_common.merge(deps + kt_toolchain.kotlin_libs)
+    merged_deps = java_common.merge(deps)
 
     # Check that any needed deps are declared unless neverlink, in which case Jars won't be used
     # at runtime so we skip the check, though we'll populate jdeps either way.
-    jdeps_output = file_factory.declare_file(".jdeps")
-    _run_import_deps_checker(
+    jdeps_output = ctx.actions.declare_file(ctx.label.name + ".jdeps")
+    _check_deps(
         ctx,
         jars_to_check = jars,
-        merged_deps = deps,
+        merged_deps = merged_deps,
         enforce_strict_deps = not neverlink,
         jdeps_output = jdeps_output,
         deps_checker = deps_checker,
         java_toolchain = java_toolchain,
     )
 
+    if not jars:
+        fail("Must provide a Jar to use kt_jvm_import")
+
     java_info = java_common.merge([
         JavaInfo(
             output_jar = jar,
             compile_jar = jar,
             source_jar = srcjar,
-            deps = [deps],
+            deps = deps,
             runtime_deps = runtime_deps,
             neverlink = neverlink,
             # TODO: Set compile-time jdeps to help reduce Javac classpaths downstream
@@ -1203,7 +1161,6 @@ common = struct(
     collect_proguard_specs = _collect_proguard_specs,
     collect_providers = _collect_providers,
     create_jar_from_tree_artifacts = _create_jar_from_tree_artifacts,
-    common_kapt_and_kotlinc_args = _common_kapt_and_kotlinc_args,
     is_kt_src = _is_kt_src,
     kt_jvm_import = _kt_jvm_import,
     kt_jvm_library = _kt_jvm_library,

@@ -38,8 +38,5 @@ java_plugin(
 java_binary(
     name = "jacoco_cli",
     main_class = "org.jacoco.cli.internal.Main",
-    runtime_deps = [
-        "@bazel_tools//tools/jdk:JacocoCoverage",
-        "@maven//:org_jacoco_org_jacoco_cli",
-    ],
+    runtime_deps = ["@maven//:org_jacoco_org_jacoco_cli"],
 )
