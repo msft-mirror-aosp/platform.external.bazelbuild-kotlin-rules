@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("//kotlin:rules.bzl", "kt_jvm_library")
-load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
+load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test", "kt_jvm_library_under_test")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 
 package(
@@ -24,35 +24,72 @@ package(
 licenses(["notice"])
 
 jvm_library_test(
-    name = "no_kt_exported_friend_trans_package_test",
+    name = "no_kt_exported_friend_cross_package_test",
     expected_friend_jar_names = [],
-    target_under_test = ":no_kt_exported_friend_trans_package",
-)
-
-kt_jvm_library(
-    name = "no_kt_exported_friend_trans_package",
-    srcs = ["Input.kt"],
-    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    deps = [
-        # Exports :friend from this package
-        "//tests/analysis/jvm_library/friends/sub:kt_exports_friend",
-    ],
+    target_under_test = kt_jvm_library_under_test(
+        name = "no_kt_exported_friend_cross_package",
+        srcs = ["Input.kt"],
+        deps = [
+            # Exports :friend from this package
+            "//tests/analysis/jvm_library/friends/sub:kt_exports_friend",
+        ],
+    ),
 )
 
 jvm_library_test(
     name = "has_java_exported_friend_in_package_test",
     expected_friend_jar_names = [
         "libjava_exports_friend-hjar.jar",
-        "friend-compile.jar",
+        "libfriend-compile.jar",
     ],
-    target_under_test = ":has_java_exported_friend_in_package",
+    target_under_test = kt_jvm_library_under_test(
+        name = "has_java_exported_friend_in_package",
+        srcs = ["Input.kt"],
+        deps = [":java_exports_friend"],
+    ),
 )
 
-kt_jvm_library(
-    name = "has_java_exported_friend_in_package",
-    srcs = ["Input.kt"],
-    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    deps = [":java_exports_friend"],
+jvm_library_test(
+    name = "has_kt_exported_friend_in_package_test",
+    expected_friend_jar_names = [
+        "libkt_exports_friend-compile.jar",
+        "libfriend-compile.jar",
+    ],
+    target_under_test = kt_jvm_library_under_test(
+        name = "has_kt_exported_friend_in_package",
+        srcs = ["Input.kt"],
+        deps = [":kt_exports_friend"],
+    ),
+)
+
+jvm_library_test(
+    name = "no_direct_friend_testing_package_test",
+    expected_friend_jar_names = [],
+    target_under_test = kt_jvm_library_under_test(
+        name = "no_direct_friend_testing_package",
+        srcs = ["Input.kt"],
+        deps = ["//tests/analysis/jvm_library/friends/testing:testingfriend"],
+    ),
+)
+
+jvm_library_test(
+    name = "no_direct_friend_subpackage_test",
+    expected_friend_jar_names = [],
+    target_under_test = kt_jvm_library_under_test(
+        name = "no_direct_friend_subpackage",
+        srcs = ["Input.kt"],
+        deps = ["//tests/analysis/jvm_library/friends/sub:subfriend"],
+    ),
+)
+
+jvm_library_test(
+    name = "has_direct_friend_in_package_test",
+    expected_friend_jar_names = ["libfriend-compile.jar"],
+    target_under_test = kt_jvm_library_under_test(
+        name = "has_direct_friend_in_package",
+        srcs = ["Input.kt"],
+        deps = [":friend"],
+    ),
 )
 
 java_library(
@@ -62,40 +99,11 @@ java_library(
     exports = [":friend"],
 )
 
-jvm_library_test(
-    name = "has_kt_exported_friend_in_package_test",
-    expected_friend_jar_names = [
-        "kt_exports_friend-compile.jar",
-        "friend-compile.jar",
-    ],
-    target_under_test = ":has_kt_exported_friend_in_package",
-)
-
-kt_jvm_library(
-    name = "has_kt_exported_friend_in_package",
-    srcs = ["Input.kt"],
-    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    deps = [":kt_exports_friend"],
-)
-
 kt_jvm_library(
     name = "kt_exports_friend",
     srcs = ["Input.kt"],
     tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     exports = [":friend"],
-)
-
-jvm_library_test(
-    name = "has_direct_friend_in_package_test",
-    expected_friend_jar_names = ["friend-compile.jar"],
-    target_under_test = ":has_direct_friend_in_package",
-)
-
-kt_jvm_library(
-    name = "has_direct_friend_in_package",
-    srcs = ["Input.kt"],
-    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-    deps = [":friend"],
 )
 
 kt_jvm_library(
