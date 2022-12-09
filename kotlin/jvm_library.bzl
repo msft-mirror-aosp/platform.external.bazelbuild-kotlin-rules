@@ -16,7 +16,6 @@
 
 load(":jvm_library.internal.bzl", "kt_jvm_library_helper")
 load("//bazel:stubs.bzl", "register_extension_info")
-load("@bazel_skylib//lib:dicts.bzl", "dicts")
 
 def kt_jvm_library(
         name,
@@ -31,11 +30,16 @@ def kt_jvm_library(
         exported_plugins = None,
         resources = None,
         tags = None,
+        testonly = None,  # None to preserve Blaze's defaults, b/112708042
         javacopts = None,
         custom_kotlincopts = None,
         disable_lint_checks = None,
+        compatible_with = None,
+        restricted_to = None,
         transitive_configs = None,
-        **kwargs):
+        visibility = None,
+        deprecation = None,
+        features = []):
     """This rule compiles Kotlin (and Java) sources into a Jar file.
 
     Most Java-like libraries
@@ -63,11 +67,15 @@ def kt_jvm_library(
       javacopts: Additional flags to pass to javac if used.
       custom_kotlincopts: Additional flags to pass to Kotlin compiler.
       disable_lint_checks: A list of AndroidLint checks to be skipped.
+      compatible_with: Standard attribute, see
+        https://bazel.build/reference/be/common-definitions#common.compatible_with.
+      restricted_to: Standard attribute, see
+        https://bazel.build/reference/be/common-definitions#common.restricted_to.
       transitive_configs:  Blaze feature flags (if any) on which this target depends.
+      visibility: A list of targets allowed to depend on this rule.
       deprecation: Standard attribute, see
         https://bazel.build/reference/be/common-definitions#common.deprecation.
       features: Features enabled.
-      **kwargs: Other keyword arguments.
     """
     srcs = srcs or []
     common_srcs = common_srcs or []
@@ -103,10 +111,13 @@ def kt_jvm_library(
         data = data,
         disable_lint_checks = disable_lint_checks,
         tags = tags,
+        testonly = testonly,
+        compatible_with = compatible_with,
+        restricted_to = restricted_to,
         transitive_configs = transitive_configs,
-        **dicts.add(
-            kwargs,
-        )
+        visibility = visibility,
+        deprecation = deprecation,
+        features = features,
     )
 
 register_extension_info(

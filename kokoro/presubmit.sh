@@ -37,19 +37,18 @@ hsperfdata_dir="/tmp/hsperfdata_$(whoami)_rules_kotlin"
 mkdir -p "$hsperfdata_dir"
 
 cd "${workspace_root}"
-# Run test coverage for all the test targets except excluded by
-# --instrumentation_filter - code coverage doesn't work for them and they
-# would only be tested
-"$bazel" coverage \
-    --sandbox_tmpfs_path="$hsperfdata_dir" \
-    --verbose_failures \
-    --experimental_google_legacy_api \
-    --instrumentation_filter=-//tests/jvm/java/multijarimport[/:],-//tests/jvm/java/functions[/:] \
-    //tests/...
-
-# For a specific test //tools:source_jar_zipper_freshness_test run test only
 "$bazel" test \
     --sandbox_tmpfs_path="$hsperfdata_dir" \
     --verbose_failures \
     --experimental_google_legacy_api \
-    //tools:source_jar_zipper_freshness_test
+    //tests/...
+
+# Testing with code coverage
+"$bazel" test \
+    --sandbox_tmpfs_path="$hsperfdata_dir" \
+    --verbose_failures \
+    --experimental_google_legacy_api \
+    --collect_code_coverage=1 \
+    //tests/analysis:kt_jvm_compile_using_kt_jvm_compile_with_r_java_test \
+    //tests/analysis:kt_jvm_compile_with_r_java_as_first_dep_test \
+    //tests/analysis:kt_jvm_compile_without_srcs_and_with_exports_test
