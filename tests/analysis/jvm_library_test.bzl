@@ -89,6 +89,13 @@ def _test_impl(ctx):
         friend_jar_names = [p.rsplit("/", 1)[1] for p in friend_paths_arg.split(",")] if friend_paths_arg else []
         asserts.set_equals(env, sets.make(ctx.attr.expected_friend_jar_names), sets.make(friend_jar_names))
 
+    asserts.equals(
+        env,
+        ctx.attr.expect_neverlink,
+        len(actual[JavaInfo].transitive_runtime_jars.to_list()) == 0,
+        "Mismatch: Expected transitive_runtime_jars iff (neverlink == False)",
+    )
+
     return analysistest.end(env)
 
 _test = analysistest.make(
@@ -107,6 +114,7 @@ _test = analysistest.make(
             default = _DEFAULT_LIST,
         ),
         expect_processor_classpath = attr.bool(),
+        expect_neverlink = attr.bool(),
     ),
 )
 
