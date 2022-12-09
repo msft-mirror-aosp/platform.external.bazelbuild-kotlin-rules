@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("//kotlin:rules.bzl", "kt_jvm_library")
-load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test", "kt_jvm_library_under_test")
+load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 
 package(
@@ -26,24 +26,17 @@ licenses(["notice"])
 jvm_library_test(
     name = "no_kt_exported_friend_cross_package_test",
     expected_friend_jar_names = [
-        "libkt_exports_friend-compile.jar",
-        # Absent # "libfriend-compile.jar"
+        "kt_exports_friend-compile.jar",
+        # Absent # "friend-compile.jar"
     ],
-    target_under_test = kt_jvm_library_under_test(
-        name = "no_kt_exported_friend_cross_package",
-        srcs = ["Input.kt"],
-        deps = [":kt_exports_friend"],
-    ),
+    target_under_test = ":no_kt_exported_friend_cross_package",
 )
 
-jvm_library_test(
-    name = "no_direct_friend_cross_package_test",
-    expected_friend_jar_names = [],
-    target_under_test = kt_jvm_library_under_test(
-        name = "no_direct_friend_cross_package",
-        srcs = ["Input.kt"],
-        deps = ["//tests/analysis/jvm_library/friends:friend"],
-    ),
+kt_jvm_library(
+    name = "no_kt_exported_friend_cross_package",
+    srcs = ["Input.kt"],
+    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+    deps = [":kt_exports_friend"],
 )
 
 kt_jvm_library(
@@ -53,8 +46,15 @@ kt_jvm_library(
     exports = ["//tests/analysis/jvm_library/friends:friend"],
 )
 
+jvm_library_test(
+    name = "no_direct_friend_cross_package_test",
+    expected_friend_jar_names = [],
+    target_under_test = ":no_direct_friend_cross_package",
+)
+
 kt_jvm_library(
-    name = "subfriend",
+    name = "no_direct_friend_cross_package",
     srcs = ["Input.kt"],
     tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+    deps = ["//tests/analysis/jvm_library/friends:friend"],
 )

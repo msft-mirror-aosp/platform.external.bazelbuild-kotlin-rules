@@ -24,8 +24,19 @@ load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 def _kt_jvm_import_impl(ctx):
     kt_jvm_toolchain = kt_jvm_toolchains.get(ctx)
 
+    if not ctx.files.jars:
+        fail("List of jars cannot be empty")
+
+    deps_java_infos = []
+    for dep in ctx.attr.deps:
+        deps_java_infos.append(dep[JavaInfo])
+
+    # Put Kotlin's standard libs last to match what kotlinc would do without -no-stdlib
+    deps_java_infos.extend(kt_jvm_toolchain.kotlin_libs)
+
     runtime_deps_java_infos = []
     for runtime_dep in ctx.attr.runtime_deps:
+        # Collect JavaInfo providers
         if JavaInfo in runtime_dep:
             runtime_deps_java_infos.append(runtime_dep[JavaInfo])
         elif CcInfo not in runtime_dep:
@@ -33,15 +44,15 @@ def _kt_jvm_import_impl(ctx):
 
     result = common.kt_jvm_import(
         ctx,
-        kt_toolchain = kt_jvm_toolchain,
         jars = ctx.files.jars,
         srcjar = ctx.file.srcjar,
-        deps = common.collect_providers(JavaInfo, ctx.attr.deps),
+        deps = deps_java_infos,
         runtime_deps = runtime_deps_java_infos,
         neverlink = ctx.attr.neverlink,
         java_toolchain = java_toolchains.get(ctx),
         deps_checker = ctx.executable._deps_checker,
     )
+    result_java_info = result.java_info
 
     # Collect runfiles from deps unless neverlink
     runfiles = None
@@ -57,7 +68,7 @@ def _kt_jvm_import_impl(ctx):
         )
 
     return [
-        result.java_info,
+        result_java_info,
         ProguardSpecProvider(common.collect_proguard_specs(
             ctx,
             ctx.files.proguard_specs,

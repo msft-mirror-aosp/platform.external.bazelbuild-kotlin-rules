@@ -14,37 +14,29 @@
 
 """TODO: Write module docstring."""
 
-def is_eligible_friend(target, friend):
+def _is_eligible_friend(target, friend):
     """
-    Determines if `target` is allowed to use `internal` members of `friend`
+    Determines if `target` is allowed to call `friend` a friend (and use its `internal` members).
 
-    To be eligible, one of:
-      1. `target` and `friend` in same pkg
-      2. `target` in `testing/` subpkg of `friend` pkg
-      3. `target` in `javatests/` pkg, `friend` in parallel `java/` pkg
-      4. `target` in `test/java/` pkg, `friend` in parallel `main/java/` pkg
+    To be eligible, `target` must be one of:
+      - in the parallel `java/` package from a `javatests/` package
+      - in the parallel `main/java` package from a `test/java` package
+      - another target in the same `BUILD` file
 
     Args:
       target: (target) The current target
       friend: (Target) A potential friend of `target`
-
-    Returns:
-      True if `friend` is an eligible friend of `target`.
     """
 
     target_pkg = target.label.package + "/"
     friend_pkg = friend.label.package + "/"
 
     if target_pkg == friend_pkg:
-        # Case 1
-        return True
-
-    if target_pkg.removesuffix("testing/") == friend_pkg:
-        # Case 2
+        # Allow friends on targets in the same package
         return True
 
     if "javatests/" in target_pkg and "java/" in friend_pkg:
-        # Case 3
+        # Allow friends from javatests/ on the parallel java/ package
         target_java_pkg = target_pkg.rsplit("javatests/", 1)[1]
         friend_java_pkg = friend_pkg.rsplit("java/", 1)[1]
         if target_java_pkg == friend_java_pkg:
@@ -52,7 +44,7 @@ def is_eligible_friend(target, friend):
 
     if ("test/java/" in target_pkg and "main/java/" in friend_pkg and
         True):
-        # Case 4
+        # Allow friends from test/java on the parallel main/java package
         target_split = target_pkg.rsplit("test/java/", 1)
         friend_split = friend_pkg.rsplit("main/java/", 1)
         if target_split == friend_split:
@@ -68,18 +60,7 @@ def _get_output_jars(target, _ctx_rule):
 kt_friend_jars_visitor = struct(
     name = "friend_jars",
     visit_target = _get_output_jars,
-    filter_edge = is_eligible_friend,
-    finish_expansion = None,
-    process_unvisited_target = None,
-)
-
-def _get_output_labels(target, _):
-    return [target.label]
-
-kt_friend_labels_visitor = struct(
-    name = "friend_labels",
-    visit_target = _get_output_labels,
-    filter_edge = is_eligible_friend,
+    filter_edge = _is_eligible_friend,
     finish_expansion = None,
     process_unvisited_target = None,
 )

@@ -15,6 +15,7 @@
  */
 
 // This file contains the example filed upstream for b/121222399.
+// TODO: Turn this into a regression test once the issue is fixed.
 package kapt
 
 interface Base<T>
