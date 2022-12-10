@@ -70,7 +70,7 @@ load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "KT_VERSION")
 http_archive(
     name = "kotlinc",
     build_file = "@//bazel:kotlinc.BUILD",
-    sha256 = "8412b31b808755f0c0d336dbb8c8443fa239bf32ddb3cdb81b305b25f0ad279e",
+    sha256 = "7683f5451ef308eb773a686ee7779a76a95ed8b143c69ac247937619d7ca3a09",
     strip_prefix = "kotlinc",
     urls = [
         "https://github.com/JetBrains/kotlin/releases/download/v{0}/kotlin-compiler-{0}.zip".format(KT_VERSION[1:].replace("_", ".")),
@@ -86,7 +86,6 @@ maven_install(
         "com.google.auto.value:auto-value:1.9",
         "com.google.testing.compile:compile-testing:0.19",
         "com.google.truth:truth:1.1.3",
-        "info.picocli:picocli:4.6.3",
         "javax.inject:jsr330-api:0.9",
         "junit:junit:4.13.2",
         "org.jacoco:org.jacoco.agent:0.8.8",

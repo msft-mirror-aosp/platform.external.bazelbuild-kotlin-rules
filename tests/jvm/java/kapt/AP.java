@@ -63,7 +63,7 @@ public class AP extends AbstractProcessor {
                 .createSourceFile("kapt." + simpleName, element)
                 .openOutputStream()) {
           os.write(
-              String.format("package kapt; @Count(%d) public class %s {}", next, simpleName)
+              String.format("package kapt; @Count(%d) class %s {}", next, simpleName)
                   .getBytes(UTF_8));
         } catch (IOException e) {
           throw new UncheckedIOException(e);
