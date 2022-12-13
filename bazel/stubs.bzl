@@ -32,3 +32,6 @@ DEFAULT_BUILTIN_PROCESSORS = [
 ]
 
 BASE_JVMOPTS = []
+
+def select_java_language_version(**_kwargs):
+    return "11"
