@@ -22,7 +22,7 @@ from the way that java targets handles plugins.
 def _get_java_plugins(_target, ctx_rule):
     exported_plugins = getattr(ctx_rule.attr, "exported_plugins", [])
     return [
-        t[JavaPluginInfo]
+        t[JavaPluginInfo].plugins
         for t in exported_plugins
         if JavaPluginInfo in t
     ]
