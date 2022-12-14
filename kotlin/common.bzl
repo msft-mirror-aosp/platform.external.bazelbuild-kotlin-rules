@@ -850,7 +850,7 @@ def _kt_jvm_library(
     if kt_srcs and ("flogger" in [p.plugin_id for p in plugins.kt_compiler_plugin_infos]):
         deps.append(kt_toolchain.flogger_runtime)
 
-    if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
+    if kt_srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
         deps.extend(kt_toolchain.kotlin_libs)
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
