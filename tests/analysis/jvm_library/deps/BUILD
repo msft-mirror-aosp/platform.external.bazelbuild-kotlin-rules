@@ -19,12 +19,30 @@ package(default_testonly = True)
 
 licenses(["notice"])
 
+rules_for_test.kt_jvm_library(
+    name = "deps_test_kt_dep",
+    srcs = [
+        "Input.kt",
+    ],
+)
+
+rules_for_test.java_library(
+    name = "deps_test_java_dep",
+    srcs = [
+        "Input.java",
+    ],
+)
+
 jvm_library_test(
-    name = "no_java_srcs_test",
+    name = "deps_test",
     target_under_test = rules_for_test.kt_jvm_library(
-        name = "no_java_srcs",
+        name = "deps",
         srcs = [
-            "Input.kt",
+            "Foo.java",
+        ],
+        deps = [
+            ":deps_test_java_dep",
+            ":deps_test_kt_dep",
         ],
     ),
 )

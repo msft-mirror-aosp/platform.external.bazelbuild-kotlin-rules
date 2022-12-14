@@ -507,33 +507,24 @@ def _run_import_deps_checker(
         jdeps_output = None,
         deps_checker = None,
         java_toolchain = None):
-    # Direct compile_jars before transitive not to confuse strict_deps (b/149107867)
-    full_classpath = depset(
-        order = "preorder",
-        transitive = [merged_deps.compile_jars, merged_deps.transitive_compile_time_jars],
-    )
+    full_classpath = _create_classpath(java_toolchain, [merged_deps])
     label = _get_original_kt_target_label(ctx)
-    bootclasspath = java_toolchain.bootclasspath
 
     args = ctx.actions.args()
     args.add("--jdeps_output", jdeps_output)
     args.add_all(jars_to_check, before_each = "--input")
-    args.add_all(bootclasspath, before_each = "--bootclasspath_entry")
+    args.add_all(java_toolchain.bootclasspath, before_each = "--bootclasspath_entry")
     args.add_all(full_classpath, before_each = "--classpath_entry")
     if enforce_strict_deps:
         args.add_all(merged_deps.compile_jars, before_each = "--directdep")
-    args.add("--checking_mode=%s" % ("error" if enforce_strict_deps else "silence"))
+    args.add("error" if enforce_strict_deps else "silence", format = "--checking_mode=%s")
     args.add("--nocheck_missing_members")  # compiler was happy so no need
-    args.add("--rule_label")
-    args.add(label)
+    args.add("--rule_label", label)
 
     ctx.actions.run(
         executable = deps_checker,
         arguments = [args],
-        inputs = depset(
-            jars_to_check,
-            transitive = [bootclasspath, full_classpath],
-        ),
+        inputs = depset(jars_to_check, transitive = [full_classpath]),
         outputs = [jdeps_output],
         mnemonic = "KtCheckStrictDeps" if enforce_strict_deps else "KtJdeps",
         progress_message = "%s deps for %s" % (
@@ -862,24 +853,13 @@ def _kt_jvm_library(
     if srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
         deps.extend(kt_toolchain.kotlin_libs)
 
-    merged_deps = java_common.merge(deps + codegen_output_java_infos)
-
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
         _check_srcs_package(ctx.label.package, srcs, "srcs")
         _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
         _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
-    # Complete classpath including bootclasspath. Like for Javac, explicitly place direct
-    # compile_jars before transitive not to confuse strict_deps (b/149107867).
-    full_classpath = depset(
-        order = "preorder",
-        transitive = [
-            java_toolchain.bootclasspath,
-            merged_deps.compile_jars,
-            merged_deps.transitive_compile_time_jars,
-        ],
-    )
+    full_classpath = _create_classpath(java_toolchain, deps + codegen_output_java_infos)
 
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
@@ -896,13 +876,13 @@ def _kt_jvm_library(
     out_jars = []
     out_srcjars = []
     out_compilejars = []
-    kapt_outputs = _EMPTY_KAPT_OUTPUTS
 
     # Kotlin compilation requires two passes when annotation processing is
     # required. The initial pass processes the annotations and generates
     # additional sources and the following pass compiles the Kotlin code.
     # Skip kapt if no plugins have processors (can happen with only
     # go/errorprone plugins, # b/110540324)
+    kapt_outputs = _EMPTY_KAPT_OUTPUTS
     if kt_srcs and plugin_processors:
         kapt_outputs = _kapt(
             ctx,
@@ -925,7 +905,6 @@ def _kt_jvm_library(
 
         out_jars.append(kapt_outputs.jar)
         java_syncer.add_srcjars([kapt_outputs.srcjar])
-        merged_deps = java_common.merge([merged_deps, kapt_outputs.java_info])
 
     kotlinc_result = None
     if kt_srcs or common_srcs:
@@ -952,13 +931,6 @@ def _kt_jvm_library(
         out_srcjars.append(kotlinc_result.source_jar)
         out_jars.append(kotlinc_result.output_jar)
 
-        # Add dep on JaCoCo runtime to merged_deps.
-        # The latter helps jdeps computation (b/130747644) but could be runtime-only if we computed
-        # compile-time Jdeps based using the compile Jar (which doesn't contain instrumentation).
-        # See b/117897097 for why it's still useful to make the (runtime) dep explicit.
-        if ctx.coverage_instrumented():
-            merged_deps = java_common.merge([merged_deps, kt_toolchain.coverage_runtime])
-
     classpath_resources_dirs, classpath_resources_non_dirs = _partition(
         classpath_resources,
         filter = lambda res: res.is_directory,
@@ -979,6 +951,17 @@ def _kt_jvm_library(
     java_genjar = None
     is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
     if java_srcs or java_syncer.srcjars or classpath_resources:
+        javac_deps = deps + codegen_output_java_infos  # Defensive copy
+        if kapt_outputs.java_info:
+            javac_deps.append(kapt_outputs.java_info)
+        if kotlinc_result:
+            javac_deps.append(kotlinc_result.java_info)
+            if ctx.coverage_instrumented():
+                # Including the coverage runtime improves jdeps computation (b/130747644), but it
+                # could be runtime-only if we computed compile-time jdeps using the compile JAR
+                # (which doesn't contain instrumentation). See b/117897097.
+                javac_deps.append(kt_toolchain.coverage_runtime)
+
         javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
         javac_java_info = java_common.compile(
             ctx,
@@ -990,7 +973,7 @@ def _kt_jvm_library(
             exports = exports if is_android_library_without_kt_srcs else [],
             output = javac_out,
             exported_plugins = exported_plugins,
-            deps = ([kotlinc_result.java_info] if kotlinc_result else []) + [merged_deps],
+            deps = javac_deps,
             # Include default_javac_flags, which reflect Blaze's --javacopt flag, so they win over
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
@@ -1181,6 +1164,17 @@ def _collect_proguard_specs(
 def _collect_providers(provider, deps):
     """Collects the requested provider from the given list of deps."""
     return [dep[provider] for dep in deps if provider in dep]
+
+def _create_classpath(java_toolchain, deps):
+    # To not confuse strictdeps, order as boot > direct > transitive JARs (b/149107867).
+    return depset(
+        order = "preorder",
+        transitive = (
+            [java_toolchain.bootclasspath] +
+            [dep.compile_jars for dep in deps] +
+            [dep.transitive_compile_time_jars for dep in deps]
+        ),
+    )
 
 def _partition(sequence, filter):
     pos, neg = [], []
