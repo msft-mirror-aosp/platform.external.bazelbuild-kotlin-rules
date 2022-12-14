@@ -15,8 +15,8 @@
 """Compile method that can compile kotlin or java sources"""
 
 load(":common.bzl", "common")
-load(":traverse_exports.bzl", "kt_traverse_exports")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
+load(":traverse_exports.bzl", "kt_traverse_exports")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 
 _RULE_FAMILY = common.RULE_FAMILY
@@ -46,7 +46,6 @@ def kt_jvm_compile(
         disable_lint_checks = [],
         r_java = None,
         output_srcjar = None,
-        flogger_runtime = None,
         rule_family = _RULE_FAMILY.UNKNOWN,
         annotation_processor_additional_outputs = [],
         annotation_processor_additional_inputs = [],
@@ -87,7 +86,6 @@ def kt_jvm_compile(
         NOTE: This field accepts a JavaInfo, but should only be used for the
         Android R.java within an android_library rule.
       output_srcjar: Target output file for generated source jar. Default filename used if None.
-      flogger_runtime: JavaInfo, Flogger runtime. Optional
       rule_family: The family of the rule calling this function. Element of common.RULE_FAMILY.
         May be used to enable/disable some features.
       annotation_processor_additional_outputs: sequence of Files. A list of
@@ -110,6 +108,9 @@ def kt_jvm_compile(
         # dependent libraries.
         fail("Expected one of (srcs, common_srcs, exports) is not empty for kotlin/jvm_compile on target: {}".format(ctx.label))
 
+    if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
+        fail("resources attribute only allowed for jvm libraries")
+
     if type(java_toolchain) != "JavaToolchainInfo":
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
@@ -117,8 +118,21 @@ def kt_jvm_compile(
     srcs = list(srcs)
     classpath_resources = list(classpath_resources)
     java_infos = []
+    codegen_output_java_infos = []
+
+    # The r_java field only support Android resources Jar files. For now, verify
+    # that the name of the jar matches "_resources.jar". This check does not to
+    # prevent malicious use, the intent is to prevent accidental usage.
+    r_java_infos = []
+    if r_java:
+        for jar in r_java.outputs.jars:
+            if not jar.class_jar.path.endswith("_resources.jar"):
+                fail("Error, illegal dependency provided for r_java. This " +
+                     "only supports Android resource Jar files, " +
+                     "'*_resources.jar'.")
+        r_java_infos.append(r_java)
+
     pre_processed_java_plugin_processors = sets.make([])
-    use_flogger = False
 
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
     has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
@@ -126,52 +140,29 @@ def kt_jvm_compile(
         kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
     for dep in deps:
-        # Collect JavaInfo providers and info about plugins (JavaPluginData).
-        if JavaInfo in dep:
+        if False:
+            pass
+        elif JavaInfo in dep:
             java_infos.append(dep[JavaInfo])
-
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
-
-    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or srcs or common_srcs:
-        java_infos.extend(kt_toolchain.kotlin_libs)
-
-    # TODO: Inject the runtime library from the flogger API target
-    if use_flogger:
-        if not flogger_runtime:
-            fail("Dependency on flogger exists, but flogger_runtime not passed")
-        java_infos.append(flogger_runtime)
 
     if kotlincopts != None and "-Werror" in kotlincopts:
         fail("Flag -Werror is not permitted")
 
-    if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
-        fail("resources attribute only allowed for jvm libraries")
-
-    # The r_java field only support Android resources Jar files. For now, verify
-    # that the name of the jar matches "_resources.jar". This check does not to
-    # prevent malicious use, the intent is to prevent accidental usage.
-    r_java_info = []
-    if r_java:
-        for jar in r_java.outputs.jars:
-            if not jar.class_jar.path.endswith("_resources.jar"):
-                fail("Error, illegal dependency provided for r_java. This " +
-                     "only supports Android resource Jar files, " +
-                     "'*_resources.jar'.")
-        r_java_info.append(r_java)
-
     return common.kt_jvm_library(
         ctx,
-        android_lint_plugins = android_lint_plugins,  # List of JavaInfo
+        android_lint_plugins = [p[JavaInfo] for p in android_lint_plugins],
         android_lint_rules_jars = android_lint_rules_jars,
         classpath_resources = classpath_resources,
         common_srcs = common_srcs,
         coverage_srcs = coverage_srcs,
-                deps = r_java_info + java_infos,
+                deps = r_java_infos + java_infos,
+        codegen_output_java_infos = codegen_output_java_infos,
         disable_lint_checks = disable_lint_checks,
         exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
-        exports = r_java_info + [e[JavaInfo] for e in exports if JavaInfo in e],
+        exports = r_java_infos + [e[JavaInfo] for e in exports if JavaInfo in e],
         friend_jars = kt_traverse_exports.expand_friend_jars(deps, root = ctx),
         java_toolchain = java_toolchain,
         javacopts = javacopts,
@@ -202,6 +193,3 @@ def kt_jvm_compile(
         annotation_processor_additional_outputs = annotation_processor_additional_outputs,
         annotation_processor_additional_inputs = annotation_processor_additional_inputs,
     )
-
-# TODO Delete this
-compile = kt_jvm_compile

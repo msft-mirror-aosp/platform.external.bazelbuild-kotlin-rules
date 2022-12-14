@@ -17,6 +17,12 @@ load("//kotlin:rules.bzl", "kt_jvm_import", "kt_jvm_library")
 
 licenses(["notice"])
 
+# During coverage builds, every library gets a dep on JaCoCo (Java Code Coverage).
+# Libjars, from libraries, only include their direct sources. Together, these behaviours
+# trigger an ImportDepsChecker error for :car-jar and :car-inline-jar. To prevent that, we disable
+# coverage builds on all downstream targets.
+_NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO = ["nozapfhahn"]
+
 kt_jvm_library(
     name = "car_demo_src_lib",
     srcs = ["CarDemo.kt"],
@@ -38,11 +44,13 @@ java_test(
 java_import(
     name = "car-jar",
     jars = ["//tests/jvm/java/functions/car:car_lib-jar"],
+    tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
 )
 
 kt_jvm_library(
     name = "car_demo_jar_lib",
     srcs = ["CarDemo.kt"],
+    tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     deps = [
         ":car-jar",
     ],
@@ -53,7 +61,8 @@ kt_jvm_library(
 java_test(
     name = "car_jar_demo",
     main_class = "functions.CarDemo",
-    tags = ["darwin_x86_64_compatible"],
+    tags = ["darwin_x86_64_compatible"] +
+           _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     runtime_deps = [
         ":car_demo_jar_lib",
         "@kotlinc//:kotlin_stdlib",
@@ -66,6 +75,7 @@ kt_jvm_import(
         "//tests/jvm/java/functions/car:car_inline_lib-jar",
         "//tests/jvm/java/functions/car:car_extra_lib-jar",
     ],
+    tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     deps = [
         ":car-jar",
     ],
@@ -74,6 +84,7 @@ kt_jvm_import(
 kt_jvm_library(
     name = "car_demo_inline_lib",
     srcs = ["CarInlineDemo.kt"],
+    tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     deps = [
         ":car-inline-jar",
         ":car-jar",
@@ -85,10 +96,8 @@ kt_jvm_library(
 java_test(
     name = "car_inline_demo",
     main_class = "functions.CarInlineDemo",
-    tags = [
-        "darwin_x86_64_compatible",
-        "nozapfhahn",
-    ],
+    tags = ["darwin_x86_64_compatible"] +
+           _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     runtime_deps = [
         ":car_demo_inline_lib",
         "@kotlinc//:kotlin_stdlib",
