@@ -11,8 +11,8 @@ third_party {
     type: GIT
     value: "https://team.googlesource.com/kotlin-rules/rules"
   }
-  version: "f4178248eea802a9c26f501bac7df4afd04445c3"
-  last_upgrade_date { year: 2022 month: 12 day: 9}
+  version: "0904db290987a7e48a708369e5093b6d033769e7"
+  last_upgrade_date { year: 2022 month: 12 day: 14}
   license_type: NOTICE
 }
 
