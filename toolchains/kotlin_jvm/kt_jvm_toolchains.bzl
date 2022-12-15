@@ -14,7 +14,7 @@
 
 """Kotlin toolchain."""
 
-load("//bazel:stubs.bzl", "select_java_language_version")
+load("//bazel:stubs.bzl", "select_java_language_level")
 
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
@@ -250,12 +250,9 @@ kt_jvm_toolchain = rule(
 
 def _declare(**kwargs):
     kt_jvm_toolchain(
-        # TODO: use select_java_language_level() after support for Java 8 is dropped
-        jvm_target = select_java_language_version(
-            # The JVM bytecode version to output
-            java8 = "1.8",
-            java11 = "11",
-            java_head = "18",  # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
+        # The JVM bytecode version to output
+        jvm_target = select_java_language_level(
+            highest_supported = 18,  # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
         ),
         **kwargs
     )
