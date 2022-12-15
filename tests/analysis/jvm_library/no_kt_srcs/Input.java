@@ -14,11 +14,3 @@
  * limitations under the License.
  */
 
-// This file contains the example filed upstream for b/121222399.
-package kapt
-
-interface Base<T>
-
-interface HasDefaultMethod<T> : Base<T> {
-  fun print(msg: String) = println(msg)
-}
