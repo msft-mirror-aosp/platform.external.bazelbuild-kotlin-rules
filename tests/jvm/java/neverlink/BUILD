@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Analysis Tests
-
-load("//tests/analysis:jvm_compile_test.bzl", jvm_compile_test_suite = "test_suite")
-load("//tests/analysis:jvm_import_test.bzl", jvm_import_test_suite = "test_suite")
-load("//tests/analysis:jvm_library_test.bzl", jvm_library_test_suite = "test_suite")
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//tests/analysis:for_test.bzl", "rules_for_test")
+load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
 
 licenses(["notice"])
 
-jvm_compile_test_suite(name = "jvm_compile_tests")
-
-jvm_library_test_suite(name = "jvm_library_tests")
-
-jvm_import_test_suite(name = "jvm_import_tests")
+jvm_library_test(
+    name = "neverlinked_input_library_test",
+    expect_neverlink = True,
+    target_under_test = rules_for_test.kt_jvm_library(
+        name = "neverlinked_input_library",
+        srcs = ["Input.kt"],
+        neverlink = True,
+    ),
+)
