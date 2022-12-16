@@ -64,7 +64,7 @@ def _jvm_library_impl(ctx):
         exports = ctx.attr.exports,
         javacopts = ctx.attr.javacopts,
         kotlincopts = merge_kotlincopts(ctx),
-        neverlink = False,
+        neverlink = ctx.attr.neverlink,
         testonly = ctx.attr.testonly,
                 android_lint_plugins = ctx.attr._android_lint_plugins,
         manifest = None,
@@ -186,6 +186,11 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         doc = """Additional flags to pass to javac if used as part of this rule, which is the case
                      if `.java` `srcs` are provided or annotation processors generate sources for this
                      rule.""",
+    ),
+    neverlink = attr.bool(
+        default = False,
+        doc = """Only use this library for compilation and not at runtime. Useful if the library
+                  will be provided by the runtime environment during execution.""",
     ),
     plugins = attr.label_list(
         providers = [
