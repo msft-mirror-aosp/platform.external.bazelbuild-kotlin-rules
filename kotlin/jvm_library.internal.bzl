@@ -15,6 +15,7 @@
 """Kotlin kt_jvm_library rule."""
 
 load("//kotlin:compiler_opt.bzl", "kotlincopts_attrs", "merge_kotlincopts")
+load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
@@ -124,6 +125,7 @@ def _jvm_library_impl(ctx):
     ]
 
 _KT_JVM_LIBRARY_ATTRS = dicts.add(
+    androidlint_toolchains.attrs,
     java_toolchains.attrs,
     kotlincopts_attrs(),
     kt_jvm_toolchains.attrs,

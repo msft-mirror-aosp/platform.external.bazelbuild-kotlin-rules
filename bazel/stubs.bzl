@@ -16,8 +16,10 @@
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 
-def register_extension_info(**_kwargs):
+def _empty_fn(*_args, **_kwargs):
     pass
+
+register_extension_info = _empty_fn
 
 FORBIDDEN_DEP_PACKAGES = sets.make([])
 
@@ -35,3 +37,12 @@ BASE_JVMOPTS = []
 
 def select_java_language_level(**_kwargs):
     return "11"
+
+registry_checks_for_package = _empty_fn
+
+LINT_REGISTRY = None  # Only ever passed to registry_checks_for_package
+
+lint_actions = struct(
+    run_lint_on_library = _empty_fn,
+    get_android_lint_baseline_file = _empty_fn,
+)

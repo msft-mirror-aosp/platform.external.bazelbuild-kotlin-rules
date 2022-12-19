@@ -14,7 +14,9 @@
 
 """Common Kotlin definitions."""
 
+load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load("//bazel:stubs.bzl", "lint_actions")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 load(":file_factory.bzl", "FileFactory")
@@ -1016,6 +1018,53 @@ def _kt_jvm_library(
 
     # TODO: Move severity overrides to config file when possible again
     blocking_action_outs = []
+
+    # TODO: Remove the is_android_library_without_kt_srcs condition once KtAndroidLint
+    # uses the same lint checks with AndroidLint
+
+    if not is_android_library_without_kt_srcs and androidlint_toolchains.get_wrapper(ctx):
+        lint_flags = [
+            "--java-language-level",  # b/159950410
+            kt_toolchain.java_language_version,
+            "--kotlin-language-level",
+            kt_toolchain.kotlin_language_version,
+            "--nowarn",  # Check for "errors", which includes custom checks that report errors.
+            "--XallowBaselineSuppress",  # allow baseline exemptions of otherwise unsuppressable errors
+            "--exitcode",  # fail on error
+            "--fullpath",  # reduce file path clutter in reported issues
+            "--text",
+            "stdout",  # also log to stdout
+        ]
+        if disable_lint_checks != None and disable_lint_checks and disable_lint_checks != [""]:
+            lint_flags.append("--disable")
+            lint_flags.append(",".join(disable_lint_checks))
+
+        # TODO: Support Android Lint plugins coming from plugins and exported_plugins attributes
+        android_lint_plugins_jars = depset(
+            order = "preorder",
+            transitive = [plugin_classpaths] + [dep.transitive_runtime_jars for dep in android_lint_plugins],
+        )
+
+        android_lint_out = lint_actions.run_lint_on_library(
+            ctx,
+            output = file_factory.declare_file("_android_lint_output.xml"),
+            srcs = kt_srcs + java_srcs + common_srcs,
+            source_jars = java_syncer.srcjars,
+            classpath = full_classpath,
+            manifest = manifest,
+            merged_manifest = merged_manifest,
+            resource_files = resource_files,
+            baseline_file = androidlint_toolchains.get_baseline(ctx),
+            config = kt_toolchain.android_lint_config,
+            android_lint_plugins_depset = android_lint_plugins_jars,
+            android_lint_rules = android_lint_rules_jars,
+            lint_flags = lint_flags,
+            extra_input_depsets = [p.processor_data for p in java_plugin_datas],
+            testonly = testonly,
+            android_java8_libs = kt_toolchain.android_java8_apis_desugared,
+            mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
+        )
+        blocking_action_outs.append(android_lint_out)
 
     if output_srcjar == None:
         output_srcjar = file_factory.declare_file("-src.jar")

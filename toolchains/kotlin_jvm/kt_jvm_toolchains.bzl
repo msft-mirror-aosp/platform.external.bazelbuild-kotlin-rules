@@ -98,6 +98,8 @@ def _kotlinc_cli_flags(ctx):
 
 def _kt_jvm_toolchain_impl(ctx):
     kt_jvm_toolchain = dict(
+        android_java8_apis_desugared = ctx.attr.android_java8_apis_desugared,
+        android_lint_config = ctx.file.android_lint_config,
         build_marker = ctx.file.build_marker,
         coverage_instrumenter = ctx.attr.coverage_instrumenter[DefaultInfo].files_to_run,
         # Don't require JavaInfo provider for integration test convenience.
@@ -129,6 +131,15 @@ def _kt_jvm_toolchain_impl(ctx):
 
 kt_jvm_toolchain = rule(
     attrs = dict(
+        android_java8_apis_desugared = attr.bool(
+            # Reflects a select in build rules.
+            doc = "Whether Java 8 API desugaring is enabled",
+            mandatory = True,
+        ),
+        android_lint_config = attr.label(
+            cfg = "exec",
+            allow_single_file = [".xml"],
+        ),
         build_marker = attr.label(
             default = "//tools:build_marker",
             allow_single_file = [".jar"],
@@ -250,6 +261,9 @@ kt_jvm_toolchain = rule(
 
 def _declare(**kwargs):
     kt_jvm_toolchain(
+        android_java8_apis_desugared = select({
+            "//conditions:default": False,
+        }),
         # The JVM bytecode version to output
         jvm_target = select_java_language_level(
             highest_supported = 18,  # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
