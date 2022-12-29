@@ -134,8 +134,6 @@ def kt_jvm_compile(
 
     pre_processed_java_plugin_processors = sets.make([])
 
-    #    if ctx.
-
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
     has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
