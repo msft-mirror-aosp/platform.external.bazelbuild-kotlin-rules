@@ -724,7 +724,7 @@ def _DirSrcjarSyncer(ctx, kt_toolchain, file_factory):
             _create_jar_from_tree_artifacts(
                 ctx,
                 kt_toolchain,
-                file_factory.declare_file("%s.srcjar" % len(_srcjars)),
+                file_factory.declare_file("%s-codegen.srcjar" % len(_srcjars)),
                 dirs,
             ),
         )
@@ -1048,8 +1048,8 @@ def _kt_jvm_library(
         android_lint_out = lint_actions.run_lint_on_library(
             ctx,
             output = file_factory.declare_file("_android_lint_output.xml"),
-            srcs = kt_srcs + java_srcs + common_srcs,
-            source_jars = java_syncer.srcjars,
+            srcs = [f for f in kt_srcs + java_srcs if ("plugin/published" not in f.path)] + common_srcs,
+            source_jars = [f for f in java_syncer.srcjars if not f.path.endswith("-codegen.srcjar")],
             classpath = full_classpath,
             manifest = manifest,
             merged_manifest = merged_manifest,
