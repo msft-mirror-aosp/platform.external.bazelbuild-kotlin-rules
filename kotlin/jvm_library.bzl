@@ -16,10 +16,8 @@
 
 load(":jvm_library.internal.bzl", "kt_jvm_library_helper")
 load("//bazel:stubs.bzl", "register_extension_info")
+load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
-load("//bazel:stubs.bzl", "lint_actions")
-load("//bazel:stubs.bzl", "LINT_REGISTRY")
-load("//bazel:stubs.bzl", "registry_checks_for_package")
 
 def kt_jvm_library(
         name,
@@ -109,11 +107,8 @@ def kt_jvm_library(
         transitive_configs = transitive_configs,
         **dicts.add(
             kwargs,
-            {
-                # Dictionary necessary to set private attributes.
-                "$android_lint_baseline_file": lint_actions.get_android_lint_baseline_file(native.package_name()),
-                "$android_lint_plugins": registry_checks_for_package(LINT_REGISTRY, native.package_name()),
-            },
+            androidlint_toolchains.set_baselines(),
+            androidlint_toolchains.set_plugins(),
         )
     )
 

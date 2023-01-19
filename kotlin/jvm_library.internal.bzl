@@ -232,12 +232,6 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         doc = """The list of source files that are processed to create the target.
                  To support circular dependencies, this can include `.kt` and `.java` files.""",
     ),
-    _android_lint_plugins = attr.label_list(
-        providers = [
-            [JavaInfo],
-        ],
-        cfg = "exec",
-    ),
 )
 
 kt_jvm_library_helper = rule(
