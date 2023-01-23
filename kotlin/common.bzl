@@ -965,6 +965,14 @@ def _kt_jvm_library(
                 javac_deps.append(kt_toolchain.coverage_runtime)
 
         javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
+        allows_non_strict = False
+        for src in srcs:
+            if "_non_strict_" in src.path:
+                allows_non_strict = True
+                break
+        if allows_non_strict:
+            # TODO: Apply make_non_strict to a tighter range.
+            javac_deps = [java_common.make_non_strict(dep) for dep in javac_deps]
         javac_java_info = java_common.compile(
             ctx,
             source_files = java_srcs,
