@@ -19,9 +19,9 @@ load("//bazel:stubs.bzl", "select_java_language_level")
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_7_21"
+KT_VERSION = "v1_8_0"
 
-KT_LANG_VERSION = "1.7"
+KT_LANG_VERSION = "1.8"
 
 # Kotlin JVM toolchain type label
 _TYPE = Label("//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
@@ -78,6 +78,12 @@ def _kotlinc_common_flags(ctx, other_flags):
 
         # Allows a no source files to create an empty jar.
         "-Xallow-no-source-files",
+
+        # TODO: Remove this flag
+        "-Xuse-old-innerclasses-logic",
+
+        # TODO: Remove this flag
+        "-Xno-source-debug-extension",
     ] + other_flags
 
     # --define=extra_kt_jvm_opts is for overriding from command line.
