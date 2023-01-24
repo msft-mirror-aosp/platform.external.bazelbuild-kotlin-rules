@@ -1030,7 +1030,7 @@ def _kt_jvm_library(
     # TODO: Remove the is_android_library_without_kt_srcs condition once KtAndroidLint
     # uses the same lint checks with AndroidLint
 
-    if not is_android_library_without_kt_srcs and androidlint_toolchains.get_wrapper(ctx):
+    if not is_android_library_without_kt_srcs:
         lint_flags = [
             "--java-language-level",  # b/159950410
             kt_toolchain.java_language_version,
@@ -1055,6 +1055,7 @@ def _kt_jvm_library(
 
         android_lint_out = lint_actions.run_lint_on_library(
             ctx,
+            runner = kt_toolchain.android_lint_runner,
             output = file_factory.declare_file("_android_lint_output.xml"),
             srcs = [f for f in kt_srcs + java_srcs if ("plugin/published" not in f.path)] + common_srcs,
             source_jars = [f for f in java_syncer.srcjars if not f.path.endswith("-codegen.srcjar")],

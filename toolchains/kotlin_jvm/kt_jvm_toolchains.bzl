@@ -106,6 +106,7 @@ def _kt_jvm_toolchain_impl(ctx):
     kt_jvm_toolchain = dict(
         android_java8_apis_desugared = ctx.attr.android_java8_apis_desugared,
         android_lint_config = ctx.file.android_lint_config,
+        android_lint_runner = ctx.attr.android_lint_runner[DefaultInfo].files_to_run,
         build_marker = ctx.file.build_marker,
         coverage_instrumenter = ctx.attr.coverage_instrumenter[DefaultInfo].files_to_run,
         # Don't require JavaInfo provider for integration test convenience.
@@ -145,6 +146,11 @@ kt_jvm_toolchain = rule(
         android_lint_config = attr.label(
             cfg = "exec",
             allow_single_file = [".xml"],
+        ),
+        android_lint_runner = attr.label(
+            default = "//bazel:stub_tool",
+            executable = True,
+            cfg = "exec",
         ),
         build_marker = attr.label(
             default = "//tools:build_marker",

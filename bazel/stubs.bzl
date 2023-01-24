@@ -42,7 +42,11 @@ registry_checks_for_package = _empty_fn
 
 LINT_REGISTRY = None  # Only ever passed to registry_checks_for_package
 
+def _run_lint_on_library(ctx, output, *_args, **_kwargs):
+    ctx.actions.write(output, "Android Lint Disabled")
+    return output
+
 lint_actions = struct(
-    run_lint_on_library = _empty_fn,
+    run_lint_on_library = _run_lint_on_library,
     get_android_lint_baseline_file = _empty_fn,
 )

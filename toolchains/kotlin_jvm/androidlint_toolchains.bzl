@@ -21,10 +21,6 @@ _ATTRS = dict(
         allow_single_file = True,
         cfg = "exec",
     ),
-    _android_lint_wrapper = attr.label(
-        executable = True,
-        cfg = "exec",
-    ),
 )
 
 def _set_baselines():
@@ -36,6 +32,5 @@ def _set_baselines():
 androidlint_toolchains = struct(
     attrs = _ATTRS,
     get_baseline = lambda ctx: getattr(ctx.file, "_android_lint_baseline_file", None),
-    get_wrapper = lambda ctx: getattr(ctx.attr, "_android_lint_wrapper", None),
     set_baselines = _set_baselines,
 )
