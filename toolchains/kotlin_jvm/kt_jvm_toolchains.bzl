@@ -223,8 +223,6 @@ kt_jvm_toolchain = rule(
             default = [
                 "@kotlinc//:kotlin_reflect",
                 "@kotlinc//:kotlin_stdlib",
-                "@kotlinc//:kotlin_stdlib_jdk7",
-                "@kotlinc//:kotlin_stdlib_jdk8",
                 "@kotlinc//:kotlin_test_not_testonly",
             ],
             cfg = "target",
