@@ -965,14 +965,15 @@ def _kt_jvm_library(
                 javac_deps.append(kt_toolchain.coverage_runtime)
 
         javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
-        allows_non_strict = False
-        for src in srcs:
-            if "_non_strict_" in src.path:
-                allows_non_strict = True
-                break
-        if allows_non_strict:
-            # TODO: Apply make_non_strict to a tighter range.
-            javac_deps = [java_common.make_non_strict(dep) for dep in javac_deps]
+        allow_indirect_dep_access = _contains_srcs_with_sjd_exemption(srcs)
+        annotation_plugins = list(plugins.java_plugin_infos)
+        if allow_indirect_dep_access:
+            annotation_plugins.append(
+                JavaPluginInfo(
+                    processor_class = "_KtCodegenProcessed",
+                    runtime_deps = [],
+                ),
+            )
         javac_java_info = java_common.compile(
             ctx,
             source_files = java_srcs,
@@ -988,12 +989,13 @@ def _kt_jvm_library(
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
             javac_opts = ctx.fragments.java.default_javac_flags + javacopts,
-            plugins = plugins.java_plugin_infos,
+            plugins = annotation_plugins,
             strict_deps = "DEFAULT",
             java_toolchain = java_toolchain,
             neverlink = neverlink,
             # Enable annotation processing for java-only sources to enable data binding
-            enable_annotation_processing = not kt_srcs,
+            # Disable annotation processing if the srcs have already been processed.
+            enable_annotation_processing = (not kt_srcs) and (not allow_indirect_dep_access),
             annotation_processor_additional_outputs = annotation_processor_additional_outputs,
             annotation_processor_additional_inputs = annotation_processor_additional_inputs,
         )
@@ -1222,6 +1224,14 @@ def _collect_proguard_specs(
 def _collect_providers(provider, deps):
     """Collects the requested provider from the given list of deps."""
     return [dep[provider] for dep in deps if provider in dep]
+
+# Allows certain generated sources to be exempted from strict deps. Configuration at,
+# google3/tools/build_defs/kotlin/policy/codegen_plugin.bzl#_PROCESSOR_PREFIXES_WITH_SJD_EXEMPTION
+def _contains_srcs_with_sjd_exemption(srcs):
+    for src in srcs:
+        if "_non_strict_" in src.path:
+            return True
+    return False
 
 def _create_classpath(java_toolchain, deps):
     # To not confuse strictdeps, order as boot > direct > transitive JARs (b/149107867).
