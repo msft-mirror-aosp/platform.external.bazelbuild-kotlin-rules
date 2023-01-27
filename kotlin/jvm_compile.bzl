@@ -133,6 +133,7 @@ def kt_jvm_compile(
         r_java_infos.append(r_java)
 
     pre_processed_java_plugin_processors = sets.make([])
+    pre_processed_kt_codegen_plugin_processors = sets.make([])
 
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
     has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
@@ -184,7 +185,10 @@ def kt_jvm_compile(
                     if (KtCompilerPluginInfo in plugin)
                 ],
         ),
-        pre_processed_java_plugin_processors = pre_processed_java_plugin_processors,
+        pre_processed_processors = sets.union(
+            pre_processed_java_plugin_processors,
+            pre_processed_kt_codegen_plugin_processors,
+        ),
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,
