@@ -141,9 +141,7 @@ def kt_jvm_compile(
         kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
     for dep in deps:
-        if False:
-            pass
-        elif JavaInfo in dep:
+        if JavaInfo in dep:
             java_infos.append(dep[JavaInfo])
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
