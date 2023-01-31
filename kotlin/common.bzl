@@ -80,6 +80,9 @@ _RULE_FAMILY = struct(
 def _is_dir(file, basename):
     return file.is_directory and file.basename == basename
 
+def _is_file(file, extension):
+    return (not file.is_directory) and file.path.endswith(extension)
+
 def _is_kt_src(src):
     """Decides if `src` Kotlin code.
 
@@ -88,7 +91,7 @@ def _is_kt_src(src):
       -  a tree-artifact expected to contain only Kotlin source files
     """
 
-    return src.path.endswith(_EXT.KT) or _is_dir(src, "kotlin")
+    return _is_file(src, _EXT.KT) or _is_dir(src, "kotlin")
 
 # Compute module name based on target (b/139403883), similar to Swift
 def _derive_module_name(ctx):
@@ -536,7 +539,7 @@ def _run_import_deps_checker(
     )
 
 def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
-    if not jar.basename.endswith(".jar"):
+    if not _is_file(jar, _EXT.JAR):
         fail("Expect JAR input but got %s" % jar)
     file_factory = FileFactory(ctx, jar)
 
@@ -838,10 +841,10 @@ def _kt_jvm_library(
 
     # Split sources, as java requires a separate compile step.
     kt_srcs = [s for s in srcs if _is_kt_src(s)]
-    java_srcs = [s for s in srcs if s.path.endswith(_EXT.JAVA)]
+    java_srcs = [s for s in srcs if _is_file(s, _EXT.JAVA)]
     java_syncer = _DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     java_syncer.add_dirs([s for s in srcs if _is_dir(s, "java")])
-    java_syncer.add_srcjars([s for s in srcs if s.path.endswith(_EXT.SRCJAR)])
+    java_syncer.add_srcjars([s for s in srcs if _is_file(s, _EXT.SRCJAR)])
 
     expected_srcs = sets.make(kt_srcs + java_srcs + java_syncer.dirs + java_syncer.srcjars)
     unexpected_srcs = sets.difference(sets.make(srcs), expected_srcs)

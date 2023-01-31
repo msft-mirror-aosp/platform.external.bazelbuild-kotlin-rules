@@ -35,23 +35,17 @@ EOF
 
 def _create_dir_impl(ctx):
     dir = ctx.actions.declare_directory(ctx.attr.name)
-    if ctx.files.srcs:
-        ctx.actions.run_shell(
-            command = "mkdir -p {0} && cp {1} {0}".format(
-                dir.path + "/" + ctx.attr.subdir,
-                " ".join([s.path for s in ctx.files.srcs]),
-            ),
-            inputs = ctx.files.srcs,
-            outputs = [dir],
-        )
-    else:
-        ctx.actions.run_shell(
-            command = "mkdir -p {0}".format(
-                dir.path + "/" + ctx.attr.subdir,
-            ),
-            inputs = ctx.files.srcs,
-            outputs = [dir],
-        )
+
+    command = "mkdir -p {0} " + ("&& cp {1} {0}" if ctx.files.srcs else "# {1}")
+    ctx.actions.run_shell(
+        command = command.format(
+            dir.path + "/" + ctx.attr.subdir,
+            " ".join([s.path for s in ctx.files.srcs]),
+        ),
+        inputs = ctx.files.srcs,
+        outputs = [dir],
+    )
+
     return [DefaultInfo(files = depset([dir]))]
 
 _create_dir = rule(
@@ -62,7 +56,10 @@ _create_dir = rule(
     ),
 )
 
-def create_dir(name, subdir, srcs):
+def create_dir(
+        name,
+        subdir = None,
+        srcs = None):
     _create_dir(
         name = name,
         subdir = subdir,
