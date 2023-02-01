@@ -809,12 +809,14 @@ def _kt_jvm_library(
         output = None,
         output_srcjar = None,  # Will derive default filename if not set.
         deps = [],
-        codegen_output_java_infos = [],  # JavaInfo sequence from kt_codegen_plugin.
         exports = [],  # passthrough for JavaInfo constructor
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
         plugins = _kt_plugins_map(),
-        pre_processed_processors = sets.make([]),
+        kt_codegen_processing_env = dict(
+            pre_processed_processors = depset(),
+            codegen_output_java_infos = [],
+        ),
         exported_plugins = [],
         android_lint_plugins = [],
         android_lint_rules_jars = depset(),  # Depset with standalone Android Lint rules Jars
@@ -835,6 +837,8 @@ def _kt_jvm_library(
         fail("Missing or invalid java_toolchain")
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
+    pre_processed_processors = kt_codegen_processing_env["pre_processed_processors"]
+    codegen_output_java_infos = kt_codegen_processing_env["codegen_output_java_infos"]
 
     file_factory = FileFactory(ctx, output)
     deps = list(deps)  # Defensive copy
@@ -874,7 +878,7 @@ def _kt_jvm_library(
         cls
         for p in java_plugin_datas
         for cls in p.processor_classes.to_list()
-        if not sets.contains(pre_processed_processors, cls)
+        if cls not in pre_processed_processors.to_list()
     ]
     plugin_classpaths = depset(transitive = [p.processor_jars for p in java_plugin_datas])
 
