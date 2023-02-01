@@ -45,9 +45,7 @@ def _jvm_library_impl(ctx):
     kt_jvm_toolchain = kt_jvm_toolchains.get(ctx)
 
     for target in ctx.attr.runtime_deps:
-        if JavaInfo in target:
-            pass
-        elif CcInfo not in target:
+        if (JavaInfo not in target) and (CcInfo not in target):
             fail("Unexpected runtime dependency (must provide JavaInfo or CcInfo): " + str(target.label))
 
     if not ctx.files.srcs and not ctx.files.common_srcs and not ctx.attr.exports and not ctx.attr.exported_plugins:
@@ -66,9 +64,9 @@ def _jvm_library_impl(ctx):
         exports = ctx.attr.exports,
         javacopts = ctx.attr.javacopts,
         kotlincopts = merge_kotlincopts(ctx),
-        neverlink = False,
+        neverlink = ctx.attr.neverlink,
         testonly = ctx.attr.testonly,
-                android_lint_plugins = [p[JavaInfo] for p in ctx.attr._android_lint_plugins],
+                android_lint_plugins = ctx.attr._android_lint_plugins,
         manifest = None,
         merged_manifest = None,
         resource_files = [],
@@ -188,6 +186,11 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         doc = """Additional flags to pass to javac if used as part of this rule, which is the case
                      if `.java` `srcs` are provided or annotation processors generate sources for this
                      rule.""",
+    ),
+    neverlink = attr.bool(
+        default = False,
+        doc = """Only use this library for compilation and not at runtime. Useful if the library
+                  will be provided by the runtime environment during execution.""",
     ),
     plugins = attr.label_list(
         providers = [

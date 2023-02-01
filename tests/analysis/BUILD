@@ -17,6 +17,7 @@
 load("//tests/analysis:jvm_compile_test.bzl", jvm_compile_test_suite = "test_suite")
 load("//tests/analysis:jvm_import_test.bzl", jvm_import_test_suite = "test_suite")
 load("//tests/analysis:jvm_library_test.bzl", jvm_library_test_suite = "test_suite")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 

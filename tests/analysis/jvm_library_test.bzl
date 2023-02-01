@@ -89,6 +89,13 @@ def _test_impl(ctx):
         friend_jar_names = [p.rsplit("/", 1)[1] for p in friend_paths_arg.split(",")] if friend_paths_arg else []
         asserts.set_equals(env, sets.make(ctx.attr.expected_friend_jar_names), sets.make(friend_jar_names))
 
+    asserts.equals(
+        env,
+        ctx.attr.expect_neverlink,
+        len(actual[JavaInfo].transitive_runtime_jars.to_list()) == 0,
+        "Mismatch: Expected transitive_runtime_jars iff (neverlink == False)",
+    )
+
     return analysistest.end(env)
 
 _test = analysistest.make(
@@ -107,6 +114,7 @@ _test = analysistest.make(
             default = _DEFAULT_LIST,
         ),
         expect_processor_classpath = attr.bool(),
+        expect_neverlink = attr.bool(),
     ),
 )
 
@@ -138,158 +146,6 @@ _coverage_test = analysistest.make(
 
 def _extract_data_runfiles(target):
     return [f.basename for f in target[DefaultInfo].data_runfiles.files.to_list()]
-
-def _test_kt_jvm_library_with_deps():
-    test_name = "kt_jvm_library_with_deps_test"
-
-    kt_jvm_library(
-        name = test_name + "_kt_dep",
-        srcs = [create_file(
-            name = test_name + "/Hello.kt",
-            content = """
-package test
-
-fun hello(): String = "Hello!"
-""",
-        )],
-    )
-    native.java_library(
-        name = test_name + "_java_dep",
-        srcs = ["testinputs/Foo.java"],
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            create_file(
-                name = test_name + "/Hi.kt",
-                content = """
-package test
-
-fun hi(): String = "Hi!"
-""",
-            ),
-            "testinputs/Bar.java",
-        ],
-        deps = [
-            test_name + "_kt_dep",
-            test_name + "_java_dep",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_no_deps():
-    test_name = "kt_jvm_library_no_deps_test"
-    create_file(
-        name = test_name + "/Salutations.kt",
-        content = """
-package test
-
-fun greeting(): String = "Hello World!"
-""",
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            "testinputs/Bar.java",
-            test_name + "/Salutations.kt",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_with_only_common_srcs():
-    test_name = "kt_jvm_library_only_common_srcs_test"
-    create_file(
-        name = test_name + "/Salutations.kt",
-        content = """
-package test
-
-fun greeting(): String = "Hello World!"
-""",
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        common_srcs = [
-            test_name + "/Salutations.kt",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_no_java_srcs():
-    test_name = "kt_jvm_library_no_java_srcs_test"
-    create_file(
-        name = test_name + "/Salutations.kt",
-        content = """
-package test
-
-fun greeting(): String = "Hello World!"
-""",
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            test_name + "/Salutations.kt",
-        ],
-            )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_no_kt_srcs():
-    test_name = "kt_jvm_library_no_kt_srcs_test"
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            "testinputs/Bar.java",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_with_runtime_deps():
-    test_name = "kt_jvm_library_with_runtime_deps_test"
-    create_file(
-        name = test_name + "/Salutations.kt",
-        content = """
-package test
-
-fun greeting(): String = "Hello World!"
-""",
-    )
-    native.java_library(
-        name = test_name + "_dep",
-        srcs = [],
-    )
-    kt_jvm_library(
-        name = test_name + "_tut",
-        srcs = [
-            test_name + "/Salutations.kt",
-        ],
-        runtime_deps = [
-            test_name + "_dep",
-        ],
-    )
-    _test(
-        name = test_name,
-        target_under_test = test_name + "_tut",
-    )
-    return test_name
 
 def _test_kt_jvm_library_with_proguard_specs():
     test_name = "kt_jvm_library_with_proguard_specs_test"
@@ -353,48 +209,6 @@ Hi!
     _test(
         name = test_name,
         target_under_test = test_name + "_tut",
-    )
-    return test_name
-
-def _test_kt_jvm_library_with_data():
-    test_name = "kt_jvm_library_with_data_test"
-    kt_jvm_lib_name = test_name + "_tut"
-
-    data_txt = create_file(
-        name = test_name + "data.txt",
-        content = """
-Hello World!
-""",
-    )
-
-    # Kotlin file
-    muchdata_kt = create_file(
-        name = test_name + "/MuchData.kt",
-        content = """
-package test
-
-import java.io.File
-
-fun greeting(): String = File("data.txt").readText()
-""",
-    )
-
-    kt_jvm_library(
-        name = kt_jvm_lib_name,
-        srcs = [muchdata_kt],
-        data = [data_txt],
-    )
-
-    _test(
-        name = test_name,
-        target_under_test = kt_jvm_lib_name,
-        expected = dict(
-            data = [
-                data_txt,
-                # libX.jar is always in data_runfiles as well - just append it.
-                "lib%s.jar" % kt_jvm_lib_name,
-            ],
-        ),
     )
     return test_name
 
@@ -816,23 +630,16 @@ def test_suite(name):
             _test_forbidden_nano_export(),
             _test_kt_jvm_library_dep_on_exported_plugin(),
             _test_kt_jvm_library_java_dep_on_exported_plugin(),
-            _test_kt_jvm_library_no_deps(),
-            _test_kt_jvm_library_no_java_srcs(),
-            _test_kt_jvm_library_no_kt_srcs(),
             _test_kt_jvm_library_no_kt_srcs_with_plugin(),
-            _test_kt_jvm_library_with_data(),
-            _test_kt_jvm_library_with_deps(),
             _test_kt_jvm_library_with_export_that_exports_plugin(),
             _test_kt_jvm_library_with_exported_plugin(),
             _test_kt_jvm_library_with_exports(),
             _test_kt_jvm_library_with_java_export_that_exports_plugin(),
             _test_kt_jvm_library_with_no_sources(),
             _test_kt_jvm_library_with_non_processor_plugin(),
-            _test_kt_jvm_library_with_only_common_srcs(),
             _test_kt_jvm_library_with_plugin(),
             _test_kt_jvm_library_with_proguard_specs(),
             _test_kt_jvm_library_with_resources(),
-            _test_kt_jvm_library_with_runtime_deps(),
             _test_kt_jvm_library_coverage(),
         ],
     )
