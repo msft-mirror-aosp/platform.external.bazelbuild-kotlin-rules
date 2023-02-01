@@ -50,6 +50,7 @@ _ALLOWED_JVM_RULES = [
     "kt_jvm_import",
     "kt_proto_library_helper",
     "_j2kt_jvm_library_rule",  # b/233055549
+    "kt_flatbuffers_library",  # b/263252785
 ]
 
 _EXT = struct(
