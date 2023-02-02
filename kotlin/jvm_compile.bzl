@@ -17,6 +17,7 @@
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
+load(":visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
 _RULE_FAMILY = common.RULE_FAMILY
 

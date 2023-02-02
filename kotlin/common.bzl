@@ -20,6 +20,7 @@ load("//bazel:stubs.bzl", "lint_actions")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 load(":file_factory.bzl", "FileFactory")
+load(":visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
 # TODO: Remove the _ALLOWED_*_RULES lists to determine which rules
 # are accepted dependencies to Kotlin rules as the approach does not scale
@@ -1003,7 +1004,7 @@ def _kt_jvm_library(
             annotation_processor_additional_inputs = annotation_processor_additional_inputs,
         )
 
-        # Directly return the JavaInfo from java.compile() for java-only andorid_library targets
+        # Directly return the JavaInfo from java.compile() for java-only android_library targets
         # to avoid creating a new JavaInfo. See b/239847857 for additional context.
         if is_android_library_without_kt_srcs:
             return struct(
