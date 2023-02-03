@@ -24,6 +24,8 @@ be passed to the `custom_kotlincopts` attribute. The set of directories that all
 `kt_compiler_opt` targets is also limited, to prevent misuse.
 """
 
+load(":visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+
 # Intentionally private to prevent misuse.
 _KtCompilerOptInfo = provider(
     doc = "A restricted set of kotlinc opts",
