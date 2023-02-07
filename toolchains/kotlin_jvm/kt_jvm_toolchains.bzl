@@ -275,9 +275,8 @@ def _declare(**kwargs):
             "//conditions:default": False,
         }),
         # The JVM bytecode version to output
-        jvm_target = select_java_language_level(
-            highest_supported = 18,  # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
-        ),
+        # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
+        jvm_target = "11",
         **kwargs
     )
 
