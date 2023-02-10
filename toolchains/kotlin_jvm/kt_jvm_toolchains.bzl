@@ -19,7 +19,7 @@ load("//bazel:stubs.bzl", "select_java_language_level")
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_8_0"
+KT_VERSION = "v1_8_10"
 
 KT_LANG_VERSION = "1.8"
 
