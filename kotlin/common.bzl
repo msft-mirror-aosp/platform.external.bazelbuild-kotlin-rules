@@ -1018,8 +1018,12 @@ def _kt_jvm_library(
         java_native_headers_jar = javac_java_info.outputs.native_headers
 
         if kt_srcs:
-            java_gensrcjar = kapt_outputs.srcjar
-            java_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
+            if pre_processed_processors and java_syncer.srcjars:
+                java_gensrcjar = java_syncer.srcjars[0]
+                java_genjar = javac_out
+            else:
+                java_gensrcjar = kapt_outputs.srcjar
+                java_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
         else:
             java_gensrcjar = javac_java_info.annotation_processing.source_jar
             java_genjar = javac_java_info.annotation_processing.class_jar
