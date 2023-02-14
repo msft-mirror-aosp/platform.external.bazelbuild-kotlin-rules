@@ -19,6 +19,7 @@ load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", 
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(":assert_failure_test.bzl", "assert_failure_test")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 _DEFAULT_LIST = ["__default__"]
 

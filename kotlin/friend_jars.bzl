@@ -14,6 +14,8 @@
 
 """TODO: Write module docstring."""
 
+load("//:visibility.bzl", "RULES_KOTLIN")
+
 def is_eligible_friend(target, friend):
     """
     Determines if `target` is allowed to use `internal` members of `friend`

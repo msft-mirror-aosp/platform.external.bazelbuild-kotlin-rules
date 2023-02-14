@@ -14,6 +14,8 @@
 
 """FileFactory"""
 
+load("//:visibility.bzl", "RULES_KOTLIN")
+
 def FileFactory(ctx, base, suffix = None):
     """Creates files with names derived from some base file
 

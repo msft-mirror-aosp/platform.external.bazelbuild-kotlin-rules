@@ -20,6 +20,7 @@ load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//bazel:stubs.bzl", "lint_actions")
 load("//bazel:stubs.bzl", "LINT_REGISTRY")
 load("//bazel:stubs.bzl", "registry_checks_for_package")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def kt_jvm_library(
         name,

@@ -14,6 +14,8 @@
 
 """A rule for declaring and passing kotlinc plugins."""
 
+load("//:visibility.bzl", "RULES_KOTLIN")
+
 _KtCompilerPluginInfo = provider(
     doc = "Info for running a plugin that directly registers itself to kotlinc extension points",
     fields = dict(

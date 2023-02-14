@@ -15,6 +15,7 @@
 """Stubs"""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _empty_fn(*_args, **_kwargs):
     pass

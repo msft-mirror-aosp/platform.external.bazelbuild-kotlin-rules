@@ -15,6 +15,7 @@
 """Kotlin toolchain."""
 
 load("//bazel:stubs.bzl", "select_java_language_level")
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()

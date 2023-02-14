@@ -15,6 +15,7 @@
 """An assertion for analysis failure."""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _assert_failure_test_impl(ctx):
     env = analysistest.begin(ctx)

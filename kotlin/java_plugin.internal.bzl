@@ -19,6 +19,8 @@ Due to cross plugin type processing, the plugin info search processor differs
 from the way that java targets handles plugins.
 """
 
+load("//:visibility.bzl", "RULES_KOTLIN")
+
 def _get_java_plugins(_target, ctx_rule):
     exported_plugins = getattr(ctx_rule.attr, "exported_plugins", [])
     return [

@@ -14,6 +14,8 @@
 
 """kt_traverse_exports visitor for exposing jdeps files from direct deps."""
 
+load("//:visibility.bzl", "RULES_KOTLIN")
+
 def _get_jdeps(target, _ctx_rule):
     return [out.compile_jdeps for out in target[JavaInfo].java_outputs if out.compile_jdeps]
 

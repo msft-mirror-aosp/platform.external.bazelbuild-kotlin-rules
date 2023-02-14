@@ -20,7 +20,7 @@ load("//bazel:stubs.bzl", "lint_actions")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 load(":file_factory.bzl", "FileFactory")
-load(":visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
 # TODO: Remove the _ALLOWED_*_RULES lists to determine which rules
 # are accepted dependencies to Kotlin rules as the approach does not scale

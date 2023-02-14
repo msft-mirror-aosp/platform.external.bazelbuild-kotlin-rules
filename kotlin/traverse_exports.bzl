@@ -19,7 +19,7 @@ load(":direct_jdeps.bzl", "kt_direct_jdeps_visitor")
 load(":forbidden_deps.bzl", "kt_forbidden_deps_visitor")
 load(":friend_jars.bzl", "kt_friend_jars_visitor", "kt_friend_labels_visitor")
 load(":java_plugin.internal.bzl", "java_plugin_visitor")
-load(":visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
 # java_xxx_proto_library don't populate java_outputs but we can get them through
 # required_aspect_providers from their proto_library deps.
