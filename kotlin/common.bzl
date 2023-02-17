@@ -797,6 +797,27 @@ def _check_srcs_package(target_package, srcs, attr_name):
             fail(("Please do not depend on %s directly in %s.  Either move it to this package or " +
                   "depend on an appropriate rule in its package.") % (src.owner, attr_name))
 
+def _split_srcs_by_language(srcs, common_srcs, java_syncer):
+    srcs_set = sets.make(srcs)
+    common_srcs_set = sets.make(common_srcs)
+
+    overlapping_srcs_set = sets.intersection(srcs_set, common_srcs_set)
+    if sets.length(overlapping_srcs_set) != 0:
+        fail("Overlap between srcs and common_srcs: %s" % sets.to_list(overlapping_srcs_set))
+
+    # Split sources, as java requires a separate compile step.
+    kt_srcs = [s for s in srcs if _is_kt_src(s)]
+    java_srcs = [s for s in srcs if _is_file(s, _EXT.JAVA)]
+    java_syncer.add_dirs([s for s in srcs if _is_dir(s, "java")])
+    java_syncer.add_srcjars([s for s in srcs if _is_file(s, _EXT.SRCJAR)])
+
+    expected_srcs_set = sets.make(kt_srcs + java_srcs + java_syncer.dirs + java_syncer.srcjars)
+    unexpected_srcs_set = sets.difference(srcs_set, expected_srcs_set)
+    if sets.length(unexpected_srcs_set) != 0:
+        fail("Unexpected srcs: %s" % sets.to_list(unexpected_srcs_set))
+
+    return (kt_srcs, java_srcs)
+
 # TODO: Streamline API to generate less actions.
 def _kt_jvm_library(
         ctx,
@@ -844,18 +865,8 @@ def _kt_jvm_library(
 
     file_factory = FileFactory(ctx, output)
     deps = list(deps)  # Defensive copy
-
-    # Split sources, as java requires a separate compile step.
-    kt_srcs = [s for s in srcs if _is_kt_src(s)]
-    java_srcs = [s for s in srcs if _is_file(s, _EXT.JAVA)]
     java_syncer = _DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
-    java_syncer.add_dirs([s for s in srcs if _is_dir(s, "java")])
-    java_syncer.add_srcjars([s for s in srcs if _is_file(s, _EXT.SRCJAR)])
-
-    expected_srcs = sets.make(kt_srcs + java_srcs + java_syncer.dirs + java_syncer.srcjars)
-    unexpected_srcs = sets.difference(sets.make(srcs), expected_srcs)
-    if sets.length(unexpected_srcs) != 0:
-        fail("Unexpected srcs: %s" % sets.to_list(unexpected_srcs))
+    kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
 
     # TODO: Remove this special case
     if kt_srcs and ("flogger" in [p.plugin_id for p in plugins.kt_compiler_plugin_infos]):
