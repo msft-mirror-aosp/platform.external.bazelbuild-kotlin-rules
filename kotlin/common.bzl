@@ -994,7 +994,7 @@ def _kt_jvm_import(
     if not jars:
         fail("Must import at least one JAR")
 
-    file_factory = FileFactory(ctx, jars[0])
+    file_factory = FileFactory(ctx, ctx.label.name)
     deps = java_common.merge(deps + kt_toolchain.kotlin_libs)
 
     # Check that any needed deps are declared unless neverlink, in which case Jars won't be used
