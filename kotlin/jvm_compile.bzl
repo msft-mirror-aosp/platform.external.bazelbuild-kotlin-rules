@@ -115,10 +115,7 @@ def kt_jvm_compile(
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
 
-    srcs = list(srcs)
-    classpath_resources = list(classpath_resources)
     java_infos = []
-    codegen_output_java_infos = []
 
     # The r_java field only support Android resources Jar files. For now, verify
     # that the name of the jar matches "_resources.jar". This check does not to
