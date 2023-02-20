@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""kt_traverse_exports visitor for exposing jdeps files from direct deps."""
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-load("//:visibility.bzl", "RULES_KOTLIN")
+package(default_visibility = ["//:internal"])
 
-def _get_jdeps(target, _ctx_rule):
-    return [out.compile_jdeps for out in target[JavaInfo].java_outputs if out.compile_jdeps]
+licenses(["notice"])
 
-kt_direct_jdeps_visitor = struct(
-    name = "direct_jdeps",
-    visit_target = _get_jdeps,
-    filter_edge = None,
-    process_unvisited_target = None,
-    finish_expansion = None,
+bzl_library(
+    name = "traverse_exports_bzl",
+    srcs = glob(["*.bzl"]),
+    deps = [
+        "//:visibility_bzl",
+        "//kotlin:for_traverse_exports_bzl",
+        "@bazel_skylib//lib:sets",
+    ],
 )

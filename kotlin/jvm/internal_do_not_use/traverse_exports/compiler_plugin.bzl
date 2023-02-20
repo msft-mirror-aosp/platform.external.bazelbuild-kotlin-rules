@@ -12,9 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Combined aspect for all rules_kotlin behaviours that need to traverse exports."""
+"""kt_compiler_plugin_visitor"""
 
-load("//kotlin/jvm/internal_do_not_use/traverse_exports:traverse_exports.bzl", _kt_traverse_exports = "kt_traverse_exports")
-load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 
-kt_traverse_exports = _kt_traverse_exports
+def _get_exported_plugins(_target, ctx_rule):
+    return [
+        t[KtCompilerPluginInfo]
+        for t in getattr(ctx_rule.attr, "exported_plugins", [])
+        if (KtCompilerPluginInfo in t)
+    ]
+
+kt_compiler_plugin_visitor = struct(
+    name = "compiler_plugins",
+    visit_target = _get_exported_plugins,
+    filter_edge = None,
+    finish_expansion = None,
+    process_unvisited_target = None,
+)

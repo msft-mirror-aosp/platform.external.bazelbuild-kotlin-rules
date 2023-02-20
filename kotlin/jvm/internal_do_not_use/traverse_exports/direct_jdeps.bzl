@@ -12,9 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Combined aspect for all rules_kotlin behaviours that need to traverse exports."""
+"""kt_traverse_exports visitor for exposing jdeps files from direct deps."""
 
-load("//kotlin/jvm/internal_do_not_use/traverse_exports:traverse_exports.bzl", _kt_traverse_exports = "kt_traverse_exports")
-load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
-kt_traverse_exports = _kt_traverse_exports
+def _get_jdeps(target, _ctx_rule):
+    return [
+        out.compile_jdeps
+        for out in target[JavaInfo].java_outputs
+        if out.compile_jdeps
+    ]
+
+kt_direct_jdeps_visitor = struct(
+    name = "direct_jdeps",
+    visit_target = _get_jdeps,
+    filter_edge = None,
+    process_unvisited_target = None,
+    finish_expansion = None,
+)
