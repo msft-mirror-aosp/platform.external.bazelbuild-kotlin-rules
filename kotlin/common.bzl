@@ -865,9 +865,10 @@ def _kt_jvm_library(
         java_native_headers_jar = javac_java_info.outputs.native_headers
 
         if kt_srcs:
-            if pre_processed_processors and java_syncer.srcjars:
-                java_gensrcjar = java_syncer.srcjars[0]
+            if pre_processed_processors:
+                java_gensrcjar = kt_codegen_processing_env["java_info_genearted_source_jar"]
                 java_genjar = javac_out
+
             else:
                 java_gensrcjar = kapt_outputs.srcjar
                 java_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
@@ -1079,6 +1080,36 @@ def _collect_proguard_specs(
         transitive = [p.specs for p in _collect_providers(ProguardSpecProvider, propagated_deps)],
         order = "preorder",
     )
+
+def _gen_java_info_genearted_class_jar(ctx, kt_toolchain, input_jars, srcjars):
+    output_jar = ctx.actions.declare_file(ctx.label.name + "_java_info_genearted_class_jar.jar")
+
+    input_jars = depset(input_jars)
+    transformer_env_files = depset(srcjars)
+
+    transformer_entry_point = "com.google.devtools.jar.transformation.ClassFileSelectorBySourceFile"
+    transformer_jars = kt_toolchain.class_file_selector_by_source_file[JavaInfo].transitive_runtime_jars
+    jar_transformer = kt_toolchain.jar_transformer[DefaultInfo].files_to_run
+
+    args = ctx.actions.args()
+    args.add_joined("--input_jars", input_jars, join_with = ",")
+    args.add_joined("--transformer_jars", transformer_jars, join_with = ",")
+    args.add("--transformer_entry_point", transformer_entry_point)
+    args.add_all("--transformer_env_files", transformer_env_files)
+    args.add("--result", output_jar)
+    ctx.actions.run(
+        inputs = depset(transitive = [
+            input_jars,
+            transformer_jars,
+            transformer_env_files,
+        ]),
+        outputs = [output_jar],
+        arguments = [args],
+        progress_message = "Transforming into %s" % output_jar.short_path,
+        mnemonic = "JarTransformer",
+        executable = jar_transformer,
+    )
+    return output_jar
 
 def _collect_providers(provider, deps):
     """Collects the requested provider from the given list of deps."""
