@@ -408,7 +408,9 @@ def _run_kotlinc(
         plugins = _kt_plugins_map(),
         friend_jars = depset(),
         enforce_strict_deps = False,
-        enforce_complete_jdeps = False):
+        enforce_complete_jdeps = False,
+        mnemonic = None,
+        message_prefix = ""):
     direct_inputs = []
     transitive_inputs = []
     outputs = []
@@ -470,11 +472,55 @@ def _run_kotlinc(
         arguments = [kotlinc_args],
         inputs = depset(direct = direct_inputs, transitive = transitive_inputs),
         outputs = outputs,
-        mnemonic = "Kt2JavaCompile",
-        progress_message = "Compiling Kotlin For Java Runtime: %s" % _get_original_kt_target_label(ctx),
+        mnemonic = mnemonic,
+        progress_message = message_prefix + str(_get_original_kt_target_label(ctx)),
         execution_requirements = {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
+    )
+
+    return struct(
+        output_jar = output,
+        compile_jar = kt_ijar,
+    )
+
+def _kt_compile(
+        ctx,
+        file_factory,
+        kt_srcs = [],
+        common_srcs = [],
+        coverage_srcs = [],
+        java_srcs_and_dirs = [],
+        kt_hdrs = None,
+        common_hdrs = None,
+        kotlincopts = [],
+        compile_jdeps = depset(),
+        toolchain = None,
+        classpath = [],
+        directdep_jars = depset(),
+        plugins = _kt_plugins_map(),
+        friend_jars = depset(),
+        enforce_strict_deps = False,
+        enforce_complete_jdeps = False):
+    # TODO: don't run jvm-abi-gen plugin here if we have headers
+    kotlinc_full_result = _run_kotlinc(
+        ctx,
+        kt_srcs = kt_srcs,
+        common_srcs = common_srcs,
+        coverage_srcs = coverage_srcs,
+        java_srcs_and_dirs = java_srcs_and_dirs,
+        file_factory = file_factory,
+        kotlincopts = kotlincopts,
+        compile_jdeps = compile_jdeps,
+        toolchain = toolchain,
+        classpath = classpath,
+        directdep_jars = directdep_jars,
+        plugins = plugins,
+        friend_jars = friend_jars,
+        enforce_strict_deps = enforce_strict_deps,
+        enforce_complete_jdeps = enforce_complete_jdeps,
+        mnemonic = "Kt2JavaCompile",
+        message_prefix = "Compiling for Java runtime: ",
     )
 
     srcjar = kt_srcjars.zip(
@@ -485,20 +531,68 @@ def _run_kotlinc(
         common_srcs = common_srcs,
     )
 
+    output_jar = kotlinc_full_result.output_jar
     if ctx.coverage_instrumented():
-        output = _offline_instrument_jar(
+        output_jar = _offline_instrument_jar(
             ctx,
             toolchain,
-            output,
+            output_jar,
             kt_srcs + common_srcs + coverage_srcs,
         )
 
+    # Use un-instrumented Jar at compile-time to avoid double-instrumenting inline functions
+    # (see b/110763361 for the comparable Gradle issue)
+    compile_jar = kotlinc_full_result.compile_jar
+    if toolchain.header_gen_tool:
+        kotlinc_header_result = _run_kotlinc(
+            ctx,
+            kt_srcs = kt_hdrs,
+            common_srcs = common_hdrs,
+            coverage_srcs = coverage_srcs,
+            java_srcs_and_dirs = java_srcs_and_dirs,
+            file_factory = file_factory.derive("-abi"),
+            kotlincopts = kotlincopts,
+            compile_jdeps = compile_jdeps,
+            toolchain = toolchain,
+            classpath = classpath,
+            directdep_jars = directdep_jars,
+            plugins = plugins,
+            friend_jars = friend_jars,
+            enforce_strict_deps = enforce_strict_deps,
+            enforce_complete_jdeps = enforce_complete_jdeps,
+            mnemonic = "Kt2JavaHeaderCompile",
+            message_prefix = "Computing ABI interface Jar: ",
+        )
+        compile_jar = kotlinc_header_result.compile_jar
+
     result = dict(
-        output_jar = output,
-        compile_jar = kt_ijar,
+        output_jar = output_jar,
+        compile_jar = compile_jar,
         source_jar = srcjar,
     )
     return struct(java_info = JavaInfo(**result), **result)
+
+def _derive_headers(
+        ctx,
+        toolchain,
+        file_factory,
+        srcs):
+    if not srcs or not toolchain.header_gen_tool:
+        return srcs
+
+    output_dir = file_factory.declare_directory("-headers")
+    args = ctx.actions.args()
+    args.add(output_dir.path, format = "-output_dir=%s")
+    args.add_joined(srcs, format_joined = "-sources=%s", join_with = ",")
+    ctx.actions.run(
+        executable = toolchain.header_gen_tool,
+        arguments = [args],
+        inputs = srcs,
+        outputs = [output_dir],
+        mnemonic = "KtDeriveHeaders",
+        progress_message = "Deriving %s: %s" % (output_dir.basename, _get_original_kt_target_label(ctx)),
+    )
+    return [output_dir]
 
 def _get_original_kt_target_label(ctx):
     label = ctx.label
@@ -735,6 +829,20 @@ def _kt_jvm_library(
     out_srcjars = []
     out_compilejars = []
 
+    kt_hdrs = _derive_headers(
+        ctx,
+        toolchain = kt_toolchain,
+        file_factory = file_factory.derive("-kt"),
+        # TODO: prohibit overlap of srcs and common_srcs
+        srcs = kt_srcs,
+    )
+    common_hdrs = _derive_headers(
+        ctx,
+        toolchain = kt_toolchain,
+        file_factory = file_factory.derive("-common"),
+        srcs = common_srcs,
+    )
+
     # Kotlin compilation requires two passes when annotation processing is
     # required. The initial pass processes the annotations and generates
     # additional sources and the following pass compiles the Kotlin code.
@@ -745,8 +853,8 @@ def _kt_jvm_library(
         kapt_outputs = _kapt(
             ctx,
             file_factory = file_factory,
-            kt_srcs = kt_srcs,
-            common_srcs = common_srcs,
+            kt_srcs = kt_hdrs,
+            common_srcs = common_hdrs,
             java_srcs = java_srcs,
             plugin_processors = plugin_processors,
             plugin_classpaths = plugin_classpaths,
@@ -766,12 +874,14 @@ def _kt_jvm_library(
 
     kotlinc_result = None
     if kt_srcs or common_srcs:
-        kotlinc_result = _run_kotlinc(
+        kotlinc_result = _kt_compile(
             ctx,
             kt_srcs = kt_srcs,
             common_srcs = common_srcs,
             coverage_srcs = coverage_srcs,
             java_srcs_and_dirs = java_srcs + java_syncer.dirs,
+            kt_hdrs = kt_hdrs,
+            common_hdrs = common_hdrs,
             file_factory = file_factory.derive("-kt"),
             kotlincopts = kotlincopts,
             compile_jdeps = compile_jdeps,
@@ -782,9 +892,6 @@ def _kt_jvm_library(
             enforce_strict_deps = enforce_strict_deps,
             enforce_complete_jdeps = enforce_complete_jdeps,
         )
-
-        # Use un-instrumented Jar at compile-time to avoid double-instrumenting inline functions
-        # (see b/110763361 for the comparable Gradle issue)
         out_compilejars.append(kotlinc_result.compile_jar)
         out_srcjars.append(kotlinc_result.source_jar)
         out_jars.append(kotlinc_result.output_jar)
