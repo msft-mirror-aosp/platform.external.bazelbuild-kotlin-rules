@@ -69,16 +69,15 @@ def create_dir(
     )
     return name
 
-def get_action_arg(actions, mnemonic, arg_name):
-    """Get a named arg from a specific action
+def get_action(actions, mnemonic):
+    """Get a specific action
 
     Args:
       actions: [List[Action]]
       mnemonic: [string] Identify the action whose args to search
-      arg_name: [string]
 
     Returns:
-      [Optional[string]] The arg value, or None if it couldn't be found
+      [Optional[action]] The arg value, or None if it couldn't be found
     """
     menmonic_actions = [a for a in actions if a.mnemonic == mnemonic]
     if len(menmonic_actions) == 0:
@@ -86,8 +85,22 @@ def get_action_arg(actions, mnemonic, arg_name):
     elif len(menmonic_actions) > 1:
         fail("Expected a single '%s' action" % mnemonic)
 
-    mnemonic_action = menmonic_actions[0]
-    arg_values = [a for a in mnemonic_action.argv if a.startswith(arg_name)]
+    return menmonic_actions[0]
+
+def get_arg(action, arg_name):
+    """Get a named arg from a specific action
+
+    Args:
+      action: [Optional[Action]]
+      arg_name: [string]
+
+    Returns:
+      [Optional[string]] The arg value, or None if it couldn't be found
+    """
+    if not action:
+        return None
+
+    arg_values = [a for a in action.argv if a.startswith(arg_name)]
     if len(arg_values) == 0:
         return None
     elif len(arg_values) > 1:

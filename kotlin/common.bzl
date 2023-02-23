@@ -446,7 +446,7 @@ def _run_kotlinc(
 
     output = file_factory.declare_file(".jar")
     kotlinc_args.add("-d", output)
-    outputs.append(output)
+    outputs.insert(0, output)  # The param file name is derived from the 0th output
     kotlinc_args.add_all(kt_srcs)
     direct_inputs.extend(kt_srcs)
     kotlinc_args.add_all(common_srcs)
