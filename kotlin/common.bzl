@@ -975,7 +975,6 @@ def _kt_jvm_library(
             if pre_processed_processors:
                 java_gensrcjar = kt_codegen_processing_env["java_info_genearted_source_jar"]
                 java_genjar = javac_out
-
             else:
                 java_gensrcjar = kapt_outputs.srcjar
                 java_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
