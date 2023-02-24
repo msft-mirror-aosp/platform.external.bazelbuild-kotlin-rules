@@ -17,7 +17,7 @@
 load(":compiler_plugin.bzl", "kt_compiler_plugin_visitor")
 load(":direct_jdeps.bzl", "kt_direct_jdeps_visitor")
 load(":forbidden_deps.bzl", "kt_forbidden_deps_visitor")
-load(":friend_jars.bzl", "kt_friend_jars_visitor")
+load(":friend_jars.bzl", "kt_friend_jars_visitor", "kt_friend_labels_visitor")
 load(":java_plugin.internal.bzl", "java_plugin_visitor")
 
 # java_xxx_proto_library don't populate java_outputs but we can get them through
@@ -29,7 +29,6 @@ _DEPS_AS_EXPORTS_RULES = [
 ]
 
 _NO_SRCS_DEPS_AS_EXPORTS_RULES = [
-    "android_library",
     "proto_library",
 ]
 
@@ -45,6 +44,7 @@ _VISITORS = [
     kt_direct_jdeps_visitor,
     kt_compiler_plugin_visitor,
     kt_friend_jars_visitor,
+    kt_friend_labels_visitor,
     java_plugin_visitor,
 ]
 
@@ -65,7 +65,7 @@ def _aspect_impl(target, ctx):
     if not (JavaInfo in target):
         # Ignore non-JVM targets. This also chops-up the
         # traversal domain at these targets.
-        # TODO: Supoprt non-JVM targets for KMP
+        # TODO: Support non-JVM targets for KMP
         return _EMPTY_KT_TRAVERSE_EXPORTS_INFO
 
     exports = []
