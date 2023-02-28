@@ -398,7 +398,6 @@ def _run_kotlinc(
         file_factory,
         kt_srcs = [],
         common_srcs = [],
-        coverage_srcs = [],
         java_srcs_and_dirs = [],
         kotlincopts = [],
         compile_jdeps = depset(),
@@ -507,7 +506,6 @@ def _kt_compile(
         ctx,
         kt_srcs = kt_srcs,
         common_srcs = common_srcs,
-        coverage_srcs = coverage_srcs,
         java_srcs_and_dirs = java_srcs_and_dirs,
         file_factory = file_factory,
         kotlincopts = kotlincopts,
@@ -548,7 +546,6 @@ def _kt_compile(
             ctx,
             kt_srcs = kt_hdrs,
             common_srcs = common_hdrs,
-            coverage_srcs = coverage_srcs,
             java_srcs_and_dirs = java_srcs_and_dirs,
             file_factory = file_factory.derive("-abi"),
             kotlincopts = kotlincopts,
@@ -561,7 +558,7 @@ def _kt_compile(
             enforce_strict_deps = enforce_strict_deps,
             enforce_complete_jdeps = enforce_complete_jdeps,
             mnemonic = "Kt2JavaHeaderCompile",
-            message_prefix = "Computing ABI interface Jar: ",
+            message_prefix = "Computing Kotlin ABI interface Jar: ",
         )
         compile_jar = kotlinc_header_result.compile_jar
 
