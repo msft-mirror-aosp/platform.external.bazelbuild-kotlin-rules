@@ -976,8 +976,15 @@ def _kt_jvm_library(
 
         if kt_srcs:
             if pre_processed_processors:
-                java_gensrcjar = kt_codegen_processing_env["java_info_genearted_source_jar"]
-                java_genjar = javac_out
+                java_gensrcjar = kt_codegen_processing_env["java_info_generated_source_jar"][0]
+                java_genjar = ctx.actions.declare_file(ctx.label.name + "_java_info_generated_class_jar.jar")
+                _gen_java_info_generated_class_jar(
+                    ctx,
+                    java_genjar,
+                    kt_toolchain,
+                    input_jars = out_jars,
+                    srcjars = [java_gensrcjar],
+                )
             else:
                 java_gensrcjar = kapt_outputs.srcjar
                 java_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
@@ -1035,7 +1042,7 @@ def _kt_jvm_library(
             ),
             android_lint_rules = plugins.android_lint_singlejar_plugins,
             lint_flags = lint_flags,
-            extra_input_depsets = [p.processor_data for p in java_plugin_datas],
+            extra_input_depsets = [p.processor_data for p in java_plugin_datas] + [depset([java_genjar] if java_genjar else [])],
             testonly = testonly,
             android_java8_libs = kt_toolchain.android_java8_apis_desugared,
             mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
@@ -1190,9 +1197,7 @@ def _collect_proguard_specs(
         order = "preorder",
     )
 
-def _gen_java_info_generated_class_jar(ctx, kt_toolchain, input_jars, srcjars):
-    output_jar = ctx.actions.declare_file(ctx.label.name + "_java_info_genearted_class_jar.jar")
-
+def _gen_java_info_generated_class_jar(ctx, output_jar, kt_toolchain, input_jars, srcjars):
     input_jars = depset(input_jars)
     transformer_env_files = depset(srcjars)
 
