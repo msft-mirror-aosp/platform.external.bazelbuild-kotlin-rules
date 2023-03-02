@@ -342,43 +342,6 @@ def _run_turbine(
             progress_message = progress_message,
         )
 
-def _derive_gen_class_jar(
-        ctx,
-        toolchain,
-        manifest_proto,
-        javac_jar,
-        java_srcs = []):
-    """Returns the annotation processor-generated classes contained in given Jar."""
-    if not manifest_proto:
-        return None
-    if not javac_jar:
-        fail("There must be a javac Jar if there was annotation processing")
-    if not java_srcs:
-        # If there weren't any hand-written .java srcs, just use Javac's output
-        return javac_jar
-
-    # Run GenClass tool to derive gen_class_jar by filtering hand-written sources.
-    # cf. Bazel's JavaCompilationHelper#createGenJarAction
-    result = FileFactory(ctx, javac_jar).declare_file("-gen.jar")
-
-    genclass_args = ctx.actions.args()
-    genclass_args.add("--manifest_proto", manifest_proto)
-    genclass_args.add("--class_jar", javac_jar)
-    genclass_args.add("--output_jar", result)
-
-    kt_run_deploy_jar(
-        ctx = ctx,
-        java_runtime = toolchain.java_runtime,
-        deploy_jar = toolchain.genclass,
-        inputs = [manifest_proto, javac_jar],
-        outputs = [result],
-        args = [genclass_args],
-        mnemonic = "KtGenClassJar",
-        progress_message = "Deriving %{output}",
-    )
-
-    return result
-
 def _kt_plugins_map(
         android_lint_singlejar_plugins = depset(),
         android_lint_libjar_plugin_infos = [],
@@ -915,9 +878,8 @@ def _kt_jvm_library(
 
     javac_java_info = None
     java_native_headers_jar = None
-    java_gensrcjar = None
-    java_genjar = None
     is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
+
     if java_srcs or java_syncer.srcjars or classpath_resources:
         javac_deps = deps + codegen_output_java_infos  # Defensive copy
         if kapt_outputs.java_info:
@@ -974,25 +936,16 @@ def _kt_jvm_library(
         out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
         java_native_headers_jar = javac_java_info.outputs.native_headers
 
-        if kt_srcs:
-            if pre_processed_processors:
-                java_gensrcjar = kt_codegen_processing_env["java_info_generated_source_jar"][0]
-                java_genjar = ctx.actions.declare_file(ctx.label.name + "_java_info_generated_class_jar.jar")
-                _gen_java_info_generated_class_jar(
-                    ctx,
-                    java_genjar,
-                    kt_toolchain,
-                    input_jars = out_jars,
-                    srcjars = [java_gensrcjar],
-                )
-            else:
-                java_gensrcjar = kapt_outputs.srcjar
-                java_genjar = _derive_gen_class_jar(ctx, kt_toolchain, kapt_outputs.manifest, javac_out, java_srcs)
-        else:
-            java_gensrcjar = javac_java_info.annotation_processing.source_jar
-            java_genjar = javac_java_info.annotation_processing.class_jar
-            if java_gensrcjar:
-                java_syncer.add_srcjars([java_gensrcjar])
+    java_gensrcjar = None
+    java_genjar = None
+    if pre_processed_processors:
+        java_gensrcjar = kt_codegen_processing_env["java_info_generated_source_jar"][0]
+
+    elif javac_java_info:
+        java_gensrcjar = javac_java_info.annotation_processing.source_jar
+        java_genjar = javac_java_info.annotation_processing.class_jar
+        if java_gensrcjar:
+            java_syncer.add_srcjars([java_gensrcjar])
 
     jdeps_output = None
     compile_jdeps_output = None
@@ -1196,34 +1149,6 @@ def _collect_proguard_specs(
         transitive = [p.specs for p in _collect_providers(ProguardSpecProvider, propagated_deps)],
         order = "preorder",
     )
-
-def _gen_java_info_generated_class_jar(ctx, output_jar, kt_toolchain, input_jars, srcjars):
-    input_jars = depset(input_jars)
-    transformer_env_files = depset(srcjars)
-
-    transformer_entry_point = "com.google.devtools.jar.transformation.ClassFileSelectorBySourceFile"
-    transformer_jars = kt_toolchain.class_file_selector_by_source_file[JavaInfo].transitive_runtime_jars
-    jar_transformer = kt_toolchain.jar_transformer[DefaultInfo].files_to_run
-
-    args = ctx.actions.args()
-    args.add_joined("--input_jars", input_jars, join_with = ",")
-    args.add_joined("--transformer_jars", transformer_jars, join_with = ",")
-    args.add("--transformer_entry_point", transformer_entry_point)
-    args.add_all("--transformer_env_files", transformer_env_files)
-    args.add("--result", output_jar)
-    ctx.actions.run(
-        inputs = depset(transitive = [
-            input_jars,
-            transformer_jars,
-            transformer_env_files,
-        ]),
-        outputs = [output_jar],
-        arguments = [args],
-        progress_message = "Transforming into %s" % output_jar.short_path,
-        mnemonic = "JarTransformer",
-        executable = jar_transformer,
-    )
-    return output_jar
 
 def _collect_providers(provider, deps):
     """Collects the requested provider from the given list of deps."""
