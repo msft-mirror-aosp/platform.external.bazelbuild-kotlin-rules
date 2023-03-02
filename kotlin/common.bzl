@@ -1190,7 +1190,7 @@ def _collect_proguard_specs(
         order = "preorder",
     )
 
-def _gen_java_info_genearted_class_jar(ctx, kt_toolchain, input_jars, srcjars):
+def _gen_java_info_generated_class_jar(ctx, kt_toolchain, input_jars, srcjars):
     output_jar = ctx.actions.declare_file(ctx.label.name + "_java_info_genearted_class_jar.jar")
 
     input_jars = depset(input_jars)
