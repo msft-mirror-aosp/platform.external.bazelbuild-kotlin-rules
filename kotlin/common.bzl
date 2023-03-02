@@ -1004,7 +1004,7 @@ def _kt_jvm_library(
             "--text",
             "stdout",  # also log to stdout
         ]
-        if disable_lint_checks != None and disable_lint_checks and disable_lint_checks != [""]:
+        if disable_lint_checks and disable_lint_checks != [""]:
             lint_flags.append("--disable")
             lint_flags.append(",".join(disable_lint_checks))
 
