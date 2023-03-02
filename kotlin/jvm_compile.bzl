@@ -150,8 +150,6 @@ def kt_jvm_compile(
 
     return common.kt_jvm_library(
         ctx,
-        android_lint_plugins = [p[JavaInfo] for p in android_lint_plugins],
-        android_lint_rules_jars = android_lint_rules_jars,
         classpath_resources = classpath_resources,
         common_srcs = common_srcs,
         coverage_srcs = coverage_srcs,
@@ -173,7 +171,13 @@ def kt_jvm_compile(
         output = output,
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
-            java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins if (JavaPluginInfo in plugin)],
+            android_lint_singlejar_plugins = android_lint_rules_jars,
+            android_lint_libjar_plugin_infos = [p[JavaInfo] for p in android_lint_plugins],
+            java_plugin_infos = [
+                plugin[JavaPluginInfo]
+                for plugin in plugins
+                if (JavaPluginInfo in plugin)
+            ],
             kt_compiler_plugin_infos =
                 kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
                     plugin[KtCompilerPluginInfo]

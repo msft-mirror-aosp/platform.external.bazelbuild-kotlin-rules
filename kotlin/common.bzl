@@ -380,15 +380,23 @@ def _derive_gen_class_jar(
     return result
 
 def _kt_plugins_map(
+        android_lint_singlejar_plugins = depset(),
+        android_lint_libjar_plugin_infos = [],
         java_plugin_infos = [],
         kt_compiler_plugin_infos = []):
     """A struct containing all the plugin types understood by rules_kotlin.
 
     Args:
-      java_plugin_infos: (list[JavaPluginInfo])
-      kt_compiler_plugin_infos: (list[KtCompilerPluginInfo])
+        android_lint_singlejar_plugins:  (depset[File]) Android Lint checkers.
+            Each JAR is self-contained and should be loaded in an isolated classloader.
+        android_lint_libjar_plugin_infos: (list[JavaInfo]) Android Lint checkers.
+            All infos share transitive dependencies and should be loaded in a combined classloader.
+        java_plugin_infos: (list[JavaPluginInfo])
+        kt_compiler_plugin_infos: (list[KtCompilerPluginInfo])
     """
     return struct(
+        android_lint_singlejar_plugins = android_lint_singlejar_plugins,
+        android_lint_libjar_plugin_infos = android_lint_libjar_plugin_infos,
         java_plugin_infos = java_plugin_infos,
         kt_compiler_plugin_infos = kt_compiler_plugin_infos,
     )
@@ -768,8 +776,6 @@ def _kt_jvm_library(
             codegen_output_java_infos = [],
         ),
         exported_plugins = [],
-        android_lint_plugins = [],
-        android_lint_rules_jars = depset(),  # Depset with standalone Android Lint rules Jars
         javacopts = [],
         kotlincopts = [],
         compile_jdeps = depset(),
@@ -1008,12 +1014,6 @@ def _kt_jvm_library(
             lint_flags.append("--disable")
             lint_flags.append(",".join(disable_lint_checks))
 
-        # TODO: Support Android Lint plugins coming from plugins and exported_plugins attributes
-        android_lint_plugins_jars = depset(
-            order = "preorder",
-            transitive = [plugin_classpaths] + [dep.transitive_runtime_jars for dep in android_lint_plugins],
-        )
-
         android_lint_out = lint_actions.run_lint_on_library(
             ctx,
             runner = kt_toolchain.android_lint_runner,
@@ -1026,8 +1026,14 @@ def _kt_jvm_library(
             resource_files = resource_files,
             baseline_file = androidlint_toolchains.get_baseline(ctx),
             config = kt_toolchain.android_lint_config,
-            android_lint_plugins_depset = android_lint_plugins_jars,
-            android_lint_rules = android_lint_rules_jars,
+            android_lint_plugins_depset = depset(
+                order = "preorder",
+                transitive = [plugin_classpaths] + [
+                    dep.transitive_runtime_jars
+                    for dep in plugins.android_lint_libjar_plugin_infos
+                ],
+            ),
+            android_lint_rules = plugins.android_lint_singlejar_plugins,
             lint_flags = lint_flags,
             extra_input_depsets = [p.processor_data for p in java_plugin_datas],
             testonly = testonly,
