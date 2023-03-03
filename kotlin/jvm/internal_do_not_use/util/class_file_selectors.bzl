@@ -40,7 +40,7 @@ def gen_java_info_generated_class_jar(ctx, file_factory, kt_toolchain, input_jar
     args.add_joined("--input_jars", input_jars, join_with = ",")
     args.add_joined("--transformer_jars", transformer_jars, join_with = ",")
     args.add("--transformer_entry_point", transformer_entry_point)
-    args.add_all("--transformer_env_files", transformer_env_files)
+    args.add_joined("--transformer_env_files", transformer_env_files, join_with = ",")
     args.add("--result", output_jar)
     ctx.actions.run(
         inputs = depset(transitive = [
