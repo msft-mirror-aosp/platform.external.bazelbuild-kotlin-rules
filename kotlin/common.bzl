@@ -734,10 +734,6 @@ def _kt_jvm_library(
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
         plugins = _kt_plugins_map(),
-        kt_codegen_processing_env = dict(
-            pre_processed_processors = depset(),
-            codegen_output_java_infos = [],
-        ),
         exported_plugins = [],
         javacopts = [],
         kotlincopts = [],
@@ -756,6 +752,12 @@ def _kt_jvm_library(
         fail("Missing or invalid java_toolchain")
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
+
+    kt_codegen_processing_env = dict(
+        pre_processed_processors = depset(),
+        codegen_output_java_infos = [],
+    )
+
     pre_processed_processors = kt_codegen_processing_env["pre_processed_processors"]
     codegen_output_java_infos = kt_codegen_processing_env["codegen_output_java_infos"]
 

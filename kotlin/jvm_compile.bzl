@@ -185,7 +185,6 @@ def kt_jvm_compile(
                     if (KtCompilerPluginInfo in plugin)
                 ],
         ),
-        kt_codegen_processing_env = kt_codegen_processing_env,
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,
