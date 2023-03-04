@@ -129,11 +129,6 @@ def kt_jvm_compile(
                      "'*_resources.jar'.")
         r_java_infos.append(r_java)
 
-    kt_codegen_processing_env = dict(
-        pre_processed_processors = depset(),
-        codegen_output_java_infos = [],
-    )
-
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
     has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
