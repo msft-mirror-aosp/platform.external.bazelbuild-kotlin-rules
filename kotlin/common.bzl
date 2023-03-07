@@ -753,25 +753,26 @@ def _kt_jvm_library(
     if not kt_toolchain:
         fail("Missing or invalid kt_toolchain")
 
+    file_factory = FileFactory(ctx, output)
+    static_deps = list(deps)  # Defensive copy
+
     kt_codegen_processing_env = dict(
         pre_processed_processors = depset(),
         codegen_output_java_infos = [],
     )
 
     pre_processed_processors = kt_codegen_processing_env["pre_processed_processors"]
-    codegen_output_java_infos = kt_codegen_processing_env["codegen_output_java_infos"]
+    generative_deps = kt_codegen_processing_env["codegen_output_java_infos"]
 
-    file_factory = FileFactory(ctx, output)
-    deps = list(deps)  # Defensive copy
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
 
     # TODO: Remove this special case
     if kt_srcs and ("flogger" in [p.plugin_id for p in plugins.kt_compiler_plugin_infos]):
-        deps.append(kt_toolchain.flogger_runtime)
+        static_deps.append(kt_toolchain.flogger_runtime)
 
     if kt_srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
-        deps.extend(kt_toolchain.kotlin_libs)
+        static_deps.extend(kt_toolchain.kotlin_libs)
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
@@ -779,12 +780,14 @@ def _kt_jvm_library(
         _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
         _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
-    full_classpath = _create_classpath(java_toolchain, deps + codegen_output_java_infos)
+    # Includes generative deps from codegen.
+    extended_deps = static_deps + generative_deps
+    full_classpath = _create_classpath(java_toolchain, extended_deps)
 
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas = [info.plugins for info in plugins.java_plugin_infos] + [dep.plugins for dep in deps]
+    java_plugin_datas = [info.plugins for info in plugins.java_plugin_infos] + [dep.plugins for dep in static_deps]
     plugin_processors = [
         cls
         for p in java_plugin_datas
@@ -883,7 +886,7 @@ def _kt_jvm_library(
     is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
 
     if java_srcs or java_syncer.srcjars or classpath_resources:
-        javac_deps = deps + codegen_output_java_infos  # Defensive copy
+        javac_deps = extended_deps  # Defensive copy
         if kapt_outputs.java_info:
             javac_deps.append(kapt_outputs.java_info)
         if kotlinc_result:
@@ -1041,7 +1044,7 @@ def _kt_jvm_library(
         output_jar = output,
         compile_jar = compile_jar,
         source_jar = output_srcjar,
-        deps = deps,
+        deps = static_deps,
         exports = exports,
         exported_plugins = exported_plugins,
         runtime_deps = runtime_deps,
