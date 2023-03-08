@@ -139,9 +139,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         allow_files = True,
     ),
     deps = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
         ],
         aspects = [
             kt_traverse_exports.aspect,
@@ -173,9 +173,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                      will not run kotlinc plugins""",
     ),
     exports = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
         ],
         aspects = [
             kt_traverse_exports.aspect,
@@ -216,9 +216,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                          go/be#java_library.resources.""",
     ),
     runtime_deps = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
             [CcInfo],  # for JNI / native dependencies
         ],
         aspects = [

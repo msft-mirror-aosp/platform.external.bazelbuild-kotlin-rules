@@ -30,34 +30,6 @@ load("//bazel:stubs.bzl", "DEFAULT_BUILTIN_PROCESSORS")
 # are accepted dependencies to Kotlin rules as the approach does not scale
 # because it will require a cl + release for every new rule.
 
-_ALLOWED_ANDROID_RULES = [
-    "aar_import",
-    "android_library",
-    "kt_android_library_helper",
-]
-
-_ALLOWED_JVM_RULES = [
-    "_java_grpc_library",
-    "_java_lite_grpc_library",
-    "af_internal_guice_module",  # b/142743220
-    "af_internal_jbcsrc_library",  # added with b/143872075
-    "af_internal_soyinfo_generator",  # b/143872075
-    "java_import",
-    "java_library",
-    "java_lite_proto_library",
-    "java_mutable_proto_library",
-    "java_proto_library",
-    "java_wrap_cc",  # b/152799927
-    "jvm_import",
-    "_kmp_library",
-    "kt_grpc_library_helper",
-    "kt_jvm_library_helper",
-    "kt_jvm_import",
-    "kt_proto_library_helper",
-    "_j2kt_jvm_library_rule",  # b/233055549
-    "kt_flatbuffers_library",  # b/263252785
-]
-
 _EXT = struct(
     KT = ".kt",
     JAVA = ".java",
@@ -1189,8 +1161,6 @@ def _partition(sequence, filter):
     return pos, neg
 
 common = struct(
-    ALLOWED_ANDROID_RULES = _ALLOWED_ANDROID_RULES,
-    ALLOWED_JVM_RULES = _ALLOWED_JVM_RULES,
     JAR_FILE_TYPE = _JAR_FILE_TYPE,
     JVM_FLAGS = BASE_JVMOPTS,
     KT_FILE_TYPES = _KT_FILE_TYPES,

@@ -73,12 +73,10 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
     java_toolchains.attrs,
     kt_jvm_toolchains.attrs,
     deps = attr.label_list(
-        # We allow android rule deps to make importing android JARs easier.
-        allow_rules = common.ALLOWED_JVM_RULES + common.ALLOWED_ANDROID_RULES,
         aspects = [kt_traverse_exports.aspect],
         providers = [
             # Each provider-set expands on allow_rules
-            [JavaInfo],
+            [JavaInfo],  # We allow android rule deps to make importing android JARs easier.
         ],
         doc = """The list of libraries this library directly depends on at compile-time. For Java
                  and Kotlin libraries listed, the Jars they build as well as the transitive closure
@@ -116,10 +114,9 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
         doc = """Proguard specifications to go along with this library.""",
     ),
     runtime_deps = attr.label_list(
-        # TODO: Delete common.ALLOWED_ANDROID_RULES
-        allow_rules = common.ALLOWED_JVM_RULES + common.ALLOWED_ANDROID_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
             [CcInfo],  # for JNI / native dependencies
         ],
         aspects = [kt_traverse_exports.aspect],
