@@ -51,3 +51,6 @@ lint_actions = struct(
     run_lint_on_library = _run_lint_on_library,
     get_android_lint_baseline_file = _empty_fn,
 )
+
+def check_compiler_opt_allowlist(_label):
+    pass

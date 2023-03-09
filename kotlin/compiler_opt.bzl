@@ -24,6 +24,7 @@ be passed to the `custom_kotlincopts` attribute. The set of directories that all
 `kt_compiler_opt` targets is also limited, to prevent misuse.
 """
 
+load("//bazel:stubs.bzl", "check_compiler_opt_allowlist")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
 # Intentionally private to prevent misuse.
@@ -32,17 +33,13 @@ _KtCompilerOptInfo = provider(
     fields = {"opts": "list[string]"},
 )
 
-_ALLOWED_ROOTS = [
-]
-
 _ALLOWED_VISIBILITY_NAMES = [
     "__pkg__",
     "__subpackages__",
 ]
 
 def _kt_compiler_opt_impl(ctx):
-    if not any([ctx.label.package.startswith(p) for p in _ALLOWED_ROOTS]):
-        fail("kt_compiler_opt is only allowed under " + str(_ALLOWED_ROOTS))
+    check_compiler_opt_allowlist(ctx.label)
 
     visibility_groups = [v for v in ctx.attr.visibility if not v.name in _ALLOWED_VISIBILITY_NAMES]
     if len(visibility_groups) > 0:
