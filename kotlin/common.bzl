@@ -317,7 +317,9 @@ def _run_turbine(
 def _kt_plugins_map(
         android_lint_singlejar_plugins = depset(),
         android_lint_libjar_plugin_infos = [],
-        java_plugin_infos = [],
+        java_plugin_datas = depset(),
+        direct_java_plugin_infos = [],
+        kt_codegen_plugin_infos = depset(),
         kt_compiler_plugin_infos = []):
     """A struct containing all the plugin types understood by rules_kotlin.
 
@@ -326,13 +328,17 @@ def _kt_plugins_map(
             Each JAR is self-contained and should be loaded in an isolated classloader.
         android_lint_libjar_plugin_infos: (list[JavaInfo]) Android Lint checkers.
             All infos share transitive dependencies and should be loaded in a combined classloader.
-        java_plugin_infos: (list[JavaPluginInfo])
+        java_plugin_datas: depset([JavaPluginData]) for KtCodegenProcessing.
+        direct_java_plugin_infos: (list[JavaPluginInfo])
+        kt_codegen_plugin_infos: depset([KtCodegenPluginInfo]) for KtCodegenProcessing.
         kt_compiler_plugin_infos: (list[KtCompilerPluginInfo])
     """
     return struct(
         android_lint_singlejar_plugins = android_lint_singlejar_plugins,
         android_lint_libjar_plugin_infos = android_lint_libjar_plugin_infos,
-        java_plugin_infos = java_plugin_infos,
+        java_plugin_datas = java_plugin_datas,
+        direct_java_plugin_infos = direct_java_plugin_infos,
+        kt_codegen_plugin_infos = kt_codegen_plugin_infos,
         kt_compiler_plugin_infos = kt_compiler_plugin_infos,
     )
 
@@ -729,11 +735,14 @@ def _kt_jvm_library(
     static_deps = list(deps)  # Defensive copy
 
     kt_codegen_processing_env = dict(
-        pre_processed_processors = depset(),
+        processors_for_kt_codegen_processing = depset(),
+        processors_for_legacy_kapt = [],
         codegen_output_java_infos = [],
+        java_plugin_datas_legacy = [],
+        legacy_java_plugin_classpaths = depset(),
     )
 
-    pre_processed_processors = kt_codegen_processing_env["pre_processed_processors"]
+    kt_codegen_processors = kt_codegen_processing_env["processors_for_kt_codegen_processing"].to_list()
     generative_deps = kt_codegen_processing_env["codegen_output_java_infos"]
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
@@ -759,14 +768,9 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas = [info.plugins for info in plugins.java_plugin_infos] + [dep.plugins for dep in static_deps]
-    plugin_processors = [
-        cls
-        for p in java_plugin_datas
-        for cls in p.processor_classes.to_list()
-        if cls not in pre_processed_processors.to_list()
-    ]
-    plugin_classpaths = depset(transitive = [p.processor_jars for p in java_plugin_datas])
+    java_plugin_datas_legacy = kt_codegen_processing_env["java_plugin_datas_legacy"]
+    legacy_kapt_processors = kt_codegen_processing_env["processors_for_legacy_kapt"]
+    legacy_java_plugin_classpaths = kt_codegen_processing_env["legacy_java_plugin_classpaths"]
 
     out_jars = []
     out_srcjars = []
@@ -792,16 +796,16 @@ def _kt_jvm_library(
     # Skip kapt if no plugins have processors (can happen with only
     # go/errorprone plugins, # b/110540324)
     kapt_outputs = _EMPTY_KAPT_OUTPUTS
-    if kt_srcs and plugin_processors:
+    if kt_srcs and legacy_kapt_processors:
         kapt_outputs = _kapt(
             ctx,
             file_factory = file_factory,
             kt_srcs = kt_hdrs,
             common_srcs = common_hdrs,
             java_srcs = java_srcs,
-            plugin_processors = plugin_processors,
-            plugin_classpaths = plugin_classpaths,
-            plugin_data = depset(transitive = [p.processor_data for p in java_plugin_datas]),
+            plugin_processors = legacy_kapt_processors,
+            plugin_classpaths = legacy_java_plugin_classpaths,
+            plugin_data = depset(transitive = [p.processor_data for p in java_plugin_datas_legacy]),
             # Put contents of Bazel flag --javacopt before given javacopts as is Java rules.
             # This still ignores package configurations, which aren't exposed to Starlark.
             javacopts = (java_common.default_javac_opts(java_toolchain = java_toolchain) +
@@ -871,7 +875,7 @@ def _kt_jvm_library(
 
         javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
 
-        annotation_plugins = list(plugins.java_plugin_infos)
+        annotation_plugins = list(plugins.direct_java_plugin_infos)
 
         # Enable annotation processing for java-only sources to enable data binding
         enable_annotation_processing = not kt_srcs
@@ -915,7 +919,7 @@ def _kt_jvm_library(
 
     java_gensrcjar = None
     java_genjar = None
-    if pre_processed_processors:
+    if kt_codegen_processors:
         java_gen_srcjars = kt_codegen_processing_env["java_gen_srcjar"]
         kt_gen_srcjars = kt_codegen_processing_env["kt_gen_srcjar"]
         java_gensrcjar = file_factory.declare_file("-java_info_generated_source_jar.srcjar")
@@ -974,14 +978,14 @@ def _kt_jvm_library(
             config = kt_toolchain.android_lint_config,
             android_lint_plugins_depset = depset(
                 order = "preorder",
-                transitive = [plugin_classpaths] + [
+                transitive = [legacy_java_plugin_classpaths] + [
                     dep.transitive_runtime_jars
                     for dep in plugins.android_lint_libjar_plugin_infos
                 ],
             ),
             android_lint_rules = plugins.android_lint_singlejar_plugins,
             lint_flags = lint_flags,
-            extra_input_depsets = [p.processor_data for p in java_plugin_datas] + [depset([java_genjar] if java_genjar else [])],
+            extra_input_depsets = [p.processor_data for p in java_plugin_datas_legacy] + [depset([java_genjar] if java_genjar else [])],
             testonly = testonly,
             android_java8_libs = kt_toolchain.android_java8_apis_desugared,
             mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
