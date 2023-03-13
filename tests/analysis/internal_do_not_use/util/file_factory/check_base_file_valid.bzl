@@ -12,27 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A fake impl of kt_compiler_plugin."""
+"""Happy tests for FileFactory."""
 
-load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
+load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 load("//:visibility.bzl", "RULES_KOTLIN")
 
-def _kt_fake_compiler_plugin_impl(ctx):
-    return [
-        KtCompilerPluginInfo(
-            plugin_id = "fake",
-            jar = ctx.file._jar,
-            args = [],
-        ),
-    ]
+def _check_base_file_valid_impl(ctx):
+    FileFactory(ctx, ctx.file.base_file)
+    return []
 
-kt_fake_compiler_plugin = rule(
-    implementation = _kt_fake_compiler_plugin_impl,
+_check_base_file_valid = rule(
+    implementation = _check_base_file_valid_impl,
     attrs = dict(
-        _jar = attr.label(
-            allow_single_file = True,
-            default = "//tests/analysis/compiler_plugin:empty_jar",
-        ),
+        base_file = attr.label(allow_single_file = True, mandatory = True),
     ),
-    provides = [KtCompilerPluginInfo],
 )
+
+def check_base_file_valid(name, tags = [], **kwargs):
+    _check_base_file_valid(
+        name = name,
+        tags = tags + ONLY_FOR_ANALYSIS_TEST_TAGS,
+        **kwargs
+    )
+    return name
