@@ -12,27 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A fake impl of kt_compiler_plugin."""
+"""kt_traverse_exports visitor for exposing jdeps files from direct deps."""
 
-load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 load("//:visibility.bzl", "RULES_KOTLIN")
 
-def _kt_fake_compiler_plugin_impl(ctx):
+def _get_jdeps(target, _ctx_rule):
     return [
-        KtCompilerPluginInfo(
-            plugin_id = "fake",
-            jar = ctx.file._jar,
-            args = [],
-        ),
+        out.compile_jdeps
+        for out in target[JavaInfo].java_outputs
+        if out.compile_jdeps
     ]
 
-kt_fake_compiler_plugin = rule(
-    implementation = _kt_fake_compiler_plugin_impl,
-    attrs = dict(
-        _jar = attr.label(
-            allow_single_file = True,
-            default = "//tests/analysis/compiler_plugin:empty_jar",
-        ),
-    ),
-    provides = [KtCompilerPluginInfo],
+kt_direct_jdeps_visitor = struct(
+    name = "direct_jdeps",
+    visit_target = _get_jdeps,
+    filter_edge = None,
+    process_unvisited_target = None,
+    finish_expansion = None,
 )

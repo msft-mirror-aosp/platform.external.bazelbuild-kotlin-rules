@@ -19,6 +19,7 @@ load("//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
 load(":assert_failure_test.bzl", "assert_failure_test")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _impl(ctx):
     env = analysistest.begin(ctx)
