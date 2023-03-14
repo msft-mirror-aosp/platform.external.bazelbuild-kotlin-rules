@@ -15,9 +15,12 @@
 """Stubs"""
 
 load("@bazel_skylib//lib:sets.bzl", "sets")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
-def register_extension_info(**_kwargs):
+def _empty_fn(*_args, **_kwargs):
     pass
+
+register_extension_info = _empty_fn
 
 FORBIDDEN_DEP_PACKAGES = sets.make([])
 
@@ -33,5 +36,21 @@ DEFAULT_BUILTIN_PROCESSORS = [
 
 BASE_JVMOPTS = []
 
-def select_java_language_version(**_kwargs):
+def select_java_language_level(**_kwargs):
     return "11"
+
+registry_checks_for_package = _empty_fn
+
+LINT_REGISTRY = None  # Only ever passed to registry_checks_for_package
+
+def _run_lint_on_library(ctx, output, *_args, **_kwargs):
+    ctx.actions.write(output, "Android Lint Disabled")
+    return output
+
+lint_actions = struct(
+    run_lint_on_library = _run_lint_on_library,
+    get_android_lint_baseline_file = _empty_fn,
+)
+
+def check_compiler_opt_allowlist(_label):
+    pass
