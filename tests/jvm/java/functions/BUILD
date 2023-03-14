@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # This package tests importing extension functions.
-load("//kotlin:rules.bzl", "kt_jvm_import", "kt_jvm_library")
+load("//kotlin:rules.bzl", "kt_jvm_library")
 
 licenses(["notice"])
 
@@ -41,43 +41,24 @@ java_test(
     ],
 )
 
-java_import(
-    name = "car-jar",
-    jars = ["//tests/jvm/java/functions/car:car_lib-jar"],
-    tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
-)
-
 kt_jvm_library(
-    name = "car_demo_jar_lib",
+    name = "car_demo_import_lib",
     srcs = ["CarDemo.kt"],
     tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     deps = [
-        ":car-jar",
+        "//tests/jvm/java/functions/car:car_lib_import",
     ],
 )
 
 # This binary includes extension functions defined in an separate jar file, which
 # may be problematic if the metadata is stripped by ijar.
 java_test(
-    name = "car_jar_demo",
+    name = "car_import_demo",
     main_class = "functions.CarDemo",
-    tags = ["darwin_x86_64_compatible"] +
-           _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
+    tags = ["darwin_x86_64_compatible"] + _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     runtime_deps = [
-        ":car_demo_jar_lib",
+        ":car_demo_import_lib",
         "@kotlinc//:kotlin_stdlib",
-    ],
-)
-
-kt_jvm_import(
-    name = "car-inline-jar",
-    jars = [
-        "//tests/jvm/java/functions/car:car_inline_lib-jar",
-        "//tests/jvm/java/functions/car:car_extra_lib-jar",
-    ],
-    tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
-    deps = [
-        ":car-jar",
     ],
 )
 
@@ -86,8 +67,8 @@ kt_jvm_library(
     srcs = ["CarInlineDemo.kt"],
     tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     deps = [
-        ":car-inline-jar",
-        ":car-jar",
+        "//tests/jvm/java/functions/car:car_inline_and_extra_lib_import",
+        "//tests/jvm/java/functions/car:car_lib_import",
     ],
 )
 
@@ -96,8 +77,7 @@ kt_jvm_library(
 java_test(
     name = "car_inline_demo",
     main_class = "functions.CarInlineDemo",
-    tags = ["darwin_x86_64_compatible"] +
-           _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
+    tags = ["darwin_x86_64_compatible"] + _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
     runtime_deps = [
         ":car_demo_inline_lib",
         "@kotlinc//:kotlin_stdlib",

@@ -12,20 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""An assertion for analysis failure."""
+licenses(["notice"])
 
-load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
-load("//:visibility.bzl", "RULES_KOTLIN")
-
-def _assert_failure_test_impl(ctx):
-    env = analysistest.begin(ctx)
-    asserts.expect_failure(env, ctx.attr.msg_contains)
-    return analysistest.end(env)
-
-assert_failure_test = analysistest.make(
-    _assert_failure_test_impl,
-    expect_failure = True,
-    attrs = dict(
-        msg_contains = attr.string(mandatory = True),
-    ),
+genrule(
+    name = "sub",
+    outs = ["sub.txt"],
+    cmd = "touch $(OUTS)",
+    visibility = ["//tests/analysis/internal_do_not_use/util/file_factory:__pkg__"],
 )
