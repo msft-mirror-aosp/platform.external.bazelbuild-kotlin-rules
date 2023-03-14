@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""TODO: Write module docstring."""
+"""kt_friend_visitor"""
+
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def is_eligible_friend(target, friend):
     """
@@ -25,7 +27,7 @@ def is_eligible_friend(target, friend):
       4. `target` in `test/java/` pkg, `friend` in parallel `main/java/` pkg
 
     Args:
-      target: (target) The current target
+      target: (Target) The current target
       friend: (Target) A potential friend of `target`
 
     Returns:
