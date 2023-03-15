@@ -12,24 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utilities related to java_plugin and JavaPluginInfo.
+"""kt_codegen_plugin_visitor"""
 
-kt_codegen_plugin is using this visitor to extract java_plugin information.
-Due to cross plugin type processing, the plugin info search processor differs
-from the way that java targets handles plugins.
-"""
+load("//kotlin:codegen_plugin.internal.bzl", "KtCodegenPluginInfo")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
-def _get_java_plugins(_target, ctx_rule):
-    exported_plugins = getattr(ctx_rule.attr, "exported_plugins", [])
+def _get_kt_codegen_plugins(_target, ctx_rule):
     return [
-        t[JavaPluginInfo].plugins
-        for t in exported_plugins
-        if JavaPluginInfo in t
+        t[KtCodegenPluginInfo]
+        for t in getattr(ctx_rule.attr, "exported_plugins", [])
+        if KtCodegenPluginInfo in t
     ]
 
-java_plugin_visitor = struct(
-    name = "java_plugins",
-    visit_target = _get_java_plugins,
+kt_codegen_plugin_visitor = struct(
+    name = "codegen_plugins",
+    visit_target = _get_kt_codegen_plugins,
     filter_edge = None,
     finish_expansion = None,
     process_unvisited_target = None,
