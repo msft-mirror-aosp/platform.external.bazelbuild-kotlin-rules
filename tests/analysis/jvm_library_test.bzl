@@ -15,10 +15,11 @@
 """Kotlin kt_jvm_library rule tests."""
 
 load("//kotlin:jvm_library.bzl", "kt_jvm_library")
-load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action_arg")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action", "get_arg")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(":assert_failure_test.bzl", "assert_failure_test")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 _DEFAULT_LIST = ["__default__"]
 
@@ -84,8 +85,17 @@ def _test_impl(ctx):
         actual[JavaInfo].plugins.processor_classes.to_list(),
     )
 
+    kt_2_java_compile = get_action(actions, "Kt2JavaCompile")
+
+    if kt_2_java_compile:
+        asserts.true(
+            env,
+            kt_2_java_compile.outputs.to_list()[0].basename.endswith(".jar"),
+            "Expected first output to be a JAR (this affects the param file name).",
+        )
+
     if ctx.attr.expected_friend_jar_names != _DEFAULT_LIST:
-        friend_paths_arg = get_action_arg(actions, "Kt2JavaCompile", "-Xfriend-paths=")
+        friend_paths_arg = get_arg(kt_2_java_compile, "-Xfriend-paths=")
         friend_jar_names = [p.rsplit("/", 1)[1] for p in friend_paths_arg.split(",")] if friend_paths_arg else []
         asserts.set_equals(env, sets.make(ctx.attr.expected_friend_jar_names), sets.make(friend_jar_names))
 
