@@ -123,6 +123,7 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
         kotlin_libs = [JavaInfo(compile_jar = jar, output_jar = jar) for jar in ctx.files.kotlin_libs],
+        kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
         kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
         kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
@@ -269,6 +270,9 @@ kt_jvm_toolchain = rule(
             allow_single_file = True,
         ),
         turbine_java_runtime = attr.label(
+            cfg = "exec",
+        ),
+        kt_codegen_java_runtime = attr.label(
             cfg = "exec",
         ),
     ),
