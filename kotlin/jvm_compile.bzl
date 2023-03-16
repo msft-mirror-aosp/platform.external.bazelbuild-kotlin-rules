@@ -171,7 +171,7 @@ def kt_jvm_compile(
             java_plugin_infos = [
                 plugin[JavaPluginInfo]
                 for plugin in plugins
-                if (JavaPluginInfo in plugin)
+                if JavaPluginInfo in plugin
             ],
             kt_compiler_plugin_infos =
                 kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
