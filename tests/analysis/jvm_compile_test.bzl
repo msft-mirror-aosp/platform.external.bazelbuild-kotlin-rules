@@ -22,6 +22,7 @@ load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(":assert_failure_test.bzl", "assert_failure_test")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _impl(ctx):
     # As additional capabilites need to be tested, this rule should support

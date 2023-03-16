@@ -12,27 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//kotlin:rules.bzl", "kt_jvm_library")
+load("//kotlin:rules.bzl", "kt_jvm_import", "kt_jvm_library")
 
 package(default_visibility = ["//tests/jvm/java/functions:__subpackages__"])
 
 licenses(["notice"])
 
-# Make Jar files produced by helper targets visible to tests in parent package
-filegroup(
-    name = "car_lib-jar",
-    srcs = ["libcar_lib.jar"],
-)
-
-filegroup(
-    name = "car_inline_lib-jar",
-    srcs = ["libcar_inline_lib.jar"],
-)
-
-filegroup(
-    name = "car_extra_lib-jar",
-    srcs = ["libcar_extra_lib.jar"],
-)
+# During coverage builds, every library gets a dep on JaCoCo (Java Code Coverage).
+# Libjars, from libraries, only include their direct sources. Together, these behaviours
+# trigger an ImportDepsChecker error for :car-jar and :car-inline-jar. To prevent that, we disable
+# coverage builds on all downstream targets.
+_NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO = ["nozapfhahn"]
 
 kt_jvm_library(
     name = "car_lib",
@@ -40,8 +30,12 @@ kt_jvm_library(
         "Car.kt",
         "CarUtils.kt",
     ],
-    deps = [
-    ],
+)
+
+java_import(
+    name = "car_lib_import",
+    jars = [":libcar_lib.jar"],
+    tags = ["incomplete-deps"] + _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
 )
 
 kt_jvm_library(
@@ -49,6 +43,7 @@ kt_jvm_library(
     srcs = [
         "CarInlineUtils.kt",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":car_lib",
     ],
@@ -59,7 +54,20 @@ kt_jvm_library(
     srcs = [
         "CarExtraUtils.kt",
     ],
+    visibility = ["//visibility:private"],
     deps = [
         ":car_lib",
+    ],
+)
+
+kt_jvm_import(
+    name = "car_inline_and_extra_lib_import",
+    jars = [
+        ":libcar_inline_lib.jar",
+        ":libcar_extra_lib.jar",
+    ],
+    tags = _NO_ZAPFHAHN_BECAUSE_LIBJARS_EXCLUDE_JACOCO,
+    deps = [
+        ":car_lib_import",
     ],
 )

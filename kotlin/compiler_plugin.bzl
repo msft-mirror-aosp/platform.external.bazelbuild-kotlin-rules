@@ -14,6 +14,8 @@
 
 """A rule for declaring and passing kotlinc plugins."""
 
+load("//:visibility.bzl", "RULES_KOTLIN")
+
 _KtCompilerPluginInfo = provider(
     doc = "Info for running a plugin that directly registers itself to kotlinc extension points",
     fields = dict(
@@ -68,15 +70,4 @@ kt_compiler_plugin = rule(
         JavaPluginInfo,  # Allow this rule to be passed to java rules
         KtCompilerPluginInfo,
     ],
-)
-
-def _get_exported_plugins(_target, ctx_rule):
-    return [t[KtCompilerPluginInfo] for t in getattr(ctx_rule.attr, "exported_plugins", []) if (KtCompilerPluginInfo in t)]
-
-kt_compiler_plugin_visitor = struct(
-    name = "compiler_plugins",
-    visit_target = _get_exported_plugins,
-    filter_edge = None,
-    finish_expansion = None,
-    process_unvisited_target = None,
 )

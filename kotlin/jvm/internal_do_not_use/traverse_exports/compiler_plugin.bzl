@@ -12,27 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A fake impl of kt_compiler_plugin."""
+"""kt_compiler_plugin_visitor"""
 
-load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 
-def _kt_fake_compiler_plugin_impl(ctx):
+def _get_exported_plugins(_target, ctx_rule):
     return [
-        KtCompilerPluginInfo(
-            plugin_id = "fake",
-            jar = ctx.file._jar,
-            args = [],
-        ),
+        t[KtCompilerPluginInfo]
+        for t in getattr(ctx_rule.attr, "exported_plugins", [])
+        if (KtCompilerPluginInfo in t)
     ]
 
-kt_fake_compiler_plugin = rule(
-    implementation = _kt_fake_compiler_plugin_impl,
-    attrs = dict(
-        _jar = attr.label(
-            allow_single_file = True,
-            default = "//tests/analysis/compiler_plugin:empty_jar",
-        ),
-    ),
-    provides = [KtCompilerPluginInfo],
+kt_compiler_plugin_visitor = struct(
+    name = "compiler_plugins",
+    visit_target = _get_exported_plugins,
+    filter_edge = None,
+    finish_expansion = None,
+    process_unvisited_target = None,
 )

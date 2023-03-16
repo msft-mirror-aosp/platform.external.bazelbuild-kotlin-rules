@@ -17,6 +17,7 @@
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("//kotlin:traverse_exports.bzl", "kt_traverse_exports")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _assert_propagation_impl(ctx):
     expected_ids = sets.make(ctx.attr.expected_plugin_ids)
