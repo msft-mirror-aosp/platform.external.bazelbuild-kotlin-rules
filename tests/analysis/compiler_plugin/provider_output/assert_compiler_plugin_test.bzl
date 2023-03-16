@@ -16,6 +16,7 @@
 
 load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _test_impl(ctx):
     env = analysistest.begin(ctx)

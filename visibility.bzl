@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""kt_traverse_exports visitor for exposing jdeps files from direct deps."""
+"""Bzl visibility lists for rules_kotlin"""
 
-def _get_jdeps(target, _ctx_rule):
-    return [out.compile_jdeps for out in target[JavaInfo].java_outputs if out.compile_jdeps]
+RULES_KOTLIN = ["//..."]
 
-kt_direct_jdeps_visitor = struct(
-    name = "direct_jdeps",
-    visit_target = _get_jdeps,
-    filter_edge = None,
-    process_unvisited_target = None,
-    finish_expansion = None,
-)
+TOOLS_KOTLIN = [
+]
+
+# bzl files in these packages have access to internal parts of rules_kotlin, so think carefully
+# before expanding the list.
+RULES_DEFS_THAT_COMPILE_KOTLIN = RULES_KOTLIN + [
+]

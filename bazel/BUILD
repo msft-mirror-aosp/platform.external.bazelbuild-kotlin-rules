@@ -43,3 +43,10 @@ java_binary(
         "@maven//:org_jacoco_org_jacoco_cli",
     ],
 )
+
+genrule(
+    name = "stub_tool",
+    outs = ["stub_tool.sh"],
+    cmd = "exit 1",
+    executable = True,
+)
