@@ -78,12 +78,12 @@ def _derive_module_name(ctx):
         return package_part + "_" + name_part
     return name_part
 
-def _common_kapt_and_kotlinc_args(ctx, toolchain):
+def _get_common_and_user_kotlinc_args(ctx, toolchain, extra_kotlinc_args):
     return toolchain.kotlinc_cli_flags + [
         # Set module name so module-level metadata is preserved when merging Jars (b/139403883)
         "-module-name",
         _derive_module_name(ctx),
-    ]
+    ] + extra_kotlinc_args
 
 def _kt_plugins_map(
         android_lint_singlejar_plugins = depset(),
@@ -142,10 +142,9 @@ def _run_kotlinc(
     kotlinc_args.use_param_file("@%s", use_always = True)  # Use params file to handle long classpaths (b/76185759)
     kotlinc_args.set_param_file_format("multiline")  # kotlinc only supports double-quotes ("): https://youtrack.jetbrains.com/issue/KT-24472
 
-    kotlinc_args.add_all(_common_kapt_and_kotlinc_args(ctx, toolchain))
     kotlinc_args.add_joined("-cp", classpath, join_with = ":")
     transitive_inputs.append(classpath)
-    kotlinc_args.add_all(kotlincopts)
+    kotlinc_args.add_all(_get_common_and_user_kotlinc_args(ctx, toolchain, kotlincopts))
 
     kotlinc_args.add(toolchain.jvm_abi_gen_plugin, format = "-Xplugin=%s")
     direct_inputs.append(toolchain.jvm_abi_gen_plugin)
@@ -914,7 +913,6 @@ common = struct(
     collect_proguard_specs = _collect_proguard_specs,
     collect_providers = _collect_providers,
     create_jar_from_tree_artifacts = kt_srcjars.zip_resources,
-    common_kapt_and_kotlinc_args = _common_kapt_and_kotlinc_args,
     is_kt_src = _is_kt_src,
     kt_jvm_import = _kt_jvm_import,
     kt_jvm_library = _kt_jvm_library,
