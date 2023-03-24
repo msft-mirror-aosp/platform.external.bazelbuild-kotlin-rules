@@ -18,6 +18,7 @@ load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//bazel:stubs.bzl", "lint_actions")
 
 _RULE_FAMILY = common.RULE_FAMILY
 
@@ -166,8 +167,18 @@ def kt_jvm_compile(
         output = output,
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
-            android_lint_singlejar_plugins = android_lint_rules_jars,
-            android_lint_libjar_plugin_infos = [p[JavaInfo] for p in android_lint_plugins],
+            android_lint_singlejar_plugins = depset(
+                transitive = [android_lint_rules_jars] + [
+                    p[lint_actions.AndroidLintRulesetInfo].singlejars
+                    for p in android_lint_plugins
+                    if (lint_actions.AndroidLintRulesetInfo in p)
+                ],
+            ),
+            android_lint_libjar_plugin_infos = [
+                p[JavaInfo]
+                for p in android_lint_plugins
+                if (JavaInfo in p)
+            ],
             java_plugin_infos = [
                 plugin[JavaPluginInfo]
                 for plugin in plugins
