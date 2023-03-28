@@ -19,6 +19,7 @@ sh_binary(
     srcs = ["bazel_jar_instrumenter.sh"],
     data = [
         "//bazel:jacoco_cli",
+        "@bazel_tools//tools/jdk:jar",
     ],
     visibility = [
         "//:internal",
