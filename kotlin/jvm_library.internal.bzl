@@ -19,6 +19,7 @@ load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchai
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("//bazel:stubs.bzl", "lint_actions")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
@@ -235,6 +236,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
     _android_lint_plugins = attr.label_list(
         providers = [
             [JavaInfo],
+            [lint_actions.AndroidLintRulesetInfo],
         ],
         cfg = "exec",
     ),
