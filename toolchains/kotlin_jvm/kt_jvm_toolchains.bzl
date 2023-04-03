@@ -288,7 +288,7 @@ _ATTRS = dict(
     _toolchain = attr.label(
         # TODO: Delete this attr when fixed.
         doc = "Magic attribute name for DexArchiveAspect (b/78647825)",
-        default = "//toolchains/kotlin_jvm:kt_jvm_toolchain_impl",
+        default = "//toolchains/kotlin_jvm:kt_jvm_toolchain_linux_sts_jdk",
     ),
 )
 

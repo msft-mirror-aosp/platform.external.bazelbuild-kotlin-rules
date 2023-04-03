@@ -23,28 +23,41 @@ package(default_visibility = ["//:internal"])
 
 toolchain_type(name = kt_jvm_toolchains.name)
 
-# Toolchain resolution must match :kt_jvm_toolchain_impl. Therefore, there's no
-# need for platform-specific toolchain declarations.
 toolchain(
-    name = "kt_jvm_toolchain",
-    toolchain = ":kt_jvm_toolchain_impl",
+    name = "kt_jvm_toolchain_linux",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    toolchain = ":kt_jvm_toolchain_linux_sts_jdk",
     toolchain_type = kt_jvm_toolchains.type,
+    visibility = ["//visibility:public"],
 )
 
+# TODO: Remove this once cl/520112558 has made it into an Android rules release
 alias(
     name = "kt_jvm_toolchain_impl",
-    actual = select({
-        "@bazel_platforms//os:macos": ":kt_jvm_toolchain_macos_impl",
-        "//conditions:default": ":kt_jvm_toolchain_default_impl",
-    }),
+    actual = ":kt_jvm_toolchain_linux_sts_jdk",
     visibility = ["//visibility:public"],
 )
 
 kt_jvm_toolchains.declare(
-    name = "kt_jvm_toolchain_macos_impl",
-    enable_turbine_direct = False,
+    name = "kt_jvm_toolchain_linux_sts_jdk",
+    # TODO: Required due to magic attribute for DexArchiveAspect, remove once that
+    # attribute is removed.
+    visibility = ["//visibility:public"],
+)
+
+toolchain(
+    name = "kt_jvm_toolchain_macos",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    toolchain = ":kt_jvm_toolchain_no_turbine_darwin_jdk",
+    toolchain_type = kt_jvm_toolchains.type,
+    visibility = ["//visibility:public"],
 )
 
 kt_jvm_toolchains.declare(
-    name = "kt_jvm_toolchain_default_impl",
+    name = "kt_jvm_toolchain_no_turbine_darwin_jdk",
+    enable_turbine_direct = False,
 )
