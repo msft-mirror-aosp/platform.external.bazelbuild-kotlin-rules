@@ -87,7 +87,6 @@ def _get_common_and_user_kotlinc_args(ctx, toolchain, extra_kotlinc_args):
 
 def _kt_plugins_map(
         android_lint_singlejar_plugins = depset(),
-        android_lint_libjar_plugin_infos = [],
         java_plugin_datas = depset(),
         java_plugin_infos = [],
         kt_codegen_plugin_infos = depset(),
@@ -97,8 +96,6 @@ def _kt_plugins_map(
     Args:
         android_lint_singlejar_plugins:  (depset[File]) Android Lint checkers.
             Each JAR is self-contained and should be loaded in an isolated classloader.
-        android_lint_libjar_plugin_infos: (list[JavaInfo]) Android Lint checkers.
-            All infos share transitive dependencies and should be loaded in a combined classloader.
         java_plugin_datas: (depset[JavaPluginData]) for KtCodegenProcessing.
         java_plugin_infos: (list[JavaPluginInfo])
         kt_codegen_plugin_infos: (depset[KtCodegenPluginInfo]) for KtCodegenProcessing.
@@ -106,7 +103,6 @@ def _kt_plugins_map(
     """
     return struct(
         android_lint_singlejar_plugins = android_lint_singlejar_plugins,
-        android_lint_libjar_plugin_infos = android_lint_libjar_plugin_infos,
         java_plugin_datas = java_plugin_datas,
         java_plugin_infos = java_plugin_infos,
         kt_codegen_plugin_infos = kt_codegen_plugin_infos,
@@ -717,10 +713,7 @@ def _kt_jvm_library(
             config = kt_toolchain.android_lint_config,
             android_lint_plugins_depset = depset(
                 order = "preorder",
-                transitive = [legacy_java_plugin_classpaths] + [
-                    dep.transitive_runtime_jars
-                    for dep in plugins.android_lint_libjar_plugin_infos
-                ],
+                transitive = [legacy_java_plugin_classpaths],
             ),
             android_lint_rules = plugins.android_lint_singlejar_plugins,
             lint_flags = lint_flags,

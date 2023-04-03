@@ -234,11 +234,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                  To support circular dependencies, this can include `.kt` and `.java` files.""",
     ),
     _android_lint_plugins = attr.label_list(
-        providers = [
-            [JavaInfo],
-            [lint_actions.AndroidLintRulesetInfo],
-        ],
+        providers = [lint_actions.AndroidLintRulesetInfo],
         cfg = "exec",
+        doc = """Additional Android Lint checks to run at compile-time.""",
     ),
 )
 
