@@ -27,7 +27,6 @@ def _test_impl(ctx):
     env = analysistest.begin(ctx)
     actions = analysistest.target_actions(env)
     actual = ctx.attr.target_under_test
-    expected = ctx.attr.expected
 
     asserts.true(
         env,
@@ -40,19 +39,14 @@ def _test_impl(ctx):
         "Expected a ProguardSpecProvider provider.",
     )
 
-    if "data" in expected:
-        expected_data = expected["data"]
-        actual_data = _extract_data_runfiles(actual)
-
+    if ctx.attr.expected_runfile_names != _DEFAULT_LIST:
         asserts.new_set_equals(
             env,
-            sets.make(expected_data),
-            sets.make(actual_data),
-            """
-            FAIL: kt_jvm_library did not produce the expected data dependencies.
-            EXPECTED: %s
-            ACTUAL: %s
-            """ % (expected_data, actual_data),
+            sets.make(ctx.attr.expected_runfile_names),
+            sets.make([
+                f.basename
+                for f in actual[DefaultInfo].data_runfiles.files.to_list()
+            ]),
         )
 
     expected_exports = []
@@ -111,7 +105,6 @@ def _test_impl(ctx):
 _test = analysistest.make(
     impl = _test_impl,
     attrs = dict(
-        expected = attr.string_list_dict(),
         expected_exports = attr.label_list(),
         expected_exported_processor_classes = attr.string_list(
             doc = "Annotation processors reported as to be run on depending targets",
@@ -121,6 +114,10 @@ _test = analysistest.make(
         ),
         expected_friend_jar_names = attr.string_list(
             doc = "Names of all -Xfriend-paths= JARs",
+            default = _DEFAULT_LIST,
+        ),
+        expected_runfile_names = attr.string_list(
+            doc = "Names of all runfiles",
             default = _DEFAULT_LIST,
         ),
         expect_processor_classpath = attr.bool(),
@@ -153,9 +150,6 @@ _coverage_test = analysistest.make(
         "//command_line_option:instrumentation_filter": "+tests/analysis[:/]",
     },
 )
-
-def _extract_data_runfiles(target):
-    return [f.basename for f in target[DefaultInfo].data_runfiles.files.to_list()]
 
 def _test_kt_jvm_library_with_proguard_specs():
     test_name = "kt_jvm_library_with_proguard_specs_test"
