@@ -39,6 +39,17 @@ def _test_impl(ctx):
         "Expected a ProguardSpecProvider provider.",
     )
 
+    if ctx.attr.expected_al_ruleset_names != _DEFAULT_LIST:
+        al_action = get_action(actions, "KtAndroidLint")
+        asserts.new_set_equals(
+            env,
+            sets.make(ctx.attr.expected_al_ruleset_names),
+            sets.make([
+                a.rsplit("/", 1)[1]
+                for a in get_arg(al_action, "--lint_rules", style = "list")
+            ]),
+        )
+
     if ctx.attr.expected_runfile_names != _DEFAULT_LIST:
         asserts.new_set_equals(
             env,
@@ -105,6 +116,10 @@ def _test_impl(ctx):
 _test = analysistest.make(
     impl = _test_impl,
     attrs = dict(
+        expected_al_ruleset_names = attr.string_list(
+            doc = "Annotation processors reported as to be run on depending targets",
+            default = _DEFAULT_LIST,
+        ),
         expected_exports = attr.label_list(),
         expected_exported_processor_classes = attr.string_list(
             doc = "Annotation processors reported as to be run on depending targets",
