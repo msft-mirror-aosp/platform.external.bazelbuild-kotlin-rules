@@ -60,28 +60,12 @@ def _test_impl(ctx):
             ]),
         )
 
-    expected_exports = []
-    for target in ctx.attr.expected_exports:
-        asserts.equals(
+    if ctx.attr.expected_compile_jar_names != _DEFAULT_LIST:
+        asserts.set_equals(
             env,
-            1,
-            len(target[JavaInfo].full_compile_jars.to_list()),
-            "Not a single compile-time Jar: %s" % target.label,
-        )
-        expected_exports.extend(target[JavaInfo].full_compile_jars.to_list())
-    actual_exports = actual[JavaInfo].full_compile_jars.to_list()
-
-    # TODO: fail if there are *un*expected exports, maybe by making sure
-    # that the actual exports are exactly the expected ones plus the Jar(s)
-    # produced by this JavaInfo.
-    for expected_export in expected_exports:
-        asserts.true(
-            env,
-            expected_export in actual_exports,
-            """
-            kt_jvm_library did not export %s
-            actual: %s
-            """ % (expected_export, actual_exports),
+            sets.make(ctx.attr.expected_compile_jar_names),
+            sets.make([f.basename for f in actual[JavaInfo].compile_jars.to_list()]),
+            "kt_jvm_library JavaInfo::compile_jars",
         )
 
     asserts.equals(
@@ -120,7 +104,10 @@ _test = analysistest.make(
             doc = "Annotation processors reported as to be run on depending targets",
             default = _DEFAULT_LIST,
         ),
-        expected_exports = attr.label_list(),
+        expected_compile_jar_names = attr.string_list(
+            doc = "Names of all JavaInfo::compile_jars for the given target",
+            default = _DEFAULT_LIST,
+        ),
         expected_exported_processor_classes = attr.string_list(
             doc = "Annotation processors reported as to be run on depending targets",
         ),
@@ -447,9 +434,10 @@ fun greeting(): String = "Hello World!"
     _test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_exports = [
-            ":%s_exp" % test_name,
-            ":%s_javaexp" % test_name,
+        expected_compile_jar_names = [
+            "lib%s_tut-compile.jar" % test_name,
+            "lib%s_exp-compile.jar" % test_name,
+            "lib%s_javaexp-hjar.jar" % test_name,
         ],
     )
     return test_name
@@ -484,7 +472,10 @@ fun greeting(): String = "Hello World!"
     _test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_exports = [":%s_exports_plugin" % test_name],
+        expected_compile_jar_names = [
+            "lib%s_tut-compile.jar" % test_name,
+            "lib%s_exports_plugin-compile.jar" % test_name,
+        ],
         expected_exported_processor_classes = [test_name],
     )
     return test_name
@@ -518,7 +509,10 @@ fun greeting(): String = "Hello World!"
     _test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_exports = [],  # _exports_plugin has no compile/runtime Jars
+        expected_compile_jar_names = [
+            # _exports_plugin has no compile/runtime Jars
+            "lib%s_tut-compile.jar" % test_name,
+        ],
         expected_exported_processor_classes = [test_name],
     )
     return test_name
