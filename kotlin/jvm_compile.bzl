@@ -151,7 +151,20 @@ def kt_jvm_compile(
         coverage_srcs = coverage_srcs,
                 deps = r_java_infos + java_infos,
         disable_lint_checks = disable_lint_checks,
-        exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
+        exported_plugins = common.kt_plugins_map(
+            java_plugin_infos = [
+                e[JavaPluginInfo]
+                for e in exported_plugins
+                if (JavaPluginInfo in e)
+            ],
+            android_lint_singlejar_plugins = depset(
+                transitive = [
+                    e[lint_actions.AndroidLintRulesetInfo].singlejars
+                    for e in exported_plugins
+                    if (lint_actions.AndroidLintRulesetInfo in e)
+                ],
+            ),
+        ),
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
         exports = r_java_infos + [e[JavaInfo] for e in exports if JavaInfo in e],
         friend_jars = kt_traverse_exports.expand_friend_jars(deps, root = ctx),
@@ -171,6 +184,10 @@ def kt_jvm_compile(
                 transitive = [android_lint_rules_jars] + [
                     p[lint_actions.AndroidLintRulesetInfo].singlejars
                     for p in android_lint_plugins
+                ] + [
+                    p[lint_actions.AndroidLintRulesetInfo].singlejars
+                    for p in plugins
+                    if (lint_actions.AndroidLintRulesetInfo in p)
                 ],
             ),
             java_plugin_infos = [

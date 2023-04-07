@@ -165,6 +165,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         providers = [
             [JavaPluginInfo],
             [KtCompilerPluginInfo],
+            [lint_actions.AndroidLintRulesetInfo],
         ],
         cfg = "exec",
         doc = """JVM plugins to export to users.
@@ -199,6 +200,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         providers = [
             [JavaPluginInfo],
             [KtCompilerPluginInfo],
+            [lint_actions.AndroidLintRulesetInfo],
         ],
         cfg = "exec",
         doc = """JVM plugins to run during compilation.

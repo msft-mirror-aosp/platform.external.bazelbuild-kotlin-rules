@@ -460,6 +460,20 @@ def _split_srcs_by_language(srcs, common_srcs, java_syncer):
 
     return (kt_srcs, java_srcs)
 
+def _merge_exported_plugins(exported_plugins_map):
+    for field in ["java_plugin_datas", "kt_codegen_plugin_infos", "kt_compiler_plugin_infos"]:
+        if getattr(exported_plugins_map, field):
+            fail("exported_plugins doesn't support %s. These are propagated with aspects" % field)
+
+    return exported_plugins_map.java_plugin_infos + [JavaPluginInfo(
+        processor_class = None,
+        runtime_deps = [
+            # Assume this list is short
+            JavaInfo(output_jar = jar, compile_jar = jar)
+            for jar in exported_plugins_map.android_lint_singlejar_plugins.to_list()
+        ],
+    )]
+
 # TODO: Streamline API to generate less actions.
 def _kt_jvm_library(
         ctx,
@@ -478,7 +492,7 @@ def _kt_jvm_library(
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
         plugins = _kt_plugins_map(),
-        exported_plugins = [],
+        exported_plugins = _kt_plugins_map(),
         javacopts = [],
         kotlincopts = [],
         compile_jdeps = depset(),
@@ -530,6 +544,7 @@ def _kt_jvm_library(
     # Includes generative deps from codegen.
     extended_deps = static_deps + generative_deps
     full_classpath = _create_classpath(java_toolchain, extended_deps)
+    exported_plugins = _merge_exported_plugins(exported_plugins)
 
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).

@@ -41,7 +41,7 @@ def _test_impl(ctx):
 
     if ctx.attr.expected_al_ruleset_names != _DEFAULT_LIST:
         al_action = get_action(actions, "KtAndroidLint")
-        asserts.new_set_equals(
+        asserts.set_equals(
             env,
             sets.make(ctx.attr.expected_al_ruleset_names),
             sets.make([
@@ -51,7 +51,7 @@ def _test_impl(ctx):
         )
 
     if ctx.attr.expected_runfile_names != _DEFAULT_LIST:
-        asserts.new_set_equals(
+        asserts.set_equals(
             env,
             sets.make(ctx.attr.expected_runfile_names),
             sets.make([
@@ -68,10 +68,17 @@ def _test_impl(ctx):
             "kt_jvm_library JavaInfo::compile_jars",
         )
 
-    asserts.equals(
+    if ctx.attr.expected_exported_processor_jar_names != _DEFAULT_LIST:
+        asserts.set_equals(
+            env,
+            sets.make(ctx.attr.expected_exported_processor_jar_names),
+            sets.make([f.basename for f in actual[JavaInfo].plugins.processor_jars.to_list()]),
+        )
+
+    asserts.set_equals(
         env,
-        ctx.attr.expected_exported_processor_classes,
-        actual[JavaInfo].plugins.processor_classes.to_list(),
+        sets.make(ctx.attr.expected_exported_processor_classes),
+        sets.make(actual[JavaInfo].plugins.processor_classes.to_list()),
     )
 
     kt_2_java_compile = get_action(actions, "Kt2JavaCompile")
@@ -101,11 +108,15 @@ _test = analysistest.make(
     impl = _test_impl,
     attrs = dict(
         expected_al_ruleset_names = attr.string_list(
-            doc = "Annotation processors reported as to be run on depending targets",
+            doc = "Android Lint rule JARs reported as run on the given target",
             default = _DEFAULT_LIST,
         ),
         expected_compile_jar_names = attr.string_list(
             doc = "Names of all JavaInfo::compile_jars for the given target",
+            default = _DEFAULT_LIST,
+        ),
+        expected_exported_processor_jar_names = attr.string_list(
+            doc = "Names of all JavaInfo.plugins JARs returned by the given target",
             default = _DEFAULT_LIST,
         ),
         expected_exported_processor_classes = attr.string_list(
