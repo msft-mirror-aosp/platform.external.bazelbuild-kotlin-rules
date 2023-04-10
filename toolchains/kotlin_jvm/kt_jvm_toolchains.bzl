@@ -20,7 +20,7 @@ load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_8_10"
+KT_VERSION = "v1_8_20"
 
 KT_LANG_VERSION = "1.8"
 
