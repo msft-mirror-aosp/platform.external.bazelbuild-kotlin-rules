@@ -52,15 +52,16 @@ fun main(args: Array<String>) {
 }
 
 /**
- * Checks for duplicates and add an entry into [errors] if found any, otherwise adds a pair
- * of [zipPath] and [sourcePath] to the receiver
- * @receiver a mutable map of path to path, where keys are relative paths of files inside the
- * resulting .jar, and values are full paths of files
- * @param[zipPath] relative path inside the jar, built either from package name
- * (e.g. package com.google.foo -> com/google/foo/FileName.kt) or by resolving the file name
- * relatively the directory it came from (e.g. foo/bar/1/2.txt came from foo/bar -> 1/2.txt)
+ * Checks for duplicates and adds an entry into [errors] if one is found, otherwise adds a pair of
+ * [zipPath] and [sourcePath] to the receiver
+ *
+ * @param[zipPath] relative path inside the jar, built either from package name (e.g. package
+ *   com.google.foo -> com/google/foo/FileName.kt) or by resolving the file name relative to the
+ *   directory it came from (e.g. foo/bar/1/2.txt came from foo/bar -> 1/2.txt)
  * @param[sourcePath] full path of file into its file system
  * @param[errors] list of strings describing catched errors
+ * @receiver a mutable map of path to path, where keys are relative paths of files inside the
+ *   resulting .jar, and values are full paths of files
  */
 fun MutableMap<Path, Path>.checkForDuplicatesAndSetFilePathToPathInsideJar(
   zipPath: Path,
@@ -75,6 +76,12 @@ fun MutableMap<Path, Path>.checkForDuplicatesAndSetFilePathToPathInsideJar(
       "${sourcePath} has the same path inside .jar as ${duplicatedSourcePath}! " +
         "If it is intended behavior rename one or both of them."
     )
+  }
+}
+
+private fun clearSingletonEmptyPath(list: MutableList<Path>) {
+  if (list.size == 1 && list[0].toString() == "") {
+    list.clear()
   }
 }
 
@@ -124,9 +131,8 @@ class Zip : Runnable {
   }
 
   override fun run() {
-    check(kotlinSrcs.isNotEmpty() or commonSrcs.isNotEmpty()) {
-      "Expected at least one source file."
-    }
+    clearSingletonEmptyPath(kotlinSrcs)
+    clearSingletonEmptyPath(commonSrcs)
 
     // Validating files and getting paths for resulting .jar in one cycle
     // for each _srcs list
@@ -188,9 +194,6 @@ class Zip : Runnable {
       }
     }
 
-    if (ktZipPathToSourcePath.isEmpty() && commonZipPathToSourcePath.isEmpty()) {
-      errors.add("Expected at least one valid source file .kt or .java")
-    }
     check(errors.isEmpty()) { errors.joinToString("\n") }
 
     ZipOutputStream(BufferedOutputStream(Files.newOutputStream(outputJar))).use { zipper ->
@@ -243,6 +246,8 @@ class ZipResources : Runnable {
   val inputDirs = mutableListOf<Path>()
 
   override fun run() {
+    clearSingletonEmptyPath(inputDirs)
+
     val filePathToOutputPath = mutableMapOf<Path, Path>()
     val errors = mutableListOf<String>()
 

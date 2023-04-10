@@ -14,6 +14,8 @@
 
 """Some utils"""
 
+load("//:visibility.bzl", "RULES_KOTLIN")
+
 # Mark targets that's aren't expected to build, but are needed for analysis test assertions.
 ONLY_FOR_ANALYSIS_TEST_TAGS = ["manual", "nobuilder", "only_for_analysis_test"]
 
@@ -35,23 +37,17 @@ EOF
 
 def _create_dir_impl(ctx):
     dir = ctx.actions.declare_directory(ctx.attr.name)
-    if ctx.files.srcs:
-        ctx.actions.run_shell(
-            command = "mkdir -p {0} && cp {1} {0}".format(
-                dir.path + "/" + ctx.attr.subdir,
-                " ".join([s.path for s in ctx.files.srcs]),
-            ),
-            inputs = ctx.files.srcs,
-            outputs = [dir],
-        )
-    else:
-        ctx.actions.run_shell(
-            command = "mkdir -p {0}".format(
-                dir.path + "/" + ctx.attr.subdir,
-            ),
-            inputs = ctx.files.srcs,
-            outputs = [dir],
-        )
+
+    command = "mkdir -p {0} " + ("&& cp {1} {0}" if ctx.files.srcs else "# {1}")
+    ctx.actions.run_shell(
+        command = command.format(
+            dir.path + "/" + ctx.attr.subdir,
+            " ".join([s.path for s in ctx.files.srcs]),
+        ),
+        inputs = ctx.files.srcs,
+        outputs = [dir],
+    )
+
     return [DefaultInfo(files = depset([dir]))]
 
 _create_dir = rule(
@@ -62,7 +58,10 @@ _create_dir = rule(
     ),
 )
 
-def create_dir(name, subdir, srcs):
+def create_dir(
+        name,
+        subdir = None,
+        srcs = None):
     _create_dir(
         name = name,
         subdir = subdir,
@@ -70,16 +69,15 @@ def create_dir(name, subdir, srcs):
     )
     return name
 
-def get_action_arg(actions, mnemonic, arg_name):
-    """Get a named arg from a specific action
+def get_action(actions, mnemonic):
+    """Get a specific action
 
     Args:
       actions: [List[Action]]
       mnemonic: [string] Identify the action whose args to search
-      arg_name: [string]
 
     Returns:
-      [Optional[string]] The arg value, or None if it couldn't be found
+      [Optional[action]] The arg value, or None if it couldn't be found
     """
     menmonic_actions = [a for a in actions if a.mnemonic == mnemonic]
     if len(menmonic_actions) == 0:
@@ -87,8 +85,22 @@ def get_action_arg(actions, mnemonic, arg_name):
     elif len(menmonic_actions) > 1:
         fail("Expected a single '%s' action" % mnemonic)
 
-    mnemonic_action = menmonic_actions[0]
-    arg_values = [a for a in mnemonic_action.argv if a.startswith(arg_name)]
+    return menmonic_actions[0]
+
+def get_arg(action, arg_name):
+    """Get a named arg from a specific action
+
+    Args:
+      action: [Optional[Action]]
+      arg_name: [string]
+
+    Returns:
+      [Optional[string]] The arg value, or None if it couldn't be found
+    """
+    if not action:
+        return None
+
+    arg_values = [a for a in action.argv if a.startswith(arg_name)]
     if len(arg_values) == 0:
         return None
     elif len(arg_values) > 1:
