@@ -22,6 +22,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.time.LocalDateTime
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -85,6 +86,9 @@ private fun clearSingletonEmptyPath(list: MutableList<Path>) {
   }
 }
 
+// Normalize timestamps
+val DEFAULT_TIMESTAMP = LocalDateTime.of(2010, 1, 1, 0, 0, 0)
+
 fun MutableMap<Path, Path>.writeToStream(
   zipper: ZipOutputStream,
   prefix: String = "",
@@ -92,7 +96,7 @@ fun MutableMap<Path, Path>.writeToStream(
   for ((zipPath, sourcePath) in this) {
     BufferedInputStream(Files.newInputStream(sourcePath)).use { inputStream ->
       val entry = ZipEntry(Paths.get(prefix).resolve(zipPath).toString())
-      entry.time = 0
+      entry.timeLocal = DEFAULT_TIMESTAMP
       zipper.putNextEntry(entry)
       inputStream.copyTo(zipper, bufferSize = 1024)
     }
