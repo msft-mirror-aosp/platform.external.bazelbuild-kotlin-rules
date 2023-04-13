@@ -824,7 +824,12 @@ def _kt_jvm_import(
     java_info = java_common.merge([
         JavaInfo(
             output_jar = jar,
-            compile_jar = jar,
+            compile_jar = java_common.run_ijar(
+                actions = ctx.actions,
+                jar = jar,
+                target_label = _get_original_kt_target_label(ctx),
+                java_toolchain = java_toolchain,
+            ),
             source_jar = srcjar,
             deps = [deps],
             runtime_deps = runtime_deps,
