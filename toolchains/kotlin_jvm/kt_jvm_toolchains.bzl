@@ -121,7 +121,7 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlin_annotation_processing = ctx.file.kotlin_annotation_processing,
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
-        kotlin_libs = [JavaInfo(compile_jar = jar, output_jar = jar) for jar in ctx.files.kotlin_libs],
+        kotlin_libs = [x[JavaInfo] for x in ctx.attr.kotlin_libs],
         kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
         kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
@@ -216,7 +216,6 @@ kt_jvm_toolchain = rule(
                 "@kotlinc//:kotlin_stdlib",
                 "@kotlinc//:annotations",
             ],
-            allow_files = [".jar"],
             cfg = "target",
         ),
         kotlin_sdk_libraries = attr.label_list(
