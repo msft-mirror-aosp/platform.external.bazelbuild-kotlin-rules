@@ -12,27 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A fake impl of kt_compiler_plugin."""
+"""Android Lint toolchain for Kotlin."""
 
-load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
+load("//bazel:stubs.bzl", "lint_actions")
 load("//:visibility.bzl", "RULES_KOTLIN")
 
-def _kt_fake_compiler_plugin_impl(ctx):
-    return [
-        KtCompilerPluginInfo(
-            plugin_id = "fake",
-            jar = ctx.file._jar,
-            args = [],
-        ),
-    ]
-
-kt_fake_compiler_plugin = rule(
-    implementation = _kt_fake_compiler_plugin_impl,
-    attrs = dict(
-        _jar = attr.label(
-            allow_single_file = True,
-            default = "//tests/analysis/compiler_plugin:empty_jar",
-        ),
+_ATTRS = dict(
+    _android_lint_baseline_file = attr.label(
+        allow_single_file = True,
+        cfg = "exec",
     ),
-    provides = [KtCompilerPluginInfo],
+)
+
+def _set_baselines():
+    return {
+        # `$foo` is used to set `_foo`
+        "$android_lint_baseline_file": lint_actions.get_android_lint_baseline_file(native.package_name()),
+    }
+
+androidlint_toolchains = struct(
+    attrs = _ATTRS,
+    get_baseline = lambda ctx: getattr(ctx.file, "_android_lint_baseline_file", None),
+    set_baselines = _set_baselines,
 )

@@ -16,6 +16,7 @@
 
 load(":jvm_library.bzl", "kt_jvm_library")
 load("//bazel:stubs.bzl", "register_extension_info")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _lib_name(name):
     return "%s_DO_NOT_DEPEND_LIB" % name
