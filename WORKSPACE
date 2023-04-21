@@ -59,10 +59,10 @@ java_tools_repos()
 
 http_archive(
     name = "dagger",
-    strip_prefix = "dagger-dagger-2.28.1",
+    strip_prefix = "dagger-dagger-2.44.2",
     build_file = "@//bazel:dagger.BUILD",
-    sha256 = "9e69ab2f9a47e0f74e71fe49098bea908c528aa02fa0c5995334447b310d0cdd",
-    urls = ["https://github.com/google/dagger/archive/dagger-2.28.1.zip"],
+    sha256 = "cbff42063bfce78a08871d5a329476eb38c96af9cf20d21f8b412fee76296181",
+    urls = ["https://github.com/google/dagger/archive/dagger-2.44.2.zip"],
 )
 load("@dagger//:workspace_defs.bzl", "DAGGER_ARTIFACTS", "DAGGER_REPOSITORIES")
 
@@ -70,7 +70,7 @@ load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "KT_VERSION")
 http_archive(
     name = "kotlinc",
     build_file = "@//bazel:kotlinc.BUILD",
-    sha256 = "8412b31b808755f0c0d336dbb8c8443fa239bf32ddb3cdb81b305b25f0ad279e",
+    sha256 = "4c3fa7bc1bb9ef3058a2319d8bcc3b7196079f88e92fdcd8d304a46f4b6b5787",
     strip_prefix = "kotlinc",
     urls = [
         "https://github.com/JetBrains/kotlin/releases/download/v{0}/kotlin-compiler-{0}.zip".format(KT_VERSION[1:].replace("_", ".")),

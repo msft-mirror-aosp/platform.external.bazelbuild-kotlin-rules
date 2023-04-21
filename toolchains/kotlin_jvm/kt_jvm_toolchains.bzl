@@ -14,14 +14,15 @@
 
 """Kotlin toolchain."""
 
-load("//bazel:stubs.bzl", "select_java_language_version")
+load("//bazel:stubs.bzl", "select_java_language_level")
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_7_21"
+KT_VERSION = "v1_8_10"
 
-KT_LANG_VERSION = "1.7"
+KT_LANG_VERSION = "1.8"
 
 # Kotlin JVM toolchain type label
 _TYPE = Label("//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
@@ -78,6 +79,12 @@ def _kotlinc_common_flags(ctx, other_flags):
 
         # Allows a no source files to create an empty jar.
         "-Xallow-no-source-files",
+
+        # TODO: Remove this flag
+        "-Xuse-old-innerclasses-logic",
+
+        # TODO: Remove this flag
+        "-Xno-source-debug-extension",
     ] + other_flags
 
     # --define=extra_kt_jvm_opts is for overriding from command line.
@@ -98,11 +105,15 @@ def _kotlinc_cli_flags(ctx):
 
 def _kt_jvm_toolchain_impl(ctx):
     kt_jvm_toolchain = dict(
+        android_java8_apis_desugared = ctx.attr.android_java8_apis_desugared,
+        android_lint_config = ctx.file.android_lint_config,
+        android_lint_runner = ctx.attr.android_lint_runner[DefaultInfo].files_to_run,
         build_marker = ctx.file.build_marker,
         coverage_instrumenter = ctx.attr.coverage_instrumenter[DefaultInfo].files_to_run,
         # Don't require JavaInfo provider for integration test convenience.
         coverage_runtime = ctx.attr.coverage_runtime[JavaInfo] if JavaInfo in ctx.attr.coverage_runtime else None,
         genclass = ctx.file.genclass,
+        header_gen_tool = ctx.attr.header_gen_tool[DefaultInfo].files_to_run if ctx.attr.header_gen_tool else None,
         jar_tool = ctx.attr.jar_tool[DefaultInfo].files_to_run,
         java_language_version = ctx.attr.java_language_version,
         java_runtime = ctx.attr.java_runtime,
@@ -129,6 +140,20 @@ def _kt_jvm_toolchain_impl(ctx):
 
 kt_jvm_toolchain = rule(
     attrs = dict(
+        android_java8_apis_desugared = attr.bool(
+            # Reflects a select in build rules.
+            doc = "Whether Java 8 API desugaring is enabled",
+            mandatory = True,
+        ),
+        android_lint_config = attr.label(
+            cfg = "exec",
+            allow_single_file = [".xml"],
+        ),
+        android_lint_runner = attr.label(
+            default = "//bazel:stub_tool",
+            executable = True,
+            cfg = "exec",
+        ),
         build_marker = attr.label(
             default = "//tools:build_marker",
             allow_single_file = [".jar"],
@@ -150,6 +175,11 @@ kt_jvm_toolchain = rule(
             default = "@bazel_tools//tools/jdk:GenClass_deploy.jar",
             cfg = "exec",
             allow_single_file = True,
+        ),
+        header_gen_tool = attr.label(
+            executable = True,
+            allow_single_file = True,
+            cfg = "exec",
         ),
         jar_tool = attr.label(
             default = "@bazel_tools//tools/jdk:jar",
@@ -200,8 +230,6 @@ kt_jvm_toolchain = rule(
             default = [
                 "@kotlinc//:kotlin_reflect",
                 "@kotlinc//:kotlin_stdlib",
-                "@kotlinc//:kotlin_stdlib_jdk7",
-                "@kotlinc//:kotlin_stdlib_jdk8",
                 "@kotlinc//:kotlin_test_not_testonly",
             ],
             cfg = "target",
@@ -250,13 +278,12 @@ kt_jvm_toolchain = rule(
 
 def _declare(**kwargs):
     kt_jvm_toolchain(
-        # TODO: use select_java_language_level() after support for Java 8 is dropped
-        jvm_target = select_java_language_version(
-            # The JVM bytecode version to output
-            java8 = "1.8",
-            java11 = "11",
-            java_head = "18",  # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
-        ),
+        android_java8_apis_desugared = select({
+            "//conditions:default": False,
+        }),
+        # The JVM bytecode version to output
+        # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
+        jvm_target = "11",
         **kwargs
     )
 
