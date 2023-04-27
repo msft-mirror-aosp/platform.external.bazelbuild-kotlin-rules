@@ -47,7 +47,10 @@ def _run_lint_on_library(ctx, output, *_args, **_kwargs):
     ctx.actions.write(output, "Android Lint Disabled")
     return output
 
+_AndroidLintRulesetInfo = provider()
+
 lint_actions = struct(
+    AndroidLintRulesetInfo = _AndroidLintRulesetInfo,
     run_lint_on_library = _run_lint_on_library,
     get_android_lint_baseline_file = _empty_fn,
 )
