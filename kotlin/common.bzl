@@ -726,11 +726,13 @@ def _kt_jvm_library(
             resource_files = resource_files,
             baseline_file = androidlint_toolchains.get_baseline(ctx),
             config = kt_toolchain.android_lint_config,
-            android_lint_plugins_depset = depset(
+            android_lint_rules = depset(
                 order = "preorder",
-                transitive = [legacy_java_plugin_classpaths],
+                transitive = [
+                    legacy_java_plugin_classpaths,
+                    plugins.android_lint_singlejar_plugins,
+                ],
             ),
-            android_lint_rules = plugins.android_lint_singlejar_plugins,
             lint_flags = lint_flags,
             extra_input_depsets = [p.processor_data for p in java_plugin_datas_legacy] + [depset([java_genjar] if java_genjar else [])],
             testonly = testonly,
