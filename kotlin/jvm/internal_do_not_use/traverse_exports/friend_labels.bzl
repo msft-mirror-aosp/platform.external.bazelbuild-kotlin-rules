@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+"""kt_friend_labels_visitor"""
 
-package(default_visibility = ["//:internal"])
+# go/keep-sorted start
+load("//kotlin/common:is_eligible_friend.bzl", "is_eligible_friend")
+load("//:visibility.bzl", "RULES_KOTLIN")
+# go/keep-sorted end
 
-licenses(["notice"])
+def _get_output_labels(target, _):
+    return [target.label]
 
-bzl_library(
-    name = "traverse_exports_bzl",
-    srcs = glob(["*.bzl"]),
-    deps = [
-        "//:visibility_bzl",
-        "//kotlin:for_traverse_exports_bzl",
-        "//kotlin/common:common_bzl",
-        "@bazel_skylib//lib:sets",
-    ],
+kt_friend_labels_visitor = struct(
+    name = "friend_labels",
+    visit_target = _get_output_labels,
+    filter_edge = is_eligible_friend,
+    finish_expansion = None,
+    process_unvisited_target = None,
 )
