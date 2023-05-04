@@ -24,6 +24,9 @@ licenses(["notice"])
 bzl_library(
     name = "common_bzl",
     srcs = glob(["*.bzl"]),
+    visibility = [
+        "//:internal",
+    ],
     deps = [
         "//:visibility_bzl",
     ],
