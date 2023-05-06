@@ -103,17 +103,20 @@ def _kotlinc_cli_flags(ctx):
         "-nowarn",
     ])
 
+def _opt_for_test(val, getter):
+    return getter(val) if val else None
+
 def _kt_jvm_toolchain_impl(ctx):
     kt_jvm_toolchain = dict(
+        # go/keep-sorted start
         android_java8_apis_desugared = ctx.attr.android_java8_apis_desugared,
         android_lint_config = ctx.file.android_lint_config,
         android_lint_runner = ctx.attr.android_lint_runner[DefaultInfo].files_to_run,
         build_marker = ctx.file.build_marker,
         coverage_instrumenter = ctx.attr.coverage_instrumenter[DefaultInfo].files_to_run,
-        # Don't require JavaInfo provider for integration test convenience.
-        coverage_runtime = ctx.attr.coverage_runtime[JavaInfo] if JavaInfo in ctx.attr.coverage_runtime else None,
+        coverage_runtime = _opt_for_test(ctx.attr.coverage_runtime, lambda x: x[JavaInfo]),
         genclass = ctx.file.genclass,
-        header_gen_tool = ctx.attr.header_gen_tool[DefaultInfo].files_to_run if ctx.attr.header_gen_tool else None,
+        header_gen_tool = _opt_for_test(ctx.attr.header_gen_tool, lambda x: x[DefaultInfo].files_to_run),
         java_language_version = ctx.attr.java_language_version,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
@@ -122,16 +125,17 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
         kotlin_libs = [x[JavaInfo] for x in ctx.attr.kotlin_libs],
-        kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
         kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
         kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
+        kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         source_jar_zipper = ctx.file.source_jar_zipper,
         turbine = ctx.file.turbine,
-        turbine_direct = ctx.file.turbine_direct if ctx.attr.enable_turbine_direct else None,
-        turbine_jsa = ctx.file.turbine_jsa,
+        turbine_direct = _opt_for_test(ctx.attr.turbine_direct, lambda x: x[DefaultInfo].files_to_run),
         turbine_java_runtime = ctx.attr.turbine_java_runtime,
+        turbine_jsa = ctx.file.turbine_jsa,
+        # go/keep-sorted end
     )
     return [
         platform_common.ToolchainInfo(**kt_jvm_toolchain),
@@ -227,6 +231,9 @@ kt_jvm_toolchain = rule(
             ],
             cfg = "target",
         ),
+        kt_codegen_java_runtime = attr.label(
+            cfg = "exec",
+        ),
         proguard_whitelister = attr.label(
             default = "@bazel_tools//tools/jdk:proguard_whitelister",
             cfg = "exec",
@@ -257,15 +264,12 @@ kt_jvm_toolchain = rule(
             cfg = "exec",
             allow_single_file = True,
         ),
-        turbine_jsa = attr.label(
-            cfg = "exec",
-            allow_single_file = True,
-        ),
         turbine_java_runtime = attr.label(
             cfg = "exec",
         ),
-        kt_codegen_java_runtime = attr.label(
+        turbine_jsa = attr.label(
             cfg = "exec",
+            allow_single_file = True,
         ),
     ),
     provides = [platform_common.ToolchainInfo],
