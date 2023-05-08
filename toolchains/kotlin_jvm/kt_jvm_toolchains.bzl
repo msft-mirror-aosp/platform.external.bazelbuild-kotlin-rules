@@ -16,6 +16,7 @@
 
 load("//bazel:stubs.bzl", "select_java_language_level")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 # Work around to toolchains in Google3.
 KtJvmToolchainInfo = provider()
@@ -107,6 +108,8 @@ def _opt_for_test(val, getter):
     return getter(val) if val else None
 
 def _kt_jvm_toolchain_impl(ctx):
+    profiling_filter = ctx.attr.profiling_filter[BuildSettingInfo].value
+
     kt_jvm_toolchain = dict(
         # go/keep-sorted start
         android_java8_apis_desugared = ctx.attr.android_java8_apis_desugared,
@@ -117,6 +120,7 @@ def _kt_jvm_toolchain_impl(ctx):
         coverage_runtime = _opt_for_test(ctx.attr.coverage_runtime, lambda x: x[JavaInfo]),
         genclass = ctx.file.genclass,
         header_gen_tool = _opt_for_test(ctx.attr.header_gen_tool, lambda x: x[DefaultInfo].files_to_run),
+        is_profiling_enabled = lambda label: profiling_filter and (profiling_filter in str(label)),
         java_language_version = ctx.attr.java_language_version,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
@@ -233,6 +237,10 @@ kt_jvm_toolchain = rule(
         ),
         kt_codegen_java_runtime = attr.label(
             cfg = "exec",
+        ),
+        profiling_filter = attr.label(
+            default = "//toolchains/kotlin_jvm:profiling_filter",
+            providers = [BuildSettingInfo],
         ),
         proguard_whitelister = attr.label(
             default = "@bazel_tools//tools/jdk:proguard_whitelister",

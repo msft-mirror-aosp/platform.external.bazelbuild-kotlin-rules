@@ -138,6 +138,12 @@ def _run_kotlinc(
     kotlinc_args.use_param_file("@%s", use_always = True)  # Use params file to handle long classpaths (b/76185759)
     kotlinc_args.set_param_file_format("multiline")  # kotlinc only supports double-quotes ("): https://youtrack.jetbrains.com/issue/KT-24472
 
+    # Args to the kotlinc JVM
+    #
+    # These cannot use a param file because the file wouldn't be read until after the JVM launches.
+    # Values will be prepended with --jvm_flag= for detection.
+    jvm_args = []
+
     kotlinc_args.add_joined("-cp", classpath, join_with = ":")
     transitive_inputs.append(classpath)
     kotlinc_args.add_all(_get_common_and_user_kotlinc_args(ctx, toolchain, kotlincopts))
@@ -183,12 +189,14 @@ def _run_kotlinc(
     # (b/112439843).
     ctx.actions.run(
         executable = toolchain.kotlin_compiler,
-        arguments = [kotlinc_args],
+        arguments = ["--jvm_flag=" + x for x in jvm_args] + [kotlinc_args],
         inputs = depset(direct = direct_inputs, transitive = transitive_inputs),
         outputs = outputs,
         mnemonic = mnemonic,
         progress_message = message_prefix + str(_get_original_kt_target_label(ctx)),
         execution_requirements = {
+            "local": "1",  # Ensure comparable results across runs (cold builds, same machine)
+        } if toolchain.is_profiling_enabled(ctx.label) else {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
     )
