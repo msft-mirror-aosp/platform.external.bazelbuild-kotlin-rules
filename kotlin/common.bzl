@@ -317,7 +317,7 @@ def _derive_headers(
 def _get_original_kt_target_label(ctx):
     label = ctx.label
     if label.name.find("_DO_NOT_DEPEND") > 0:
-        # Remove rule suffix added by kt_android_library
+        # Remove rule suffix added by android_library(
         label = label.relative(":%s" % label.name[0:label.name.find("_DO_NOT_DEPEND")])
     elif hasattr(ctx.attr, "_kt_codegen_plugin_build_tool") and label.name.endswith("_processed_srcs"):
         # Remove rule suffix added by kt_codegen_filegroup. b/259984258
@@ -764,7 +764,7 @@ def _kt_jvm_library(
     use_validation = ctx.var.get("kt_use_validations", use_validation)
 
     # Include marker file in runtime Jar so we can reliably identify 1P Kotlin code
-    # TODO: consider only doing this for kt_android_library
+    # TODO: consider only doing this for android_library(
     _singlejar(
         ctx,
         out_jars + ([kt_toolchain.build_marker] if kt_srcs and ctx.label.package.startswith("java/") else []),
