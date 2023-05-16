@@ -138,7 +138,6 @@ def _kt_jvm_toolchain_impl(ctx):
         turbine = ctx.file.turbine,
         turbine_direct = _opt_for_test(ctx.attr.turbine_direct, lambda x: x[DefaultInfo].files_to_run),
         turbine_java_runtime = ctx.attr.turbine_java_runtime,
-        turbine_jsa = ctx.file.turbine_jsa,
         # go/keep-sorted end
     )
     return [
@@ -274,10 +273,6 @@ kt_jvm_toolchain = rule(
         ),
         turbine_java_runtime = attr.label(
             cfg = "exec",
-        ),
-        turbine_jsa = attr.label(
-            cfg = "exec",
-            allow_single_file = True,
         ),
     ),
     provides = [platform_common.ToolchainInfo],
