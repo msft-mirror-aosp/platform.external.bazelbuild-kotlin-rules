@@ -86,7 +86,7 @@ def _get_common_and_user_kotlinc_args(ctx, toolchain, extra_kotlinc_args):
     ] + extra_kotlinc_args
 
 def _kt_plugins_map(
-        android_lint_singlejar_plugins = depset(),
+        android_lint_rulesets = [],
         java_plugin_datas = depset(),
         java_plugin_infos = [],
         kt_codegen_plugin_infos = depset(),
@@ -94,7 +94,7 @@ def _kt_plugins_map(
     """A struct containing all the plugin types understood by rules_kotlin.
 
     Args:
-        android_lint_singlejar_plugins:  (depset[File]) Android Lint checkers.
+        android_lint_rulesets: (list[lint_actions.AndroidLintRulesInfo]) Android Lint checkers.
             Each JAR is self-contained and should be loaded in an isolated classloader.
         java_plugin_datas: (depset[JavaPluginData]) for KtCodegenProcessing.
         java_plugin_infos: (list[JavaPluginInfo])
@@ -102,7 +102,7 @@ def _kt_plugins_map(
         kt_compiler_plugin_infos: (list[KtCompilerPluginInfo])
     """
     return struct(
-        android_lint_singlejar_plugins = android_lint_singlejar_plugins,
+        android_lint_rulesets = android_lint_rulesets,
         java_plugin_datas = java_plugin_datas,
         java_plugin_infos = java_plugin_infos,
         kt_codegen_plugin_infos = kt_codegen_plugin_infos,
@@ -473,14 +473,18 @@ def _merge_exported_plugins(exported_plugins_map):
         if getattr(exported_plugins_map, field):
             fail("exported_plugins doesn't support %s. These are propagated with aspects" % field)
 
-    return exported_plugins_map.java_plugin_infos + [JavaPluginInfo(
-        processor_class = None,
-        runtime_deps = [
-            # Assume this list is short
-            JavaInfo(output_jar = jar, compile_jar = jar)
-            for jar in exported_plugins_map.android_lint_singlejar_plugins.to_list()
-        ],
-    )]
+    android_lint_ruleset_jars = []
+
+    return exported_plugins_map.java_plugin_infos + [
+        JavaPluginInfo(
+            processor_class = None,
+            runtime_deps = [
+                # Assume this list is short
+                JavaInfo(output_jar = jar, compile_jar = jar)
+                for jar in android_lint_ruleset_jars
+            ],
+        ),
+    ]
 
 # TODO: Streamline API to generate less actions.
 def _kt_jvm_library(
@@ -734,13 +738,9 @@ def _kt_jvm_library(
             resource_files = resource_files,
             baseline_file = androidlint_toolchains.get_baseline(ctx),
             config = kt_toolchain.android_lint_config,
-            android_lint_rules = depset(
-                order = "preorder",
-                transitive = [
-                    legacy_java_plugin_classpaths,
-                    plugins.android_lint_singlejar_plugins,
-                ],
-            ),
+            android_lint_rules = plugins.android_lint_rulesets + [
+                lint_actions.AndroidLintRulesetInfo(singlejars = legacy_java_plugin_classpaths),
+            ],
             lint_flags = lint_flags,
             extra_input_depsets = [p.processor_data for p in java_plugin_datas_legacy] + [depset([java_genjar] if java_genjar else [])],
             testonly = testonly,
