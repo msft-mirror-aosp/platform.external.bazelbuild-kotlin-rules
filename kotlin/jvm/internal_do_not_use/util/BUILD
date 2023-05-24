@@ -14,7 +14,9 @@
 
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-package(default_visibility = ["//:internal"])
+package(
+    default_visibility = ["//:internal"],
+)
 
 licenses(["notice"])
 

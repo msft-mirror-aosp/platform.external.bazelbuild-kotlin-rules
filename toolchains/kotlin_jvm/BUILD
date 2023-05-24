@@ -20,7 +20,9 @@ load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 
 licenses(["notice"])
 
-package(default_visibility = ["//:internal"])
+package(
+    default_visibility = ["//:internal"],
+)
 
 toolchain_type(name = kt_jvm_toolchains.name)
 

@@ -17,7 +17,9 @@ load("//tests/analysis:assert_failure_test.bzl", "assert_failure_test")
 load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
 load("//tests/analysis:util.bzl", "create_dir")
 
-package(default_testonly = True)
+package(
+    default_testonly = True,
+)
 
 licenses(["notice"])
 

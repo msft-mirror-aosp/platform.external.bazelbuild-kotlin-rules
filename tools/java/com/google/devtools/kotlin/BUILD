@@ -16,7 +16,9 @@
 
 load("//kotlin:rules.bzl", "kt_jvm_library")
 
-package(default_visibility = ["//:internal"])
+package(
+    default_visibility = ["//:internal"],
+)
 
 licenses(["notice"])
 
