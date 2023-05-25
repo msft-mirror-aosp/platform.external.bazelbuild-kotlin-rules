@@ -251,7 +251,7 @@ kt_jvm_library_helper = rule(
     ),
     provides = [JavaInfo],
     implementation = _jvm_library_impl,
-    toolchains = [kt_jvm_toolchains.type],
+    toolchains = [kt_jvm_toolchains.type, "@bazel_tools//tools/jdk:toolchain_type"],
     doc = """This rule compiles Kotlin (and Java) sources into a Jar file. Most Java-like libraries
              and binaries can depend on this rule, and this rule can in turn depend on Kotlin and
              Java libraries. This rule supports a subset of attributes supported by `java_library`.
