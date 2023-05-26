@@ -15,6 +15,7 @@
 """Kotlin kt_jvm_library rule."""
 
 load("//kotlin:compiler_opt.bzl", "kotlincopts_attrs", "merge_kotlincopts")
+load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
@@ -124,6 +125,7 @@ def _jvm_library_impl(ctx):
     ]
 
 _KT_JVM_LIBRARY_ATTRS = dicts.add(
+    androidlint_toolchains.attrs,
     java_toolchains.attrs,
     kotlincopts_attrs(),
     kt_jvm_toolchains.attrs,
@@ -137,9 +139,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         allow_files = True,
     ),
     deps = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
         ],
         aspects = [
             kt_traverse_exports.aspect,
@@ -171,9 +173,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                      will not run kotlinc plugins""",
     ),
     exports = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
         ],
         aspects = [
             kt_traverse_exports.aspect,
@@ -214,9 +216,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                          go/be#java_library.resources.""",
     ),
     runtime_deps = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
             [CcInfo],  # for JNI / native dependencies
         ],
         aspects = [

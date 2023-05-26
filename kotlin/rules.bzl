@@ -14,9 +14,15 @@
 
 """Kotlin rules."""
 
+load("//kotlin:compiler_opt.bzl", _kt_compiler_opt = "kt_compiler_opt")
+load("//kotlin:compiler_plugin_export.bzl", _kt_compiler_plugin_export = "kt_compiler_plugin_export")
 load("//kotlin:jvm_import.bzl", _kt_jvm_import = "kt_jvm_import")
 load("//kotlin:jvm_library.bzl", _kt_jvm_library = "kt_jvm_library")
 load("//kotlin:jvm_test.bzl", _kt_jvm_test = "kt_jvm_test")
+
+kt_compiler_opt = _kt_compiler_opt
+
+kt_compiler_plugin_export = _kt_compiler_plugin_export
 
 kt_jvm_import = _kt_jvm_import
 
