@@ -114,7 +114,6 @@ def _kt_jvm_toolchain_impl(ctx):
         coverage_runtime = ctx.attr.coverage_runtime[JavaInfo] if JavaInfo in ctx.attr.coverage_runtime else None,
         genclass = ctx.file.genclass,
         header_gen_tool = ctx.attr.header_gen_tool[DefaultInfo].files_to_run if ctx.attr.header_gen_tool else None,
-        jar_tool = ctx.attr.jar_tool[DefaultInfo].files_to_run,
         java_language_version = ctx.attr.java_language_version,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
@@ -123,6 +122,7 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
         kotlin_libs = [JavaInfo(compile_jar = jar, output_jar = jar) for jar in ctx.files.kotlin_libs],
+        kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
         kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
         kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
@@ -179,12 +179,6 @@ kt_jvm_toolchain = rule(
         header_gen_tool = attr.label(
             executable = True,
             allow_single_file = True,
-            cfg = "exec",
-        ),
-        jar_tool = attr.label(
-            default = "@bazel_tools//tools/jdk:jar",
-            executable = True,
-            allow_files = True,
             cfg = "exec",
         ),
         java_language_version = attr.string(
@@ -269,6 +263,9 @@ kt_jvm_toolchain = rule(
             allow_single_file = True,
         ),
         turbine_java_runtime = attr.label(
+            cfg = "exec",
+        ),
+        kt_codegen_java_runtime = attr.label(
             cfg = "exec",
         ),
     ),
