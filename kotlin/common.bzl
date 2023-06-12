@@ -241,7 +241,7 @@ def _kt_compile(
         enforce_strict_deps = enforce_strict_deps,
         enforce_complete_jdeps = enforce_complete_jdeps,
         mnemonic = "Kt2JavaCompile",
-        message_prefix = "Compiling for Java runtime: ",
+        message_prefix = "Compiling Kotlin For Java Runtime: ",
     )
 
     srcjar = kt_srcjars.zip(
