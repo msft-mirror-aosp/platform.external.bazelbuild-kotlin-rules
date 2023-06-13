@@ -125,7 +125,6 @@ def _kt_jvm_toolchain_impl(ctx):
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
         jvm_target = ctx.attr.jvm_target,
-        kotlin_annotation_processing = ctx.file.kotlin_annotation_processing,
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
         kotlin_libs = [x[JavaInfo] for x in ctx.attr.kotlin_libs],
@@ -203,11 +202,6 @@ kt_jvm_toolchain = rule(
         ),
         jvm_target = attr.string(
             doc = "The value to pass as -jvm-target, indicating the bytecode format to emit.",
-        ),
-        kotlin_annotation_processing = attr.label(
-            default = "@kotlinc//:kotlin_annotation_processing",
-            cfg = "exec",
-            allow_single_file = True,
         ),
         kotlin_compiler = attr.label(
             default = "@kotlinc//:kotlin_compiler",
