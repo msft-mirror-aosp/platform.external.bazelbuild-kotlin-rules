@@ -19,6 +19,7 @@ load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 # Work around to toolchains in Google3.
+# buildifier: disable=provider-params
 KtJvmToolchainInfo = provider()
 
 KT_VERSION = "v1_8_21"
