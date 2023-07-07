@@ -16,6 +16,7 @@
 
 load("//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
 def _kt_jvm_library_for_test(name, **kwargs):
     kt_jvm_library(
