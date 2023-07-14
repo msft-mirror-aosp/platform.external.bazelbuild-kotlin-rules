@@ -42,6 +42,7 @@ import picocli.CommandLine.Spec
 )
 class SourceJarZipper : Runnable {
   @Spec private lateinit var spec: CommandSpec
+
   override fun run() {
     throw ParameterException(spec.commandLine(), "Specify a command: zip, zip_resources or unzip")
   }
@@ -129,9 +130,11 @@ class Zip : Runnable {
   )
   val commonSrcs = mutableListOf<Path>()
 
-  companion object {
+  private companion object {
     const val PACKAGE_SPACE = "package "
-    val PACKAGE_NAME_REGEX = "[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z0-9_]+)*".toRegex()
+    // can't start with digit and can't be all underscores
+    val IDENTIFIER_REGEX = Regex("(?:[a-zA-Z]|_+[a-zA-Z0-9])\\w*")
+    val PACKAGE_NAME_REGEX = Regex("$IDENTIFIER_REGEX(?:\\.$IDENTIFIER_REGEX)*")
   }
 
   override fun run() {
@@ -153,9 +156,14 @@ class Zip : Runnable {
             // Kotlin allows usage of reserved words in package names framing them
             // with backquote symbol "`"
             val packageName =
-              line.substring(PACKAGE_SPACE.length).trim().replace(";", "").replace("`", "")
+              line
+                .removePrefix(PACKAGE_SPACE)
+                .substringBefore("//")
+                .trim()
+                .removeSuffix(";")
+                .replace(Regex("\\B`(.+?)`\\B"), "$1")
             if (!PACKAGE_NAME_REGEX.matches(packageName)) {
-              errors.add("${this} contains an invalid package name")
+              errors.add("$this contains an invalid package name")
               return this.fileName
             }
             return Paths.get(packageName.replace(".", "/")).resolve(this.fileName)
