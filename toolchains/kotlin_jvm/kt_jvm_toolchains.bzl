@@ -22,9 +22,9 @@ load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 # buildifier: disable=provider-params
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_8_21"
+KT_VERSION = "v1_9_0"
 
-KT_LANG_VERSION = "1.8"
+KT_LANG_VERSION = "1.9"
 
 # Kotlin JVM toolchain type label
 _TYPE = Label("//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
