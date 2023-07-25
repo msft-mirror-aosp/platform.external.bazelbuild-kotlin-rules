@@ -18,6 +18,7 @@
 load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
 load("//kotlin/jvm/internal_do_not_use/util:srcjars.bzl", "kt_srcjars")
 load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
+load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//bazel:stubs.bzl", "lint_actions")
@@ -199,6 +200,7 @@ def _run_kotlinc(
         } if toolchain.is_profiling_enabled(ctx.label) else {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
+        toolchain = kt_jvm_toolchains.type,
     )
 
     return struct(
@@ -311,6 +313,7 @@ def _derive_headers(
         outputs = [output_dir],
         mnemonic = "KtDeriveHeaders",
         progress_message = "Deriving %s: %s" % (output_dir.basename, _get_original_kt_target_label(ctx)),
+        toolchain = kt_jvm_toolchains.type,
     )
     return [output_dir]
 
@@ -381,6 +384,7 @@ def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
         outputs = [output],
         mnemonic = "KtJaCoCoInstrument",
         progress_message = "Instrumenting Kotlin for coverage collection: %s" % _get_original_kt_target_label(ctx),
+        toolchain = kt_jvm_toolchains.type,
     )
 
     return output
@@ -416,6 +420,7 @@ def _singlejar(
         outputs = [output],
         mnemonic = mnemonic,
         progress_message = "Merging %s: %s" % (content, label),
+        toolchain = "@bazel_tools//tools/jdk:toolchain_type",
     )
 
 def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
@@ -434,6 +439,7 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
         arguments = [args],
         mnemonic = "KtMergeJdeps",
         progress_message = "Merging jdeps files %{output}",
+        toolchain = kt_jvm_toolchains.type,
     )
 
     return merged_jdeps_file
