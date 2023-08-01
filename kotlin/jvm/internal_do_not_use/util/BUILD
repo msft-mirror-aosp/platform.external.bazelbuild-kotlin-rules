@@ -14,7 +14,9 @@
 
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-package(default_visibility = ["//:internal"])
+package(
+    default_visibility = ["//:internal"],
+)
 
 licenses(["notice"])
 
@@ -23,6 +25,7 @@ bzl_library(
     srcs = glob(["*.bzl"]),
     deps = [
         "//:visibility_bzl",
+        "//toolchains/kotlin_jvm:toolchain_bzl",
         "@bazel_tools//tools/jdk:jvmopts",
     ],
 )

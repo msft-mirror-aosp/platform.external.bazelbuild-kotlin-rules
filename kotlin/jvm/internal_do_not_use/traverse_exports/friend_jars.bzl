@@ -12,55 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""kt_friend_visitor"""
+"""kt_friend_jars_visitor"""
 
+# go/keep-sorted start
+load("//kotlin/common:is_eligible_friend.bzl", "is_eligible_friend")
 load("//:visibility.bzl", "RULES_KOTLIN")
-
-def is_eligible_friend(target, friend):
-    """
-    Determines if `target` is allowed to use `internal` members of `friend`
-
-    To be eligible, one of:
-      1. `target` and `friend` in same pkg
-      2. `target` in `testing/` subpkg of `friend` pkg
-      3. `target` in `javatests/` pkg, `friend` in parallel `java/` pkg
-      4. `target` in `test/java/` pkg, `friend` in parallel `main/java/` pkg
-
-    Args:
-      target: (Target) The current target
-      friend: (Target) A potential friend of `target`
-
-    Returns:
-      True if `friend` is an eligible friend of `target`.
-    """
-
-    target_pkg = target.label.package + "/"
-    friend_pkg = friend.label.package + "/"
-
-    if target_pkg == friend_pkg:
-        # Case 1
-        return True
-
-    if target_pkg.removesuffix("testing/") == friend_pkg:
-        # Case 2
-        return True
-
-    if "javatests/" in target_pkg and "java/" in friend_pkg:
-        # Case 3
-        target_java_pkg = target_pkg.rsplit("javatests/", 1)[1]
-        friend_java_pkg = friend_pkg.rsplit("java/", 1)[1]
-        if target_java_pkg == friend_java_pkg:
-            return True
-
-    if ("test/java/" in target_pkg and "main/java/" in friend_pkg and
-        True):
-        # Case 4
-        target_split = target_pkg.rsplit("test/java/", 1)
-        friend_split = friend_pkg.rsplit("main/java/", 1)
-        if target_split == friend_split:
-            return True
-
-    return False
+# go/keep-sorted end
 
 def _get_output_jars(target, _ctx_rule):
     # We can't simply use `JavaInfo.compile_jars` because we only want the JARs directly created by
@@ -70,17 +27,6 @@ def _get_output_jars(target, _ctx_rule):
 kt_friend_jars_visitor = struct(
     name = "friend_jars",
     visit_target = _get_output_jars,
-    filter_edge = is_eligible_friend,
-    finish_expansion = None,
-    process_unvisited_target = None,
-)
-
-def _get_output_labels(target, _):
-    return [target.label]
-
-kt_friend_labels_visitor = struct(
-    name = "friend_labels",
-    visit_target = _get_output_labels,
     filter_edge = is_eligible_friend,
     finish_expansion = None,
     process_unvisited_target = None,
