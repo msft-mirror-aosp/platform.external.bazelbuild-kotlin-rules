@@ -87,12 +87,13 @@ def get_action(actions, mnemonic):
 
     return menmonic_actions[0]
 
-def get_arg(action, arg_name):
+def get_arg(action, arg_name, style = "trim"):
     """Get a named arg from a specific action
 
     Args:
       action: [Optional[Action]]
       arg_name: [string]
+      style: [Optional[string]] The style of commandline arg
 
     Returns:
       [Optional[string]] The arg value, or None if it couldn't be found
@@ -100,10 +101,22 @@ def get_arg(action, arg_name):
     if not action:
         return None
 
-    arg_values = [a for a in action.argv if a.startswith(arg_name)]
-    if len(arg_values) == 0:
+    args = action.argv
+    matches = [(i, a) for (i, a) in enumerate(args) if a.startswith(arg_name)]
+    if len(matches) == 0:
         return None
-    elif len(arg_values) > 1:
+    elif len(matches) > 1:
         fail("Expected a single '%s' arg" % arg_name)
+    (index, arg) = matches[0]
 
-    return arg_values[0][len(arg_name):]
+    if style == "trim":
+        return arg[len(arg_name):]
+    elif style == "list":
+        result = []
+        for i in range(index + 1, len(args)):
+            if args[i].startswith("--"):
+                break
+            result.append(args[i])
+        return result
+    else:
+        fail("Unrecognized arg style '%s" % style)

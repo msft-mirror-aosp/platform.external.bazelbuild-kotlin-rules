@@ -151,7 +151,10 @@ def kt_jvm_compile(
         coverage_srcs = coverage_srcs,
                 deps = r_java_infos + java_infos,
         disable_lint_checks = disable_lint_checks,
-        exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
+        exported_plugins = common.kt_plugins_map(
+            java_plugin_infos = common.collect_providers(JavaPluginInfo, exported_plugins),
+            android_lint_rulesets = common.collect_providers(lint_actions.AndroidLintRulesetInfo, exported_plugins),
+        ),
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
         exports = r_java_infos + [e[JavaInfo] for e in exports if JavaInfo in e],
         friend_jars = kt_traverse_exports.expand_friend_jars(deps, root = ctx),
@@ -167,29 +170,17 @@ def kt_jvm_compile(
         output = output,
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
-            android_lint_singlejar_plugins = depset(
-                transitive = [android_lint_rules_jars] + [
-                    p[lint_actions.AndroidLintRulesetInfo].singlejars
-                    for p in android_lint_plugins
-                    if (lint_actions.AndroidLintRulesetInfo in p)
-                ],
+            android_lint_rulesets = (
+                common.collect_providers(lint_actions.AndroidLintRulesetInfo, android_lint_plugins) +
+                common.collect_providers(lint_actions.AndroidLintRulesetInfo, plugins)
+            ) + [
+                lint_actions.AndroidLintRulesetInfo(singlejars = android_lint_rules_jars),
+            ],
+            java_plugin_infos = common.collect_providers(JavaPluginInfo, plugins),
+            kt_compiler_plugin_infos = (
+                kt_traverse_exports.expand_compiler_plugins(deps).to_list() +
+                common.collect_providers(KtCompilerPluginInfo, plugins)
             ),
-            android_lint_libjar_plugin_infos = [
-                p[JavaInfo]
-                for p in android_lint_plugins
-                if (JavaInfo in p)
-            ],
-            java_plugin_infos = [
-                plugin[JavaPluginInfo]
-                for plugin in plugins
-                if JavaPluginInfo in plugin
-            ],
-            kt_compiler_plugin_infos =
-                kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
-                    plugin[KtCompilerPluginInfo]
-                    for plugin in plugins
-                    if (KtCompilerPluginInfo in plugin)
-                ],
         ),
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],

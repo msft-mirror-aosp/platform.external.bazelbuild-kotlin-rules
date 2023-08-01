@@ -138,7 +138,7 @@ kt_jvm_import = rule(
     fragments = ["java"],
     provides = [JavaInfo],
     implementation = _kt_jvm_import_impl,
-    toolchains = [kt_jvm_toolchains.type],
+    toolchains = [kt_jvm_toolchains.type, "@bazel_tools//tools/jdk:toolchain_type"],
     doc = """Allows the use of precompiled Kotlin `.jar` files as deps of `kt_*` targets.
 
              Prefer this rule to `java_import` for Kotlin Jars. Most Java-like libraries
