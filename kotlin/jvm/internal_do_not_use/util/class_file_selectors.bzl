@@ -15,6 +15,7 @@
 """Selects bytecode class files with a matched source file in srcjars."""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 
 def gen_java_info_generated_class_jar(ctx, file_factory, kt_toolchain, input_jars, srcjars):
     """Generates a class jar with class file jar entries matching files in the give srcjars.
@@ -53,5 +54,6 @@ def gen_java_info_generated_class_jar(ctx, file_factory, kt_toolchain, input_jar
         progress_message = "Generating JavaInfo.generated_class_jar into %{output}",
         mnemonic = "ClassFileSelectorBySourceFile",
         executable = jar_transformer,
+        toolchain = kt_jvm_toolchains.type,
     )
     return output_jar

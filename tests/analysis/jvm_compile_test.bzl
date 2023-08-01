@@ -86,7 +86,7 @@ _kt_jvm_compile = rule(
     outputs = dict(
         jar = "lib%{name}.jar",
     ),
-    toolchains = [kt_jvm_toolchains.type],
+    toolchains = [kt_jvm_toolchains.type, "@bazel_tools//tools/jdk:toolchain_type"],
 )
 
 def _test_kt_jvm_compile_using_kt_jvm_compile_with_r_java():

@@ -15,19 +15,19 @@
 load("//tests/analysis:for_test.bzl", "rules_for_test")
 load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
 
-package(default_testonly = True)
+package(
+    default_testonly = True,
+)
 
 licenses(["notice"])
 
 jvm_library_test(
     name = "data_test",
-    expected = dict(
-        data = [
-            "data.txt",
-            # libX.jar is always in data_runfiles as well - just append it.
-            "libdata.jar",
-        ],
-    ),
+    expected_runfile_names = [
+        "data.txt",
+        # libX.jar is always in data_runfiles as well - just append it.
+        "libdata.jar",
+    ],
     target_under_test = rules_for_test.kt_jvm_library(
         name = "data",
         srcs = [

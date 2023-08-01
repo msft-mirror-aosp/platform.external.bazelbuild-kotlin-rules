@@ -16,7 +16,9 @@ load("//kotlin:rules.bzl", "kt_jvm_library", "kt_jvm_test")
 load("//tests/analysis:util.bzl", "create_dir", "create_file")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
-package(default_testonly = 1)
+package(
+    default_testonly = 1,
+)
 
 licenses(["notice"])
 
