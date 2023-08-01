@@ -14,7 +14,9 @@
 
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-package(default_visibility = ["//:internal"])
+package(
+    default_visibility = ["//:internal"],
+)
 
 licenses(["notice"])
 
@@ -24,6 +26,7 @@ bzl_library(
     deps = [
         "//:visibility_bzl",
         "//kotlin:for_traverse_exports_bzl",
+        "//kotlin/common:common_bzl",
         "@bazel_skylib//lib:sets",
     ],
 )

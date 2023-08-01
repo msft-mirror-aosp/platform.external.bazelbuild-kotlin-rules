@@ -18,6 +18,7 @@
 load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
 load("//kotlin/jvm/internal_do_not_use/util:srcjars.bzl", "kt_srcjars")
 load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
+load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//bazel:stubs.bzl", "lint_actions")
@@ -86,8 +87,7 @@ def _get_common_and_user_kotlinc_args(ctx, toolchain, extra_kotlinc_args):
     ] + extra_kotlinc_args
 
 def _kt_plugins_map(
-        android_lint_singlejar_plugins = depset(),
-        android_lint_libjar_plugin_infos = [],
+        android_lint_rulesets = [],
         java_plugin_datas = depset(),
         java_plugin_infos = [],
         kt_codegen_plugin_infos = depset(),
@@ -95,18 +95,15 @@ def _kt_plugins_map(
     """A struct containing all the plugin types understood by rules_kotlin.
 
     Args:
-        android_lint_singlejar_plugins:  (depset[File]) Android Lint checkers.
+        android_lint_rulesets: (list[lint_actions.AndroidLintRulesInfo]) Android Lint checkers.
             Each JAR is self-contained and should be loaded in an isolated classloader.
-        android_lint_libjar_plugin_infos: (list[JavaInfo]) Android Lint checkers.
-            All infos share transitive dependencies and should be loaded in a combined classloader.
         java_plugin_datas: (depset[JavaPluginData]) for KtCodegenProcessing.
         java_plugin_infos: (list[JavaPluginInfo])
         kt_codegen_plugin_infos: (depset[KtCodegenPluginInfo]) for KtCodegenProcessing.
         kt_compiler_plugin_infos: (list[KtCompilerPluginInfo])
     """
     return struct(
-        android_lint_singlejar_plugins = android_lint_singlejar_plugins,
-        android_lint_libjar_plugin_infos = android_lint_libjar_plugin_infos,
+        android_lint_rulesets = android_lint_rulesets,
         java_plugin_datas = java_plugin_datas,
         java_plugin_infos = java_plugin_infos,
         kt_codegen_plugin_infos = kt_codegen_plugin_infos,
@@ -141,6 +138,12 @@ def _run_kotlinc(
     kotlinc_args = ctx.actions.args()
     kotlinc_args.use_param_file("@%s", use_always = True)  # Use params file to handle long classpaths (b/76185759)
     kotlinc_args.set_param_file_format("multiline")  # kotlinc only supports double-quotes ("): https://youtrack.jetbrains.com/issue/KT-24472
+
+    # Args to the kotlinc JVM
+    #
+    # These cannot use a param file because the file wouldn't be read until after the JVM launches.
+    # Values will be prepended with --jvm_flag= for detection.
+    jvm_args = []
 
     kotlinc_args.add_joined("-cp", classpath, join_with = ":")
     transitive_inputs.append(classpath)
@@ -187,14 +190,17 @@ def _run_kotlinc(
     # (b/112439843).
     ctx.actions.run(
         executable = toolchain.kotlin_compiler,
-        arguments = [kotlinc_args],
+        arguments = ["--jvm_flag=" + x for x in jvm_args] + [kotlinc_args],
         inputs = depset(direct = direct_inputs, transitive = transitive_inputs),
         outputs = outputs,
         mnemonic = mnemonic,
         progress_message = message_prefix + str(_get_original_kt_target_label(ctx)),
         execution_requirements = {
+            "local": "1",  # Ensure comparable results across runs (cold builds, same machine)
+        } if toolchain.is_profiling_enabled(ctx.label) else {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
+        toolchain = kt_jvm_toolchains.type,
     )
 
     return struct(
@@ -237,7 +243,7 @@ def _kt_compile(
         enforce_strict_deps = enforce_strict_deps,
         enforce_complete_jdeps = enforce_complete_jdeps,
         mnemonic = "Kt2JavaCompile",
-        message_prefix = "Compiling for Java runtime: ",
+        message_prefix = "Compiling Kotlin For Java Runtime: ",
     )
 
     srcjar = kt_srcjars.zip(
@@ -307,13 +313,14 @@ def _derive_headers(
         outputs = [output_dir],
         mnemonic = "KtDeriveHeaders",
         progress_message = "Deriving %s: %s" % (output_dir.basename, _get_original_kt_target_label(ctx)),
+        toolchain = kt_jvm_toolchains.type,
     )
     return [output_dir]
 
 def _get_original_kt_target_label(ctx):
     label = ctx.label
     if label.name.find("_DO_NOT_DEPEND") > 0:
-        # Remove rule suffix added by kt_android_library
+        # Remove rule suffix added by android_library(
         label = label.relative(":%s" % label.name[0:label.name.find("_DO_NOT_DEPEND")])
     elif hasattr(ctx.attr, "_kt_codegen_plugin_build_tool") and label.name.endswith("_processed_srcs"):
         # Remove rule suffix added by kt_codegen_filegroup. b/259984258
@@ -377,6 +384,7 @@ def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
         outputs = [output],
         mnemonic = "KtJaCoCoInstrument",
         progress_message = "Instrumenting Kotlin for coverage collection: %s" % _get_original_kt_target_label(ctx),
+        toolchain = kt_jvm_toolchains.type,
     )
 
     return output
@@ -412,6 +420,7 @@ def _singlejar(
         outputs = [output],
         mnemonic = mnemonic,
         progress_message = "Merging %s: %s" % (content, label),
+        toolchain = "@bazel_tools//tools/jdk:toolchain_type",
     )
 
 def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
@@ -430,6 +439,7 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
         arguments = [args],
         mnemonic = "KtMergeJdeps",
         progress_message = "Merging jdeps files %{output}",
+        toolchain = kt_jvm_toolchains.type,
     )
 
     return merged_jdeps_file
@@ -464,6 +474,24 @@ def _split_srcs_by_language(srcs, common_srcs, java_syncer):
 
     return (kt_srcs, java_srcs)
 
+def _merge_exported_plugins(exported_plugins_map):
+    for field in ["java_plugin_datas", "kt_codegen_plugin_infos", "kt_compiler_plugin_infos"]:
+        if getattr(exported_plugins_map, field):
+            fail("exported_plugins doesn't support %s. These are propagated with aspects" % field)
+
+    android_lint_ruleset_jars = []
+
+    return exported_plugins_map.java_plugin_infos + [
+        JavaPluginInfo(
+            processor_class = None,
+            runtime_deps = [
+                # Assume this list is short
+                JavaInfo(output_jar = jar, compile_jar = jar)
+                for jar in android_lint_ruleset_jars
+            ],
+        ),
+    ]
+
 # TODO: Streamline API to generate less actions.
 def _kt_jvm_library(
         ctx,
@@ -482,7 +510,7 @@ def _kt_jvm_library(
         runtime_deps = [],  # passthrough for JavaInfo constructor
         native_libraries = [],  # passthrough of CcInfo for JavaInfo constructor
         plugins = _kt_plugins_map(),
-        exported_plugins = [],
+        exported_plugins = _kt_plugins_map(),
         javacopts = [],
         kotlincopts = [],
         compile_jdeps = depset(),
@@ -534,6 +562,7 @@ def _kt_jvm_library(
     # Includes generative deps from codegen.
     extended_deps = static_deps + generative_deps
     full_classpath = _create_classpath(java_toolchain, extended_deps)
+    exported_plugins = _merge_exported_plugins(exported_plugins)
 
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
@@ -715,14 +744,9 @@ def _kt_jvm_library(
             resource_files = resource_files,
             baseline_file = androidlint_toolchains.get_baseline(ctx),
             config = kt_toolchain.android_lint_config,
-            android_lint_plugins_depset = depset(
-                order = "preorder",
-                transitive = [legacy_java_plugin_classpaths] + [
-                    dep.transitive_runtime_jars
-                    for dep in plugins.android_lint_libjar_plugin_infos
-                ],
-            ),
-            android_lint_rules = plugins.android_lint_singlejar_plugins,
+            android_lint_rules = plugins.android_lint_rulesets + [
+                lint_actions.AndroidLintRulesetInfo(singlejars = legacy_java_plugin_classpaths),
+            ],
             lint_flags = lint_flags,
             extra_input_depsets = [p.processor_data for p in java_plugin_datas_legacy] + [depset([java_genjar] if java_genjar else [])],
             testonly = testonly,
@@ -746,7 +770,7 @@ def _kt_jvm_library(
     use_validation = ctx.var.get("kt_use_validations", use_validation)
 
     # Include marker file in runtime Jar so we can reliably identify 1P Kotlin code
-    # TODO: consider only doing this for kt_android_library
+    # TODO: consider only doing this for android_library(
     _singlejar(
         ctx,
         out_jars + ([kt_toolchain.build_marker] if kt_srcs and ctx.label.package.startswith("java/") else []),
@@ -816,7 +840,12 @@ def _kt_jvm_import(
     java_info = java_common.merge([
         JavaInfo(
             output_jar = jar,
-            compile_jar = jar,
+            compile_jar = java_common.run_ijar(
+                actions = ctx.actions,
+                jar = jar,
+                target_label = _get_original_kt_target_label(ctx),
+                java_toolchain = java_toolchain,
+            ),
             source_jar = srcjar,
             deps = [deps],
             runtime_deps = runtime_deps,

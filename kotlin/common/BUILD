@@ -12,24 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Kotlin building rules tools
-
-load("//kotlin:rules.bzl", "kt_jvm_library")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(
+    default_applicable_licenses = ["//:license"],
     default_visibility = ["//:internal"],
 )
 
 licenses(["notice"])
 
-kt_jvm_library(
-    name = "source_jar_zipper_lib",
-    srcs = ["SourceJarZipper.kt"],
-    deps = ["@maven//:info_picocli_picocli"],
-)
-
-java_binary(
-    name = "source_jar_zipper",
-    main_class = "com.google.devtools.kotlin.SourceJarZipperKt",
-    runtime_deps = [":source_jar_zipper_lib"],
+bzl_library(
+    name = "common_bzl",
+    srcs = glob(["*.bzl"]),
+    visibility = [
+        "//:internal",
+    ],
+    deps = [
+        "//:visibility_bzl",
+    ],
 )

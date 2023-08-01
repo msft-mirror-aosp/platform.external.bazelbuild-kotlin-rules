@@ -12,24 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Kotlin building rules tools
+"""kt_friend_labels_visitor"""
 
-load("//kotlin:rules.bzl", "kt_jvm_library")
+# go/keep-sorted start
+load("//kotlin/common:is_eligible_friend.bzl", "is_eligible_friend")
+load("//:visibility.bzl", "RULES_KOTLIN")
+# go/keep-sorted end
 
-package(
-    default_visibility = ["//:internal"],
-)
+def _get_output_labels(target, _):
+    return [target.label]
 
-licenses(["notice"])
-
-kt_jvm_library(
-    name = "source_jar_zipper_lib",
-    srcs = ["SourceJarZipper.kt"],
-    deps = ["@maven//:info_picocli_picocli"],
-)
-
-java_binary(
-    name = "source_jar_zipper",
-    main_class = "com.google.devtools.kotlin.SourceJarZipperKt",
-    runtime_deps = [":source_jar_zipper_lib"],
+kt_friend_labels_visitor = struct(
+    name = "friend_labels",
+    visit_target = _get_output_labels,
+    filter_edge = is_eligible_friend,
+    finish_expansion = None,
+    process_unvisited_target = None,
 )

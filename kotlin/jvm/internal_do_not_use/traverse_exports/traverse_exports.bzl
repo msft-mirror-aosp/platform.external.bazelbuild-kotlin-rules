@@ -14,12 +14,15 @@
 
 """Combined aspect for all rules_kotlin behaviours that need to traverse exports."""
 
+# go/keep-sorted start
+load("//:visibility.bzl", "RULES_KOTLIN")
 load(":compiler_plugin.bzl", "kt_compiler_plugin_visitor")
 load(":direct_jdeps.bzl", "kt_direct_jdeps_visitor")
 load(":forbidden_deps.bzl", "kt_forbidden_deps_visitor")
-load(":friend_jars.bzl", "kt_friend_jars_visitor", "kt_friend_labels_visitor")
+load(":friend_jars.bzl", "kt_friend_jars_visitor")
+load(":friend_labels.bzl", "kt_friend_labels_visitor")
 load(":java_plugin.bzl", "java_plugin_visitor")
-load("//:visibility.bzl", "RULES_KOTLIN")
+# go/keep-sorted end
 
 # java_xxx_proto_library don't populate java_outputs but we can get them through
 # required_aspect_providers from their proto_library deps.
