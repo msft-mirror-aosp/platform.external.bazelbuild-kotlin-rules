@@ -14,7 +14,9 @@
 
 load("//kotlin:rules.bzl", "kt_jvm_library", "kt_jvm_test")
 
-package(default_testonly = 1)
+package(
+    default_testonly = 1,
+)
 
 licenses(["notice"])
 

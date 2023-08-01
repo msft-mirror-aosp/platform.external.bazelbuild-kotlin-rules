@@ -16,13 +16,15 @@
 
 load("//bazel:stubs.bzl", "select_java_language_level")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 
 # Work around to toolchains in Google3.
+# buildifier: disable=provider-params
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_8_10"
+KT_VERSION = "v1_9_0"
 
-KT_LANG_VERSION = "1.8"
+KT_LANG_VERSION = "1.9"
 
 # Kotlin JVM toolchain type label
 _TYPE = Label("//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
@@ -103,35 +105,40 @@ def _kotlinc_cli_flags(ctx):
         "-nowarn",
     ])
 
+def _opt_for_test(val, getter):
+    return getter(val) if val else None
+
 def _kt_jvm_toolchain_impl(ctx):
+    profiling_filter = ctx.attr.profiling_filter[BuildSettingInfo].value
+
     kt_jvm_toolchain = dict(
+        # go/keep-sorted start
         android_java8_apis_desugared = ctx.attr.android_java8_apis_desugared,
         android_lint_config = ctx.file.android_lint_config,
         android_lint_runner = ctx.attr.android_lint_runner[DefaultInfo].files_to_run,
         build_marker = ctx.file.build_marker,
         coverage_instrumenter = ctx.attr.coverage_instrumenter[DefaultInfo].files_to_run,
-        # Don't require JavaInfo provider for integration test convenience.
-        coverage_runtime = ctx.attr.coverage_runtime[JavaInfo] if JavaInfo in ctx.attr.coverage_runtime else None,
+        coverage_runtime = _opt_for_test(ctx.attr.coverage_runtime, lambda x: x[JavaInfo]),
         genclass = ctx.file.genclass,
-        header_gen_tool = ctx.attr.header_gen_tool[DefaultInfo].files_to_run if ctx.attr.header_gen_tool else None,
+        header_gen_tool = _opt_for_test(ctx.attr.header_gen_tool, lambda x: x[DefaultInfo].files_to_run),
+        is_profiling_enabled = lambda label: profiling_filter and (profiling_filter in str(label)),
         java_language_version = ctx.attr.java_language_version,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
         jvm_target = ctx.attr.jvm_target,
-        kotlin_annotation_processing = ctx.file.kotlin_annotation_processing,
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
-        kotlin_libs = [JavaInfo(compile_jar = jar, output_jar = jar) for jar in ctx.files.kotlin_libs],
-        kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
+        kotlin_libs = [x[JavaInfo] for x in ctx.attr.kotlin_libs],
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
         kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
         kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
+        kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         source_jar_zipper = ctx.file.source_jar_zipper,
         turbine = ctx.file.turbine,
-        turbine_direct = ctx.file.turbine_direct if ctx.attr.enable_turbine_direct else None,
-        turbine_jsa = ctx.file.turbine_jsa,
+        turbine_direct = _opt_for_test(ctx.attr.turbine_direct, lambda x: x[DefaultInfo].files_to_run),
         turbine_java_runtime = ctx.attr.turbine_java_runtime,
+        # go/keep-sorted end
     )
     return [
         platform_common.ToolchainInfo(**kt_jvm_toolchain),
@@ -197,11 +204,6 @@ kt_jvm_toolchain = rule(
         jvm_target = attr.string(
             doc = "The value to pass as -jvm-target, indicating the bytecode format to emit.",
         ),
-        kotlin_annotation_processing = attr.label(
-            default = "@kotlinc//:kotlin_annotation_processing",
-            cfg = "exec",
-            allow_single_file = True,
-        ),
         kotlin_compiler = attr.label(
             default = "@kotlinc//:kotlin_compiler",
             cfg = "exec",
@@ -216,7 +218,6 @@ kt_jvm_toolchain = rule(
                 "@kotlinc//:kotlin_stdlib",
                 "@kotlinc//:annotations",
             ],
-            allow_files = [".jar"],
             cfg = "target",
         ),
         kotlin_sdk_libraries = attr.label_list(
@@ -227,6 +228,13 @@ kt_jvm_toolchain = rule(
                 "@kotlinc//:kotlin_test_not_testonly",
             ],
             cfg = "target",
+        ),
+        kt_codegen_java_runtime = attr.label(
+            cfg = "exec",
+        ),
+        profiling_filter = attr.label(
+            default = "//toolchains/kotlin_jvm:profiling_filter",
+            providers = [BuildSettingInfo],
         ),
         proguard_whitelister = attr.label(
             default = "@bazel_tools//tools/jdk:proguard_whitelister",
@@ -258,14 +266,7 @@ kt_jvm_toolchain = rule(
             cfg = "exec",
             allow_single_file = True,
         ),
-        turbine_jsa = attr.label(
-            cfg = "exec",
-            allow_single_file = True,
-        ),
         turbine_java_runtime = attr.label(
-            cfg = "exec",
-        ),
-        kt_codegen_java_runtime = attr.label(
             cfg = "exec",
         ),
     ),
@@ -288,7 +289,7 @@ _ATTRS = dict(
     _toolchain = attr.label(
         # TODO: Delete this attr when fixed.
         doc = "Magic attribute name for DexArchiveAspect (b/78647825)",
-        default = "//toolchains/kotlin_jvm:kt_jvm_toolchain_impl",
+        default = "//toolchains/kotlin_jvm:kt_jvm_toolchain_linux_sts_jdk",
     ),
 )
 
