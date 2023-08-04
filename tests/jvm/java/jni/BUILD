@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(
-    "//kotlin:rules.bzl",
-    "kt_jvm_library",
-    "kt_jvm_test",
-)
+load("//kotlin:rules.bzl", "kt_jvm_library", "kt_jvm_test")
 
-package(default_testonly = 1)
+package(
+    default_testonly = 1,
+)
 
 licenses(["notice"])
 
