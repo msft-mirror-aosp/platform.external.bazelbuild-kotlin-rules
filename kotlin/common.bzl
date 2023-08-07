@@ -534,14 +534,14 @@ def _kt_jvm_library(
 
     kt_codegen_processing_env = dict(
         processors_for_kt_codegen_processing = depset(),
-        processors_for_legacy_kapt = [],
-        codegen_output_java_infos = [],
-        java_plugin_datas_legacy = [],
+        processors_for_java_srcs = depset(),
+        codegen_output_java_infos = depset(),
+        java_plugin_datas_legacy = depset(),
         legacy_java_plugin_classpaths = depset(),
     )
 
-    kt_codegen_processors = kt_codegen_processing_env["processors_for_kt_codegen_processing"]
-    generative_deps = kt_codegen_processing_env["codegen_output_java_infos"]
+    kt_codegen_processors = kt_codegen_processing_env["processors_for_kt_codegen_processing"].to_list()
+    generative_deps = kt_codegen_processing_env["codegen_output_java_infos"].to_list()
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
@@ -567,8 +567,8 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas_legacy = kt_codegen_processing_env["java_plugin_datas_legacy"]
-    legacy_kapt_processors = kt_codegen_processing_env["processors_for_legacy_kapt"]
+    java_plugin_datas_legacy = kt_codegen_processing_env["java_plugin_datas_legacy"].to_list()
+    processors_for_java_srcs = kt_codegen_processing_env["processors_for_java_srcs"].to_list()
     legacy_java_plugin_classpaths = kt_codegen_processing_env["legacy_java_plugin_classpaths"]
 
     out_jars = []
@@ -646,7 +646,7 @@ def _kt_jvm_library(
         annotation_plugins = list(plugins.java_plugin_infos)
 
         # Enable annotation processing for java-only sources to enable data binding
-        enable_annotation_processing = not kt_srcs
+        enable_annotation_processing = True if processors_for_java_srcs else False
 
         javac_java_info = java_common.compile(
             ctx,
