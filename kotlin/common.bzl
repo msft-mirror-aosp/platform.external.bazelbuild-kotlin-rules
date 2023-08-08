@@ -536,8 +536,7 @@ def _kt_jvm_library(
         processors_for_kt_codegen_processing = depset(),
         processors_for_java_srcs = depset(),
         codegen_output_java_infos = depset(),
-        java_plugin_datas_legacy = depset(),
-        legacy_java_plugin_classpaths = depset(),
+        java_plugin_data_set = depset(),
     )
 
     kt_codegen_processors = kt_codegen_processing_env["processors_for_kt_codegen_processing"].to_list()
@@ -567,9 +566,9 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas_legacy = kt_codegen_processing_env["java_plugin_datas_legacy"].to_list()
+    java_plugin_datas = kt_codegen_processing_env["java_plugin_data_set"].to_list()
     processors_for_java_srcs = kt_codegen_processing_env["processors_for_java_srcs"].to_list()
-    legacy_java_plugin_classpaths = kt_codegen_processing_env["legacy_java_plugin_classpaths"]
+    java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
 
     out_jars = []
     out_srcjars = []
@@ -745,10 +744,10 @@ def _kt_jvm_library(
             baseline_file = androidlint_toolchains.get_baseline(ctx),
             config = kt_toolchain.android_lint_config,
             android_lint_rules = plugins.android_lint_rulesets + [
-                lint_actions.AndroidLintRulesetInfo(singlejars = legacy_java_plugin_classpaths),
+                lint_actions.AndroidLintRulesetInfo(singlejars = java_plugin_classpaths_for_java_srcs),
             ],
             lint_flags = lint_flags,
-            extra_input_depsets = [p.processor_data for p in java_plugin_datas_legacy] + [depset([java_genjar] if java_genjar else [])],
+            extra_input_depsets = [p.processor_data for p in java_plugin_datas] + [depset([java_genjar] if java_genjar else [])],
             testonly = testonly,
             android_java8_libs = kt_toolchain.android_java8_apis_desugared,
             mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
