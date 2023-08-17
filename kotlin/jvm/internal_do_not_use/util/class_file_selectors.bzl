@@ -34,15 +34,20 @@ def gen_java_info_generated_class_jar(ctx, file_factory, kt_toolchain, input_jar
     transformer_env_files = depset(srcjars)
 
     transformer_entry_point = "com.google.devtools.jar.transformation.ClassFileSelectorBySourceFile"
+
     transformer_jars = kt_toolchain.class_file_selector_by_source_file[JavaInfo].transitive_runtime_jars
-    jar_transformer = kt_toolchain.jar_transformer[DefaultInfo].files_to_run
+
+    jar_transformer = kt_toolchain.jar_transformer
 
     args = ctx.actions.args()
+    args.add("-jar", jar_transformer)
     args.add_joined("--input_jars", input_jars, join_with = ",")
     args.add_joined("--transformer_jars", transformer_jars, join_with = ",")
     args.add("--transformer_entry_point", transformer_entry_point)
     args.add_joined("--transformer_env_files", transformer_env_files, join_with = ",")
     args.add("--result", output_jar)
+
+    java_runtime = kt_toolchain.kt_codegen_java_runtime[java_common.JavaRuntimeInfo]
     ctx.actions.run(
         inputs = depset(transitive = [
             input_jars,
@@ -53,7 +58,8 @@ def gen_java_info_generated_class_jar(ctx, file_factory, kt_toolchain, input_jar
         arguments = [args],
         progress_message = "Generating JavaInfo.generated_class_jar into %{output}",
         mnemonic = "ClassFileSelectorBySourceFile",
-        executable = jar_transformer,
         toolchain = kt_jvm_toolchains.type,
+        executable = java_runtime.java_executable_exec_path,
+        tools = [java_runtime.files, jar_transformer],
     )
     return output_jar
