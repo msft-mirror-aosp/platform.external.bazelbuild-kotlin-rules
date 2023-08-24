@@ -22,6 +22,7 @@ load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//bazel:stubs.bzl", "lint_actions")
+load("//bazel:stubs.bzl", "jspecify_flags")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 # go/keep-sorted end
 
@@ -84,7 +85,7 @@ def _get_common_and_user_kotlinc_args(ctx, toolchain, extra_kotlinc_args):
         # Set module name so module-level metadata is preserved when merging Jars (b/139403883)
         "-module-name",
         _derive_module_name(ctx),
-    ] + extra_kotlinc_args
+    ] + jspecify_flags(ctx) + extra_kotlinc_args
 
 def _kt_plugins_map(
         android_lint_rulesets = [],

@@ -52,10 +52,6 @@ def _kotlinc_common_flags(ctx, other_flags):
         # (see https://kotlinlang.org/docs/reference/java-interop.html#jsr-305-support)
         "-Xjsr305=strict",
 
-        # Trust go/JSpecify nullness annotations
-        # (see https://kotlinlang.org/docs/whatsnew1520.html#support-for-jspecify-nullness-annotations)
-        "-Xjspecify-annotations=strict",
-
         # Trust annotations on type arguments, etc.
         # (see https://kotlinlang.org/docs/java-interop.html#annotating-type-arguments-and-type-parameters)
         "-Xtype-enhancement-improvements-strict-mode",
