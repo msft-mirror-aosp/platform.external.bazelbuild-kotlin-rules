@@ -533,6 +533,7 @@ def _kt_jvm_library(
     static_deps = list(deps)  # Defensive copy
 
     kt_codegen_processing_env = dict()
+    codegen_plugin_output = None
 
     kt_codegen_processors = kt_codegen_processing_env.get("processors_for_kt_codegen_processing", depset()).to_list()
     generative_deps = kt_codegen_processing_env.get("codegen_output_java_infos", depset()).to_list()
@@ -620,6 +621,9 @@ def _kt_jvm_library(
                 classpath_resources_dirs,
             ),
         )
+    if codegen_plugin_output:
+        out_jars.extend(codegen_plugin_output.classes_gen_jar)
+        out_jars.extend(codegen_plugin_output.resources_gen_jar)
 
     javac_java_info = None
     java_native_headers_jar = None
@@ -649,7 +653,7 @@ def _kt_jvm_library(
             resources = classpath_resources_non_dirs,
             # For targets that are not android_library with java-only srcs, exports will be passed
             # to the final constructed JavaInfo.
-            exports = exports if is_android_library_without_kt_srcs else [],
+            exports = (exports + generative_deps) if is_android_library_without_kt_srcs else [],
             output = javac_out,
             exported_plugins = exported_plugins,
             deps = javac_deps,
@@ -681,9 +685,9 @@ def _kt_jvm_library(
 
     java_gensrcjar = None
     java_genjar = None
-    if kt_codegen_processing_env.get("codegen_plugin_output", None):
-        java_gen_srcjars = kt_codegen_processing_env["codegen_plugin_output"].java_gen_srcjar
-        kt_gen_srcjars = kt_codegen_processing_env["codegen_plugin_output"].kt_gen_srcjar
+    if codegen_plugin_output:
+        java_gen_srcjars = codegen_plugin_output.java_gen_srcjar
+        kt_gen_srcjars = codegen_plugin_output.kt_gen_srcjar
         java_gensrcjar = file_factory.declare_file("-java_info_generated_source_jar.srcjar")
         _singlejar(
             ctx,
