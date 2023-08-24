@@ -135,6 +135,7 @@ def _kt_jvm_toolchain_impl(ctx):
         kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         source_jar_zipper = ctx.file.source_jar_zipper,
+        toolchain_type = str(_TYPE),
         turbine = ctx.file.turbine,
         turbine_direct = _opt_for_test(ctx.attr.turbine_direct, lambda x: x[DefaultInfo].files_to_run),
         turbine_java_runtime = ctx.attr.turbine_java_runtime,
