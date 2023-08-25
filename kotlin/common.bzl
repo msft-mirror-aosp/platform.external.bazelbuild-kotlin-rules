@@ -567,9 +567,17 @@ def _kt_jvm_library(
     processors_for_java_srcs = kt_codegen_processing_env.get("processors_for_java_srcs", depset()).to_list()
     java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
 
-    out_jars = []
+    out_jars = [
+        jar
+        for java_info in generative_deps
+        for jar in java_info.runtime_output_jars
+    ]
     out_srcjars = []
-    out_compilejars = []
+    out_compilejars = [
+        jar
+        for java_info in generative_deps
+        for jar in java_info.compile_jars.to_list()
+    ]
 
     kt_hdrs = _derive_headers(
         ctx,
@@ -622,9 +630,6 @@ def _kt_jvm_library(
                 classpath_resources_dirs,
             ),
         )
-    if codegen_plugin_output:
-        out_jars.extend(codegen_plugin_output.classes_gen_jar)
-        out_jars.extend(codegen_plugin_output.resources_gen_jar)
 
     javac_java_info = None
     java_native_headers_jar = None
