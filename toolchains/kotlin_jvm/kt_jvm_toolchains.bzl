@@ -131,7 +131,7 @@ def _kt_jvm_toolchain_impl(ctx):
         kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         source_jar_zipper = ctx.file.source_jar_zipper,
-        toolchain_type = str(_TYPE),
+        toolchain_type = None if ctx.attr.toolchain_type == None else str(ctx.attr.toolchain_type.label),
         turbine = ctx.file.turbine,
         turbine_direct = _opt_for_test(ctx.attr.turbine_direct, lambda x: x[DefaultInfo].files_to_run),
         turbine_java_runtime = ctx.attr.turbine_java_runtime,
@@ -266,12 +266,15 @@ kt_jvm_toolchain = rule(
         turbine_java_runtime = attr.label(
             cfg = "exec",
         ),
+        toolchain_type = attr.label(),
     ),
     provides = [platform_common.ToolchainInfo],
     implementation = _kt_jvm_toolchain_impl,
 )
 
-def _declare(**kwargs):
+def _declare(
+        toolchain_type = _TYPE,
+        **kwargs):
     kt_jvm_toolchain(
         android_java8_apis_desugared = select({
             "//conditions:default": False,
@@ -279,6 +282,7 @@ def _declare(**kwargs):
         # The JVM bytecode version to output
         # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
         jvm_target = "11",
+        toolchain_type = toolchain_type,
         **kwargs
     )
 
