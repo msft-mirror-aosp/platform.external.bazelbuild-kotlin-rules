@@ -448,10 +448,6 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
 def _check_srcs_package(target_package, srcs, attr_name):
     """Makes sure the given srcs live in the given package."""
 
-    for src in srcs:
-        if "/published/" in src.path:
-            return
-
     # Analogous to RuleContext.checkSrcsSamePackage
     for src in srcs:
         if target_package != src.owner.package:
@@ -542,6 +538,7 @@ def _kt_jvm_library(
 
     kt_codegen_processors = kt_codegen_processing_env.get("processors_for_kt_codegen_processing", depset()).to_list()
     generative_deps = kt_codegen_processing_env.get("codegen_output_java_infos", depset()).to_list()
+    processing_action_mnemonic = kt_codegen_processing_env.get("processing_action_mnemonic", None)
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
@@ -555,7 +552,11 @@ def _kt_jvm_library(
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
-        _check_srcs_package(ctx.label.package, srcs, "srcs")
+        if processing_action_mnemonic == "KtCodegenProcessingAllJava":
+            _check_srcs_package(ctx.label.package, kt_srcs, "srcs")
+        else:
+            _check_srcs_package(ctx.label.package, srcs, "srcs")
+
         _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
         _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
