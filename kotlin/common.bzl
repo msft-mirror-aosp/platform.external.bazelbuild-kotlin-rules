@@ -448,6 +448,10 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
 def _check_srcs_package(target_package, srcs, attr_name):
     """Makes sure the given srcs live in the given package."""
 
+    for src in srcs:
+        if "/published/" in src.path:
+            return
+
     # Analogous to RuleContext.checkSrcsSamePackage
     for src in srcs:
         if target_package != src.owner.package:
