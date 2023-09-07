@@ -197,7 +197,9 @@ def _run_kotlinc(
         mnemonic = mnemonic,
         progress_message = message_prefix + str(_get_original_kt_target_label(ctx)),
         execution_requirements = {
-            "local": "1",  # Ensure comparable results across runs (cold builds, same machine)
+            # Ensure comparable results across runs (cold builds, same machine)
+            "no-cache": "1",
+            "no-remote": "1",
         } if toolchain.is_profiling_enabled(ctx.label) else {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
