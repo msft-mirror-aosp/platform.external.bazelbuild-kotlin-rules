@@ -22,7 +22,7 @@ load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 # buildifier: disable=provider-params
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_9_0"
+KT_VERSION = "v1_9_10"
 
 KT_LANG_VERSION = "1.9"
 

@@ -14,12 +14,13 @@
 
 """Common Kotlin definitions."""
 
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+
 # go/keep-sorted start
 load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
 load("//kotlin/jvm/internal_do_not_use/util:srcjars.bzl", "kt_srcjars")
 load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
-load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//bazel:stubs.bzl", "lint_actions")
 load("//bazel:stubs.bzl", "jspecify_flags")
