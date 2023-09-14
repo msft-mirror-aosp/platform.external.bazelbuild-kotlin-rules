@@ -580,7 +580,12 @@ def _kt_jvm_library(
         for java_info in generative_deps
         for jar in java_info.runtime_output_jars
     ]
-    out_srcjars = []
+
+    out_srcjars = [
+        jar
+        for jar in codegen_plugin_output.resources_gen_srcjar
+    ] if codegen_plugin_output else []
+
     out_compilejars = [
         jar
         for java_info in generative_deps
