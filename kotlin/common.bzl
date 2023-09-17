@@ -732,6 +732,7 @@ def _kt_jvm_library(
     # TODO: Remove the is_android_library_without_kt_srcs condition once KtAndroidLint
     # uses the same lint checks with AndroidLint
 
+    disable_lint_checks = disable_lint_checks + kt_codegen_processing_env.get("disabled_lint_checks", [])
     if not is_android_library_without_kt_srcs:
         lint_flags = [
             "--java-language-level",  # b/159950410
