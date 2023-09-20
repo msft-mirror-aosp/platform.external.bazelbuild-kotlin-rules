@@ -32,5 +32,5 @@ genrule(
 deploy_jar_freshness_golden_test(
     name = "source_jar_zipper_freshness_test",
     current_jar = "//tools/bin:source_jar_zipper_binary",
-    newly_built_jar = "//tools/java/com/google/devtools/kotlin:source_jar_zipper_deploy.jar",
+    newly_built_jar = "//tools/java/com/google/devtools/kotlin/srczip:source_jar_zipper_deploy.jar",
 )
