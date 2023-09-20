@@ -36,13 +36,6 @@ toolchain(
     visibility = ["//visibility:public"],
 )
 
-# TODO: Remove this once cl/520112558 has made it into an Android rules release
-alias(
-    name = "kt_jvm_toolchain_impl",
-    actual = ":kt_jvm_toolchain_linux_sts_jdk",
-    visibility = ["//visibility:public"],
-)
-
 kt_jvm_toolchains.declare(
     name = "kt_jvm_toolchain_linux_sts_jdk",
     # TODO: Required due to magic attribute for DexArchiveAspect, remove once that
