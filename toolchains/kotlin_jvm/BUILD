@@ -14,14 +14,13 @@
 
 """Kotlin/JVM toolchain."""
 
-load(":kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load(":kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 
 licenses(["notice"])
 
 package(
-    default_visibility = ["//:internal"],
+    default_visibility = ["//visibility:public"],
 )
 
 toolchain_type(name = kt_jvm_toolchains.name)
@@ -64,5 +63,4 @@ kt_jvm_toolchains.declare(
 string_flag(
     name = "profiling_filter",
     build_setting_default = "",
-    visibility = ["//visibility:private"],
 )

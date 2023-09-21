@@ -18,7 +18,7 @@ load("//bazel:deploy_jar_freshness_golden_test.bzl", "deploy_jar_freshness_golde
 licenses(["notice"])
 
 package(
-    default_visibility = ["//:internal"],
+    default_visibility = ["//visibility:public"],
 )
 
 # JAR that contains a marker entry, for identifying apps built by rules_kotlin.
