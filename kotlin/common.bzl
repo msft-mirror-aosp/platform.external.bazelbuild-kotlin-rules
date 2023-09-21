@@ -899,6 +899,7 @@ def _validate_proguard_specs(
 
         ctx.actions.run(
             executable = proguard_allowlister,
+            toolchain = kt_jvm_toolchains.type,
             arguments = [args],
             inputs = [proguard_spec],
             outputs = [validated_proguard_spec],
