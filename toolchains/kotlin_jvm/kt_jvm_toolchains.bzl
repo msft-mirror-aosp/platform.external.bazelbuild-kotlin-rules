@@ -40,7 +40,7 @@ def _kotlinc_common_flags(ctx, other_flags):
 
         # The bytecode format to emit
         "-jvm-target",
-        ctx.attr.jvm_target,
+        "11",
 
         # Emit bytecode with parameter names
         "-java-parameters",
@@ -121,7 +121,6 @@ def _kt_jvm_toolchain_impl(ctx):
         java_language_version = ctx.attr.java_language_version,
         java_runtime = ctx.attr.java_runtime,
         jvm_abi_gen_plugin = ctx.file.jvm_abi_gen_plugin,
-        jvm_target = ctx.attr.jvm_target,
         kotlin_compiler = ctx.attr.kotlin_compiler[DefaultInfo].files_to_run,
         kotlin_language_version = ctx.attr.kotlin_language_version,
         kotlin_libs = [x[JavaInfo] for x in ctx.attr.kotlin_libs],
@@ -197,9 +196,6 @@ kt_jvm_toolchain = rule(
             default = "@kotlinc//:jvm_abi_gen_plugin",
             cfg = "exec",
             allow_single_file = [".jar"],
-        ),
-        jvm_target = attr.string(
-            doc = "The value to pass as -jvm-target, indicating the bytecode format to emit.",
         ),
         kotlin_compiler = attr.label(
             default = "@kotlinc//:kotlin_compiler",
@@ -281,7 +277,6 @@ def _declare(
         }),
         # The JVM bytecode version to output
         # https://kotlinlang.org/docs/compiler-reference.html#jvm-target-version
-        jvm_target = "11",
         toolchain_type = toolchain_type,
         **kwargs
     )
