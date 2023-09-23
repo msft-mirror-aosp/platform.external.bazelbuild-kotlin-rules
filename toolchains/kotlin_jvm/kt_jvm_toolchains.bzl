@@ -14,9 +14,9 @@
 
 """Kotlin toolchain."""
 
-load("//bazel:stubs.bzl", "select_java_language_level")
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
+load("//bazel:stubs.bzl", "select_java_language_level")
 
 # Work around to toolchains in Google3.
 # buildifier: disable=provider-params
