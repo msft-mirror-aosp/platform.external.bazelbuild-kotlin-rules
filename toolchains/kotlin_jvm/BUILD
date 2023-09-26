@@ -14,6 +14,7 @@
 
 """Kotlin/JVM toolchain."""
 
+load("//bazel:stubs.bzl", "integration_test_filegroup")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load(":kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 
@@ -63,4 +64,12 @@ kt_jvm_toolchains.declare(
 string_flag(
     name = "profiling_filter",
     build_setting_default = "",
+)
+
+integration_test_filegroup(
+    name = "bazel_osx_p4deps",
+    deps = [
+        "//:bazel_osx_p4deps",
+        "//tools:bazel_osx_p4deps",
+    ],
 )

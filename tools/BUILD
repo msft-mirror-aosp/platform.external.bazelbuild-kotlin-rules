@@ -14,6 +14,7 @@
 
 # Description: Kotlin building rules tools
 load("//bazel:deploy_jar_freshness_golden_test.bzl", "deploy_jar_freshness_golden_test")
+load("//bazel:stubs.bzl", "integration_test_filegroup")
 
 licenses(["notice"])
 
@@ -27,6 +28,10 @@ genrule(
     outs = ["kotlin_build_marker.jar"],
     cmd = """$(location @bazel_tools//tools/zip:zipper) c $@ "assets/_kotlin=" """,
     tools = ["@bazel_tools//tools/zip:zipper"],
+)
+
+integration_test_filegroup(
+    name = "bazel_osx_p4deps",
 )
 
 deploy_jar_freshness_golden_test(
