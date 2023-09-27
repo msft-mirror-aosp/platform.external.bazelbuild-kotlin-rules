@@ -69,7 +69,7 @@ string_flag(
 integration_test_filegroup(
     name = "bazel_osx_p4deps",
     deps = [
-        "//:bazel_osx_p4deps",
+        "//:visibility_bzl",
         "//tools:bazel_osx_p4deps",
     ],
 )
