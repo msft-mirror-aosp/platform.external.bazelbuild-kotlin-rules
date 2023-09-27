@@ -540,6 +540,7 @@ def _kt_jvm_library(
     codegen_plugin_output = None
 
     kt_codegen_processors = kt_codegen_processing_env.get("processors_for_kt_codegen_processing", depset()).to_list()
+    codegen_tags = kt_codegen_processing_env.get("codegen_tags", [])
     generative_deps = kt_codegen_processing_env.get("codegen_output_java_infos", depset()).to_list()
     processing_action_mnemonic = kt_codegen_processing_env.get("processing_action_mnemonic", None)
 
@@ -555,7 +556,7 @@ def _kt_jvm_library(
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
-        if processing_action_mnemonic == "KtCodegenProcessingAllJava":
+        if "check_srcs_package_against_kt_srcs_only" in codegen_tags:
             _check_srcs_package(ctx.label.package, kt_srcs, "srcs")
         else:
             _check_srcs_package(ctx.label.package, srcs, "srcs")
@@ -607,7 +608,7 @@ def _kt_jvm_library(
     )
 
     kotlinc_result = None
-    if kt_srcs or common_srcs:
+    if (kt_srcs or common_srcs) and "skip_kotlinc" not in codegen_tags:
         kotlinc_result = _kt_compile(
             ctx,
             kt_srcs = kt_srcs,
@@ -658,7 +659,7 @@ def _kt_jvm_library(
                 # (which doesn't contain instrumentation). See b/117897097.
                 javac_deps.append(kt_toolchain.coverage_runtime)
 
-        javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
+        javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-libjvm-java.jar")
 
         annotation_plugins = list(plugins.java_plugin_infos)
 
@@ -733,7 +734,7 @@ def _kt_jvm_library(
     # uses the same lint checks with AndroidLint
 
     disable_lint_checks = disable_lint_checks + kt_codegen_processing_env.get("disabled_lint_checks", [])
-    if not is_android_library_without_kt_srcs:
+    if not is_android_library_without_kt_srcs and "skip_kt_android_lint" not in codegen_tags:
         lint_flags = [
             "--java-language-level",  # b/159950410
             kt_toolchain.java_language_version,
@@ -766,7 +767,7 @@ def _kt_jvm_library(
                 lint_actions.AndroidLintRulesetInfo(singlejars = java_plugin_classpaths_for_java_srcs),
             ],
             lint_flags = lint_flags,
-            extra_input_depsets = [p.processor_data for p in java_plugin_datas] + [depset([java_genjar] if java_genjar else [])],
+            extra_input_depsets = [p.processor_data for p in java_plugin_datas],
             testonly = testonly,
             android_java8_libs = kt_toolchain.android_java8_apis_desugared,
             mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
