@@ -17,6 +17,7 @@
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("//bazel:stubs.bzl", "select_java_language_level")
+load(":kotlinc_flags.bzl", "kotlinc_flags")
 
 # Work around to toolchains in Google3.
 # buildifier: disable=provider-params
@@ -24,88 +25,18 @@ KtJvmToolchainInfo = provider()
 
 KT_VERSION = "v1_9_10"
 
-KT_LANG_VERSION = "1.9"
+# TODO: Remove this alias. Why are we letting people read this?
+KT_LANG_VERSION = kotlinc_flags.KT_LANG_VERSION
 
 # Kotlin JVM toolchain type label
 _TYPE = Label("//toolchains/kotlin_jvm:kt_jvm_toolchain_type")
-
-def _kotlinc_common_flags(ctx, other_flags):
-    """Returns kotlinc flags to use in all compilations."""
-    args = [
-        # We're supplying JDK in bootclasspath explicitly instead
-        "-no-jdk",
-
-        # stdlib included in merged_deps
-        "-no-stdlib",
-
-        # The bytecode format to emit
-        "-jvm-target",
-        "11",
-
-        # Emit bytecode with parameter names
-        "-java-parameters",
-
-        # Allow default method declarations, akin to what javac emits (b/110378321).
-        "-Xjvm-default=all",
-
-        # Trust JSR305 nullness type qualifier nicknames the same as @Nonnull/@Nullable
-        # (see https://kotlinlang.org/docs/reference/java-interop.html#jsr-305-support)
-        "-Xjsr305=strict",
-
-        # Trust annotations on type arguments, etc.
-        # (see https://kotlinlang.org/docs/java-interop.html#annotating-type-arguments-and-type-parameters)
-        "-Xtype-enhancement-improvements-strict-mode",
-
-        # TODO: Remove this as the default setting (probably Kotlin 1.7)
-        "-Xenhance-type-parameter-types-to-def-not-null=true",
-
-        # Explicitly set language version so we can update compiler separate from language version
-        "-language-version",
-        ctx.attr.kotlin_language_version,
-
-        # Enable type annotations in the JVM bytecode (b/170647926)
-        "-Xemit-jvm-type-annotations",
-
-        # TODO: Temporarily disable 1.5's sam wrapper conversion
-        "-Xsam-conversions=class",
-
-        # We don't want people to use experimental APIs, but if they do, we want them to use @OptIn
-        "-opt-in=kotlin.RequiresOptIn",
-
-        # Don't complain when using old builds or release candidate builds
-        "-Xskip-prerelease-check",
-
-        # Allows a no source files to create an empty jar.
-        "-Xallow-no-source-files",
-
-        # TODO: Remove this flag
-        "-Xuse-old-innerclasses-logic",
-
-        # TODO: Remove this flag
-        "-Xno-source-debug-extension",
-    ] + other_flags
-
-    # --define=extra_kt_jvm_opts is for overriding from command line.
-    # (Last wins in repeated --define=foo= use, so use --define=bar= instead.)
-    extra_kt_jvm_opts = ctx.var.get("extra_kt_jvm_opts", default = None)
-    if extra_kt_jvm_opts:
-        args.extend([o for o in extra_kt_jvm_opts.split(" ") if o])
-    return args
-
-def _kotlinc_ide_flags(ctx):
-    return _kotlinc_common_flags(ctx, other_flags = [])
-
-def _kotlinc_cli_flags(ctx):
-    return _kotlinc_common_flags(ctx, other_flags = [
-        # Silence all warning-level diagnostics
-        "-nowarn",
-    ])
 
 def _opt_for_test(val, getter):
     return getter(val) if val else None
 
 def _kt_jvm_toolchain_impl(ctx):
     profiling_filter = ctx.attr.profiling_filter[BuildSettingInfo].value
+    kotlinc_define_flags = kotlinc_flags.read_define_flags(ctx)
 
     kt_jvm_toolchain = dict(
         # go/keep-sorted start
@@ -125,8 +56,8 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlin_language_version = ctx.attr.kotlin_language_version,
         kotlin_libs = [x[JavaInfo] for x in ctx.attr.kotlin_libs],
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
-        kotlinc_cli_flags = _kotlinc_cli_flags(ctx),
-        kotlinc_ide_flags = _kotlinc_ide_flags(ctx),
+        kotlinc_cli_flags = ctx.attr.kotlinc_cli_flags + kotlinc_define_flags,
+        kotlinc_ide_flags = ctx.attr.kotlinc_ide_flags + kotlinc_define_flags,
         kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         source_jar_zipper = ctx.file.source_jar_zipper,
@@ -221,6 +152,14 @@ kt_jvm_toolchain = rule(
                 "@kotlinc//:kotlin_test_not_testonly",
             ],
             cfg = "target",
+        ),
+        kotlinc_cli_flags = attr.string_list(
+            doc = "The static flags to pass to CLI kotlinc invocations",
+            default = kotlinc_flags.CLI_FLAGS,
+        ),
+        kotlinc_ide_flags = attr.string_list(
+            doc = "The static flags to pass to IDE kotlinc invocations",
+            default = kotlinc_flags.IDE_FLAGS,
         ),
         kt_codegen_java_runtime = attr.label(
             cfg = "exec",
