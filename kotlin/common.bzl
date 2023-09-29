@@ -547,15 +547,18 @@ def _kt_jvm_library(
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
 
+    is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs and not common_srcs
+    is_android_library_without_kt_srcs_without_generative_deps = is_android_library_without_kt_srcs and not generative_deps
+
     # TODO: Remove this special case
     if kt_srcs and ("flogger" in [p.plugin_id for p in plugins.kt_compiler_plugin_infos]):
         static_deps.append(kt_toolchain.flogger_runtime)
 
-    if kt_srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
+    if not is_android_library_without_kt_srcs_without_generative_deps:
         static_deps.extend(kt_toolchain.kotlin_libs)
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
-    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
+    if not is_android_library_without_kt_srcs:
         if "check_srcs_package_against_kt_srcs_only" in codegen_tags:
             _check_srcs_package(ctx.label.package, kt_srcs, "srcs")
         else:
@@ -647,10 +650,9 @@ def _kt_jvm_library(
 
     javac_java_info = None
     java_native_headers_jar = None
-    is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
 
     if java_srcs or java_syncer.srcjars or classpath_resources:
-        javac_deps = extended_deps  # Defensive copy
+        javac_deps = list(extended_deps)  # Defensive copy
         if kotlinc_result:
             javac_deps.append(kotlinc_result.java_info)
             if ctx.coverage_instrumented():
@@ -659,7 +661,7 @@ def _kt_jvm_library(
                 # (which doesn't contain instrumentation). See b/117897097.
                 javac_deps.append(kt_toolchain.coverage_runtime)
 
-        javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-libjvm-java.jar")
+        javac_out = output if is_android_library_without_kt_srcs_without_generative_deps else file_factory.declare_file("-libjvm-java.jar")
 
         annotation_plugins = list(plugins.java_plugin_infos)
 
@@ -673,7 +675,7 @@ def _kt_jvm_library(
             resources = classpath_resources_non_dirs,
             # For targets that are not android_library with java-only srcs, exports will be passed
             # to the final constructed JavaInfo.
-            exports = (exports + generative_deps) if is_android_library_without_kt_srcs else [],
+            exports = exports if is_android_library_without_kt_srcs_without_generative_deps else [],
             output = javac_out,
             exported_plugins = exported_plugins,
             deps = javac_deps,
@@ -692,7 +694,7 @@ def _kt_jvm_library(
 
         # Directly return the JavaInfo from java.compile() for java-only android_library targets
         # to avoid creating a new JavaInfo. See b/239847857 for additional context.
-        if is_android_library_without_kt_srcs:
+        if is_android_library_without_kt_srcs_without_generative_deps:
             return struct(
                 java_info = javac_java_info,
                 validations = [],
