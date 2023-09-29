@@ -542,7 +542,6 @@ def _kt_jvm_library(
     kt_codegen_processors = kt_codegen_processing_env.get("processors_for_kt_codegen_processing", depset()).to_list()
     codegen_tags = kt_codegen_processing_env.get("codegen_tags", [])
     generative_deps = kt_codegen_processing_env.get("codegen_output_java_infos", depset()).to_list()
-    processing_action_mnemonic = kt_codegen_processing_env.get("processing_action_mnemonic", None)
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
@@ -611,7 +610,7 @@ def _kt_jvm_library(
     )
 
     kotlinc_result = None
-    if (kt_srcs or common_srcs) and "skip_kotlinc" not in codegen_tags:
+    if kt_srcs or common_srcs:
         kotlinc_result = _kt_compile(
             ctx,
             kt_srcs = kt_srcs,
@@ -736,7 +735,7 @@ def _kt_jvm_library(
     # uses the same lint checks with AndroidLint
 
     disable_lint_checks = disable_lint_checks + kt_codegen_processing_env.get("disabled_lint_checks", [])
-    if not is_android_library_without_kt_srcs and "skip_kt_android_lint" not in codegen_tags:
+    if not is_android_library_without_kt_srcs:
         lint_flags = [
             "--java-language-level",  # b/159950410
             kt_toolchain.java_language_version,
