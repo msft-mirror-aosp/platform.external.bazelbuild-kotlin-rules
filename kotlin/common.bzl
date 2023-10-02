@@ -585,8 +585,6 @@ def _kt_jvm_library(
     ]
 
     out_srcjars = [
-        jar
-        for jar in codegen_plugin_output.resources_gen_srcjar
     ] if codegen_plugin_output else []
 
     out_compilejars = [
@@ -706,17 +704,9 @@ def _kt_jvm_library(
 
     java_gensrcjar = None
     java_genjar = None
+
     if codegen_plugin_output:
-        java_gen_srcjars = codegen_plugin_output.java_gen_srcjar
-        kt_gen_srcjars = codegen_plugin_output.kt_gen_srcjar
-        java_gensrcjar = file_factory.declare_file("-java_info_generated_source_jar.srcjar")
-        _singlejar(
-            ctx,
-            inputs = java_gen_srcjars + kt_gen_srcjars,
-            output = java_gensrcjar,
-            singlejar = java_toolchain.single_jar,
-            mnemonic = "JavaInfoGeneratedSourceJar",
-        )
+        pass
 
     elif javac_java_info:
         java_gensrcjar = javac_java_info.annotation_processing.source_jar
