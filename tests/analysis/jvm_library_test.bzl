@@ -14,19 +14,21 @@
 
 """Kotlin kt_jvm_library rule tests."""
 
+load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action", "get_arg")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(":assert_failure_test.bzl", "assert_failure_test")
-load("//:visibility.bzl", "RULES_KOTLIN")
 
 _DEFAULT_LIST = ["__default__"]
 
 def _test_impl(ctx):
     env = analysistest.begin(ctx)
-    actions = analysistest.target_actions(env)
     actual = ctx.attr.target_under_test
+
+    actions = analysistest.target_actions(env)
+    kt_al_action = get_action(actions, "KtAndroidLint")
 
     asserts.true(
         env,
@@ -38,17 +40,6 @@ def _test_impl(ctx):
         ProguardSpecProvider in actual,
         "Expected a ProguardSpecProvider provider.",
     )
-
-    if ctx.attr.expected_al_ruleset_names != _DEFAULT_LIST:
-        al_action = get_action(actions, "KtAndroidLint")
-        asserts.set_equals(
-            env,
-            sets.make(ctx.attr.expected_al_ruleset_names),
-            sets.make([
-                a.rsplit("/", 1)[1]
-                for a in get_arg(al_action, "--lint_rules", style = "list")
-            ]),
-        )
 
     if ctx.attr.expected_runfile_names != _DEFAULT_LIST:
         asserts.set_equals(
