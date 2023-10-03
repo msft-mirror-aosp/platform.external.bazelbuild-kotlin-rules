@@ -503,6 +503,8 @@ def _kt_jvm_library(
         srcs = [],
         common_srcs = [],
         coverage_srcs = [],
+        java_android_lint_config = None,
+        force_android_lint = False,  # TODO Remove this param
         manifest = None,  # set for Android libs, otherwise None.
         merged_manifest = None,  # set for Android libs, otherwise None.
         resource_files = [],  # set for Android libs, otherwise empty.
@@ -725,7 +727,7 @@ def _kt_jvm_library(
     # uses the same lint checks with AndroidLint
 
     disable_lint_checks = disable_lint_checks + kt_codegen_processing_env.get("disabled_lint_checks", [])
-    if not is_android_library_without_kt_srcs:
+    if force_android_lint or not is_android_library_without_kt_srcs:
         lint_flags = [
             "--java-language-level",  # b/159950410
             kt_toolchain.java_language_version,
@@ -753,7 +755,7 @@ def _kt_jvm_library(
             merged_manifest = merged_manifest,
             resource_files = resource_files,
             baseline_file = androidlint_toolchains.get_baseline(ctx),
-            config = kt_toolchain.android_lint_config,
+            config = (None if (kt_srcs or common_srcs) else java_android_lint_config) or kt_toolchain.android_lint_config,
             android_lint_rules = plugins.android_lint_rulesets + [
                 lint_actions.AndroidLintRulesetInfo(singlejars = java_plugin_classpaths_for_java_srcs),
             ],
