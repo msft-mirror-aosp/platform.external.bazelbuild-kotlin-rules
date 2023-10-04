@@ -691,14 +691,6 @@ def _kt_jvm_library(
             annotation_processor_additional_inputs = annotation_processor_additional_inputs,
         )
 
-        # Directly return the JavaInfo from java.compile() for java-only android_library targets
-        # to avoid creating a new JavaInfo. See b/239847857 for additional context.
-        if is_android_library_without_kt_srcs_without_generative_deps:
-            return struct(
-                java_info = javac_java_info,
-                validations = [],
-            )
-
         out_jars.append(javac_out)
         out_srcjars.extend(javac_java_info.source_jars)
         out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
@@ -763,9 +755,17 @@ def _kt_jvm_library(
             extra_input_depsets = [p.processor_data for p in java_plugin_datas],
             testonly = testonly,
             android_java8_libs = kt_toolchain.android_java8_apis_desugared,
-            mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
+            mnemonic = "AndroidLint" if is_android_library_without_kt_srcs else "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
         )
         blocking_action_outs.append(android_lint_out)
+
+    # Directly return the JavaInfo from java.compile() for java-only android_library targets
+    # to avoid creating a new JavaInfo. See b/239847857 for additional context.
+    if javac_java_info and is_android_library_without_kt_srcs_without_generative_deps:
+        return struct(
+            java_info = javac_java_info,
+            validations = blocking_action_outs,
+        )
 
     if output_srcjar == None:
         output_srcjar = file_factory.declare_file("-src.jar")
