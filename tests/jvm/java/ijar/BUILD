@@ -16,7 +16,9 @@ load("//kotlin:rules.bzl", "kt_jvm_library")
 
 licenses(["notice"])
 
-package(default_testonly = 1)
+package(
+    default_testonly = 1,
+)
 
 java_test(
     name = "ijar",

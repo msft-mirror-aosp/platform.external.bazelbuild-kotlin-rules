@@ -27,7 +27,6 @@ def _test_impl(ctx):
     env = analysistest.begin(ctx)
     actions = analysistest.target_actions(env)
     actual = ctx.attr.target_under_test
-    expected = ctx.attr.expected
 
     asserts.true(
         env,
@@ -40,49 +39,46 @@ def _test_impl(ctx):
         "Expected a ProguardSpecProvider provider.",
     )
 
-    if "data" in expected:
-        expected_data = expected["data"]
-        actual_data = _extract_data_runfiles(actual)
-
-        asserts.new_set_equals(
+    if ctx.attr.expected_al_ruleset_names != _DEFAULT_LIST:
+        al_action = get_action(actions, "KtAndroidLint")
+        asserts.set_equals(
             env,
-            sets.make(expected_data),
-            sets.make(actual_data),
-            """
-            FAIL: kt_jvm_library did not produce the expected data dependencies.
-            EXPECTED: %s
-            ACTUAL: %s
-            """ % (expected_data, actual_data),
+            sets.make(ctx.attr.expected_al_ruleset_names),
+            sets.make([
+                a.rsplit("/", 1)[1]
+                for a in get_arg(al_action, "--lint_rules", style = "list")
+            ]),
         )
 
-    expected_exports = []
-    for target in ctx.attr.expected_exports:
-        asserts.equals(
+    if ctx.attr.expected_runfile_names != _DEFAULT_LIST:
+        asserts.set_equals(
             env,
-            1,
-            len(target[JavaInfo].full_compile_jars.to_list()),
-            "Not a single compile-time Jar: %s" % target.label,
-        )
-        expected_exports.extend(target[JavaInfo].full_compile_jars.to_list())
-    actual_exports = actual[JavaInfo].full_compile_jars.to_list()
-
-    # TODO: fail if there are *un*expected exports, maybe by making sure
-    # that the actual exports are exactly the expected ones plus the Jar(s)
-    # produced by this JavaInfo.
-    for expected_export in expected_exports:
-        asserts.true(
-            env,
-            expected_export in actual_exports,
-            """
-            kt_jvm_library did not export %s
-            actual: %s
-            """ % (expected_export, actual_exports),
+            sets.make(ctx.attr.expected_runfile_names),
+            sets.make([
+                f.basename
+                for f in actual[DefaultInfo].data_runfiles.files.to_list()
+            ]),
         )
 
-    asserts.equals(
+    if ctx.attr.expected_compile_jar_names != _DEFAULT_LIST:
+        asserts.set_equals(
+            env,
+            sets.make(ctx.attr.expected_compile_jar_names),
+            sets.make([f.basename for f in actual[JavaInfo].compile_jars.to_list()]),
+            "kt_jvm_library JavaInfo::compile_jars",
+        )
+
+    if ctx.attr.expected_exported_processor_jar_names != _DEFAULT_LIST:
+        asserts.set_equals(
+            env,
+            sets.make(ctx.attr.expected_exported_processor_jar_names),
+            sets.make([f.basename for f in actual[JavaInfo].plugins.processor_jars.to_list()]),
+        )
+
+    asserts.set_equals(
         env,
-        ctx.attr.expected_exported_processor_classes,
-        actual[JavaInfo].plugins.processor_classes.to_list(),
+        sets.make(ctx.attr.expected_exported_processor_classes),
+        sets.make(actual[JavaInfo].plugins.processor_classes.to_list()),
     )
 
     kt_2_java_compile = get_action(actions, "Kt2JavaCompile")
@@ -111,8 +107,18 @@ def _test_impl(ctx):
 _test = analysistest.make(
     impl = _test_impl,
     attrs = dict(
-        expected = attr.string_list_dict(),
-        expected_exports = attr.label_list(),
+        expected_al_ruleset_names = attr.string_list(
+            doc = "Android Lint rule JARs reported as run on the given target",
+            default = _DEFAULT_LIST,
+        ),
+        expected_compile_jar_names = attr.string_list(
+            doc = "Names of all JavaInfo::compile_jars for the given target",
+            default = _DEFAULT_LIST,
+        ),
+        expected_exported_processor_jar_names = attr.string_list(
+            doc = "Names of all JavaInfo.plugins JARs returned by the given target",
+            default = _DEFAULT_LIST,
+        ),
         expected_exported_processor_classes = attr.string_list(
             doc = "Annotation processors reported as to be run on depending targets",
         ),
@@ -121,6 +127,10 @@ _test = analysistest.make(
         ),
         expected_friend_jar_names = attr.string_list(
             doc = "Names of all -Xfriend-paths= JARs",
+            default = _DEFAULT_LIST,
+        ),
+        expected_runfile_names = attr.string_list(
+            doc = "Names of all runfiles",
             default = _DEFAULT_LIST,
         ),
         expect_processor_classpath = attr.bool(),
@@ -153,9 +163,6 @@ _coverage_test = analysistest.make(
         "//command_line_option:instrumentation_filter": "+tests/analysis[:/]",
     },
 )
-
-def _extract_data_runfiles(target):
-    return [f.basename for f in target[DefaultInfo].data_runfiles.files.to_list()]
 
 def _test_kt_jvm_library_with_proguard_specs():
     test_name = "kt_jvm_library_with_proguard_specs_test"
@@ -438,9 +445,10 @@ fun greeting(): String = "Hello World!"
     _test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_exports = [
-            ":%s_exp" % test_name,
-            ":%s_javaexp" % test_name,
+        expected_compile_jar_names = [
+            "lib%s_tut-compile.jar" % test_name,
+            "lib%s_exp-compile.jar" % test_name,
+            "lib%s_javaexp-hjar.jar" % test_name,
         ],
     )
     return test_name
@@ -475,7 +483,10 @@ fun greeting(): String = "Hello World!"
     _test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_exports = [":%s_exports_plugin" % test_name],
+        expected_compile_jar_names = [
+            "lib%s_tut-compile.jar" % test_name,
+            "lib%s_exports_plugin-compile.jar" % test_name,
+        ],
         expected_exported_processor_classes = [test_name],
     )
     return test_name
@@ -509,7 +520,10 @@ fun greeting(): String = "Hello World!"
     _test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        expected_exports = [],  # _exports_plugin has no compile/runtime Jars
+        expected_compile_jar_names = [
+            # _exports_plugin has no compile/runtime Jars
+            "lib%s_tut-compile.jar" % test_name,
+        ],
         expected_exported_processor_classes = [test_name],
     )
     return test_name
