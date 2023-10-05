@@ -111,6 +111,8 @@ def get_arg(action, arg_name, style = "trim"):
 
     if style == "trim":
         return arg[len(arg_name):]
+    elif style == "next":
+        return args[index + 1]
     elif style == "list":
         result = []
         for i in range(index + 1, len(args)):
@@ -118,5 +120,6 @@ def get_arg(action, arg_name, style = "trim"):
                 break
             result.append(args[i])
         return result
+
     else:
         fail("Unrecognized arg style '%s" % style)

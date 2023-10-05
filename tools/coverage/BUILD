@@ -21,6 +21,6 @@ sh_binary(
         "//bazel:jacoco_cli",
     ],
     visibility = [
-        "//:internal",
+        "//visibility:public",
     ],
 )

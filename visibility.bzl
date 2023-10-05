@@ -14,7 +14,9 @@
 
 """Bzl visibility lists for rules_kotlin"""
 
-RULES_KOTLIN = ["//..."]
+RULES_KOTLIN = [
+    "//...",
+]
 
 TOOLS_KOTLIN = [
 ]
