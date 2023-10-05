@@ -14,8 +14,8 @@
 
 """Stubs"""
 
-load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("@bazel_skylib//lib:sets.bzl", "sets")
 
 def _empty_fn(*_args, **_kwargs):
     pass
@@ -57,3 +57,10 @@ lint_actions = struct(
 
 def check_compiler_opt_allowlist(_label):
     pass
+
+def jspecify_flags(ctx):
+    # Trust JSpecify nullness annotations
+    # (see https://kotlinlang.org/docs/whatsnew1520.html#support-for-jspecify-nullness-annotations)
+    return ["-Xjspecify-annotations=strict"]
+
+integration_test_filegroup = _empty_fn

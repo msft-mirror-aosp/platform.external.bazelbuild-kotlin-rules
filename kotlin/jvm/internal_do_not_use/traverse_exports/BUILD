@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//bazel:stubs.bzl", "integration_test_filegroup")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(
@@ -28,5 +29,13 @@ bzl_library(
         "//kotlin:for_traverse_exports_bzl",
         "//kotlin/common:common_bzl",
         "@bazel_skylib//lib:sets",
+    ],
+)
+
+integration_test_filegroup(
+    name = "bazel_osx_p4deps",
+    deps = [
+        ":traverse_exports_bzl",
+        "//kotlin/common:bazel_osx_p4deps",
     ],
 )
