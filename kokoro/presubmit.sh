@@ -18,8 +18,40 @@
 kokoro_scm_name="presubmit"
 workspace_root="${KOKORO_ARTIFACTS_DIR}/git/${kokoro_scm_name}"
 
-bazel="${KOKORO_GFILE_DIR}/bazel-${bazel_version}-linux-x86_64"
-chmod +x "$bazel"
+
+function DownloadBazelisk()  {
+    # Downloads bazelisk to a temp directory.
+
+    local version="${1:-1.18.0}"
+    local platform="${2:-linux}"
+    local arch="${3:-amd64}"
+
+    local dest=$(mktemp -d)
+    (
+        set -euxo pipefail
+
+        echo "== Downloading bazelisk ====================================="
+
+        download_url="https://github.com/bazelbuild/bazelisk/releases/download/v${version}/bazelisk-${platform}-${arch}"
+        mkdir -p "${dest}"
+        wget -nv ${download_url} -O "${dest}/bazelisk"
+        chmod +x "${dest}/bazelisk"
+
+        echo "============================================================="
+    ) &> /dev/stderr
+
+    echo "${dest}"
+}
+
+bazelisk_dir=$(DownloadBazelisk "1.18.0" linux amd64)
+export PATH="${bazelisk_dir}:${PATH}"
+
+function Cleanup() {
+  # Clean up all temporary directories: bazelisk install, sandbox, and
+  # android_tools.
+  rm -rf "$bazelisk_dir"
+}
+trap Cleanup EXIT
 
 # Default JDK on GCP_UBUNTU is JDK8
 sudo update-java-alternatives --set java-1.11.0-openjdk-amd64
@@ -40,7 +72,7 @@ cd "${workspace_root}"
 # Run test coverage for all the test targets except excluded by
 # --instrumentation_filter - code coverage doesn't work for them and they
 # would only be tested
-"$bazel" coverage \
+bazelisk coverage \
     --sandbox_tmpfs_path="$hsperfdata_dir" \
     --verbose_failures \
     --experimental_google_legacy_api \
@@ -48,7 +80,7 @@ cd "${workspace_root}"
     //tests/...
 
 # For a specific test //tools:source_jar_zipper_freshness_test run test only
-"$bazel" test \
+bazelisk test \
     --sandbox_tmpfs_path="$hsperfdata_dir" \
     --verbose_failures \
     --experimental_google_legacy_api \

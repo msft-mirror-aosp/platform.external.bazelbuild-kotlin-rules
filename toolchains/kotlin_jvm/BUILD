@@ -14,14 +14,14 @@
 
 """Kotlin/JVM toolchain."""
 
-load(":kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//bazel:stubs.bzl", "integration_test_filegroup")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load(":kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 
 licenses(["notice"])
 
 package(
-    default_visibility = ["//:internal"],
+    default_visibility = ["//visibility:public"],
 )
 
 toolchain_type(name = kt_jvm_toolchains.name)
@@ -33,13 +33,6 @@ toolchain(
     ],
     toolchain = ":kt_jvm_toolchain_linux_sts_jdk",
     toolchain_type = kt_jvm_toolchains.type,
-    visibility = ["//visibility:public"],
-)
-
-# TODO: Remove this once cl/520112558 has made it into an Android rules release
-alias(
-    name = "kt_jvm_toolchain_impl",
-    actual = ":kt_jvm_toolchain_linux_sts_jdk",
     visibility = ["//visibility:public"],
 )
 
@@ -71,5 +64,12 @@ kt_jvm_toolchains.declare(
 string_flag(
     name = "profiling_filter",
     build_setting_default = "",
-    visibility = ["//visibility:private"],
+)
+
+integration_test_filegroup(
+    name = "bazel_osx_p4deps",
+    deps = [
+        "//:visibility_bzl",
+        "//tools:bazel_osx_p4deps",
+    ],
 )
