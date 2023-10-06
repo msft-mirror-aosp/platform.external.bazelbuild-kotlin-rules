@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.devtools.kotlin
+package com.google.devtools.kotlin.srczip
 
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
