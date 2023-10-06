@@ -20,21 +20,17 @@ Currently this system recognizes:
   - targets exporting other forbidden targets
 """
 
-load("@bazel_skylib//lib:sets.bzl", "sets")
-load("//bazel:stubs.bzl", "EXEMPT_DEPS", "FORBIDDEN_DEP_PACKAGES")
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//bazel:stubs.bzl", "is_exempt_dep", "is_forbidden_dep")
 
 def _error(target, msg):
     return (str(target.label), msg)
 
-def _is_exempt(target):
-    return sets.contains(EXEMPT_DEPS, str(target.label))
-
 def _check_forbidden(target, ctx_rule):
-    if _is_exempt(target):
+    if is_exempt_dep(target):
         return []
 
-    if sets.contains(FORBIDDEN_DEP_PACKAGES, target.label.package):
+    if is_forbidden_dep(target):
         return [_error(target, "Forbidden package")]
 
     # Identify nano protos using tag (b/122083175)
@@ -45,7 +41,7 @@ def _check_forbidden(target, ctx_rule):
     return []
 
 def _if_not_checked(target):
-    return [] if _is_exempt(target) else [_error(target, "Not checked")]
+    return [] if is_exempt_dep(target) else [_error(target, "Not checked")]
 
 def _validate_deps(error_set):
     if not error_set:
