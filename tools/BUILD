@@ -14,11 +14,12 @@
 
 # Description: Kotlin building rules tools
 load("//bazel:deploy_jar_freshness_golden_test.bzl", "deploy_jar_freshness_golden_test")
+load("//bazel:stubs.bzl", "integration_test_filegroup")
 
 licenses(["notice"])
 
 package(
-    default_visibility = ["//:internal"],
+    default_visibility = ["//visibility:public"],
 )
 
 # JAR that contains a marker entry, for identifying apps built by rules_kotlin.
@@ -29,8 +30,12 @@ genrule(
     tools = ["@bazel_tools//tools/zip:zipper"],
 )
 
+integration_test_filegroup(
+    name = "bazel_osx_p4deps",
+)
+
 deploy_jar_freshness_golden_test(
     name = "source_jar_zipper_freshness_test",
     current_jar = "//tools/bin:source_jar_zipper_binary",
-    newly_built_jar = "//tools/java/com/google/devtools/kotlin:source_jar_zipper_deploy.jar",
+    newly_built_jar = "//tools/java/com/google/devtools/kotlin/srczip:source_jar_zipper_deploy.jar",
 )

@@ -30,6 +30,6 @@ kt_jvm_library(
 
 java_binary(
     name = "source_jar_zipper",
-    main_class = "com.google.devtools.kotlin.SourceJarZipperKt",
+    main_class = "com.google.devtools.kotlin.srczip.SourceJarZipperKt",
     runtime_deps = [":source_jar_zipper_lib"],
 )
