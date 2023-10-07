@@ -116,7 +116,7 @@ def kt_jvm_compile(
     if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
         fail("resources attribute only allowed for jvm libraries")
 
-    if type(java_toolchain) != "JavaToolchainInfo":
+    if type(java_toolchain) == "Target":
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
 
