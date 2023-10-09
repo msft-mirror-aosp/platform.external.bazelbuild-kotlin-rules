@@ -73,6 +73,7 @@ def _get_arg(action, arg_name, style = "trim"):
 
 kt_analysis = struct(
     # go/keep-sorted start
+    DEFAULT_LIST = ["__default__"],
     get_action = _get_action,
     get_arg = _get_arg,
     # go/keep-sorted end
