@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//tests/analysis:for_test.bzl", "rules_for_test")
+load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
 load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
 
 package(
@@ -21,14 +21,14 @@ package(
 
 licenses(["notice"])
 
-rules_for_test.java_library(
+kt_for_analysis.java_library(
     name = "runtime_deps_test_dep",
     srcs = [],
 )
 
 jvm_library_test(
     name = "runtime_deps_test",
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "runtime_deps",
         srcs = [
             "Input.kt",

@@ -12,13 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Rules for test."""
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-load("//:visibility.bzl", "RULES_KOTLIN")
-load("//kotlin:jvm_library.bzl", "kt_jvm_library")
-load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
+package(
+    default_applicable_licenses = ["//:license"],
+    default_testonly = True,
+    default_visibility = ["//:internal"],
+)
 
-rules_for_test = struct(
-    kt_jvm_library = kt_testing_rules.wrap_for_analysis(kt_jvm_library),
-    java_library = kt_testing_rules.wrap_for_analysis(native.java_library),
+licenses(["notice"])
+
+bzl_library(
+    name = "testing_bzl",
+    srcs = glob(["*.bzl"]),
+    visibility = [
+        "//:internal",
+    ],
+    deps = [
+        "//:visibility_bzl",
+        "//kotlin:rules_bzl",
+        "//kotlin/common/testing:testing_bzl",
+        "@bazel_skylib//lib:unittest",
+    ],
 )

@@ -12,21 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
-load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
+"""kt_for_analysis"""
 
-package(
-    default_testonly = True,
-)
+load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin:jvm_library.bzl", "kt_jvm_library")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
-licenses(["notice"])
-
-jvm_library_test(
-    name = "no_kt_srcs_test",
-    target_under_test = kt_for_analysis.kt_jvm_library(
-        name = "no_kt_srcs",
-        srcs = [
-            "Input.java",
-        ],
-    ),
+kt_for_analysis = struct(
+    # go/keep-sorted start
+    java_library = kt_testing_rules.wrap_for_analysis(native.java_library),
+    kt_jvm_library = kt_testing_rules.wrap_for_analysis(kt_jvm_library),
+    # go/keep-sorted end
 )

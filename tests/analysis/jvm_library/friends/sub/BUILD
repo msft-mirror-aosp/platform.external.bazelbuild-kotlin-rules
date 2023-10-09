@@ -13,7 +13,7 @@
 # limitations under the License.
 
 load("//kotlin:rules.bzl", "kt_jvm_library")
-load("//tests/analysis:for_test.bzl", "rules_for_test")
+load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
 load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 
@@ -30,7 +30,7 @@ jvm_library_test(
         "libkt_exports_friend-compile.jar",
         # Absent # "libfriend-compile.jar"
     ],
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "no_kt_exported_friend_cross_package",
         srcs = ["Input.kt"],
         deps = [":kt_exports_friend"],
@@ -40,7 +40,7 @@ jvm_library_test(
 jvm_library_test(
     name = "no_direct_friend_cross_package_test",
     expected_friend_jar_names = [],
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "no_direct_friend_cross_package",
         srcs = ["Input.kt"],
         deps = ["//tests/analysis/jvm_library/friends:friend"],

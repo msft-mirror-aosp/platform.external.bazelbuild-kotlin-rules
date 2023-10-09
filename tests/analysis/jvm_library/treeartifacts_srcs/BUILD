@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//tests/analysis:for_test.bzl", "rules_for_test")
+load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
 load("//tests/analysis:assert_failure_test.bzl", "assert_failure_test")
 load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
 load("//tests/analysis:util.bzl", "create_dir")
@@ -25,7 +25,7 @@ licenses(["notice"])
 
 jvm_library_test(
     name = "treeartifact_basename_kotlin_test",
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "treeartifact_basename_kotlin",
         srcs = [
             create_dir(
@@ -40,7 +40,7 @@ jvm_library_test(
 
 jvm_library_test(
     name = "treeartifact_basename_java_test",
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "treeartifact_basename_java",
         srcs = [
             create_dir(
@@ -56,7 +56,7 @@ jvm_library_test(
 assert_failure_test(
     name = "treeartifact_extension_kt_test",
     msg_contains = "/treeartifact_extension.kt",
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "treeartifact_extension_kt",
         srcs = [
             create_dir(
@@ -69,7 +69,7 @@ assert_failure_test(
 assert_failure_test(
     name = "treeartifact_extension_java_test",
     msg_contains = "/treeartifact_extension.java",
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "treeartifact_extension_java",
         srcs = [
             create_dir(
@@ -82,7 +82,7 @@ assert_failure_test(
 assert_failure_test(
     name = "treeartifact_extension_srcjar_test",
     msg_contains = "/treeartifact_extension.srcjar",
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "treeartifact_extension_srcjar",
         srcs = [
             create_dir(
@@ -95,7 +95,7 @@ assert_failure_test(
 assert_failure_test(
     name = "treeartifact_no_extension_test",
     msg_contains = "/treeartifact_no_extension",
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "treeartifact_no_extension",
         srcs = [
             create_dir(
