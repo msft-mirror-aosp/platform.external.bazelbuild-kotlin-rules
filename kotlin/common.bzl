@@ -202,7 +202,7 @@ def _run_kotlinc(
         } if toolchain.is_profiling_enabled(ctx.label) else {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = toolchain.toolchain_type,
     )
 
     return struct(
@@ -315,7 +315,7 @@ def _derive_headers(
         outputs = [output_dir],
         mnemonic = "KtDeriveHeaders",
         progress_message = "Deriving %s: %s" % (output_dir.basename, _get_original_kt_target_label(ctx)),
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = toolchain.toolchain_type,
     )
     return [output_dir]
 
@@ -386,7 +386,7 @@ def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
         outputs = [output],
         mnemonic = "KtJaCoCoInstrument",
         progress_message = "Instrumenting Kotlin for coverage collection: %s" % _get_original_kt_target_label(ctx),
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = toolchain.toolchain_type,
     )
 
     return output
@@ -441,7 +441,7 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
         arguments = [args],
         mnemonic = "KtMergeJdeps",
         progress_message = "Merging jdeps files %{output}",
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = kt_jvm_toolchain.toolchain_type,
     )
 
     return merged_jdeps_file
