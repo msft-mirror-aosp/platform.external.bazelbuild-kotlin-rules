@@ -32,6 +32,7 @@ bzl_library(
         "//:visibility_bzl",
         "//kotlin:rules_bzl",
         "//kotlin/common/testing:testing_bzl",
+        "@bazel_skylib//lib:sets",
         "@bazel_skylib//lib:unittest",
     ],
 )

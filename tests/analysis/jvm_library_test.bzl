@@ -16,136 +16,12 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:jvm_library.bzl", "kt_jvm_library")
-load("//kotlin/common/testing:asserts.bzl", "kt_asserts")
-load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action", "get_arg")
-load("@bazel_skylib//lib:sets.bzl", "sets")
+load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
+load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(":assert_failure_test.bzl", "assert_failure_test")
 
-_DEFAULT_LIST = ["__default__"]
-
-def _test_impl(ctx):
-    env = analysistest.begin(ctx)
-    actual = ctx.attr.target_under_test
-
-    actions = analysistest.target_actions(env)
-    kt_al_action = get_action(actions, "KtAndroidLint")
-
-    asserts.true(
-        env,
-        JavaInfo in actual,
-        "kt_jvm_library did not produce JavaInfo provider.",
-    )
-    asserts.true(
-        env,
-        ProguardSpecProvider in actual,
-        "Expected a ProguardSpecProvider provider.",
-    )
-
-    if ctx.attr.expected_runfile_names != _DEFAULT_LIST:
-        asserts.set_equals(
-            env,
-            sets.make(ctx.attr.expected_runfile_names),
-            sets.make([
-                f.basename
-                for f in actual[DefaultInfo].data_runfiles.files.to_list()
-            ]),
-        )
-
-    if ctx.attr.expected_compile_jar_names != _DEFAULT_LIST:
-        asserts.set_equals(
-            env,
-            sets.make(ctx.attr.expected_compile_jar_names),
-            sets.make([f.basename for f in actual[JavaInfo].compile_jars.to_list()]),
-            "kt_jvm_library JavaInfo::compile_jars",
-        )
-
-    if ctx.attr.expected_exported_processor_jar_names != _DEFAULT_LIST:
-        asserts.set_equals(
-            env,
-            sets.make(ctx.attr.expected_exported_processor_jar_names),
-            sets.make([f.basename for f in actual[JavaInfo].plugins.processor_jars.to_list()]),
-        )
-
-    asserts.set_equals(
-        env,
-        sets.make(ctx.attr.expected_exported_processor_classes),
-        sets.make(actual[JavaInfo].plugins.processor_classes.to_list()),
-    )
-
-    kt_2_java_compile = get_action(actions, "Kt2JavaCompile")
-
-    if kt_2_java_compile:
-        asserts.true(
-            env,
-            kt_2_java_compile.outputs.to_list()[0].basename.endswith(".jar"),
-            "Expected first output to be a JAR (this affects the param file name).",
-        )
-
-    if ctx.attr.expected_friend_jar_names != _DEFAULT_LIST:
-        friend_paths_arg = get_arg(kt_2_java_compile, "-Xfriend-paths=")
-        kt_asserts.list_matches(
-            env,
-            expected = ctx.attr.expected_friend_jar_names,
-            actual = ["/" + x for x in (friend_paths_arg.split(",") if friend_paths_arg else [])],
-            matcher = lambda expected, actual: actual.endswith(expected),
-            items_name = "friend JARs",
-        )
-
-    asserts.equals(
-        env,
-        ctx.attr.expect_neverlink,
-        len(actual[JavaInfo].transitive_runtime_jars.to_list()) == 0,
-        "Mismatch: Expected transitive_runtime_jars iff (neverlink == False)",
-    )
-
-    kt_asserts.required_mnemonic_counts(env, ctx.attr.required_mnemonic_counts, actions)
-
-    return analysistest.end(env)
-
-_test = analysistest.make(
-    impl = _test_impl,
-    attrs = dict(
-        expected_al_ruleset_names = attr.string_list(
-            doc = "Android Lint rule JARs reported as run on the given target",
-            default = _DEFAULT_LIST,
-        ),
-        expected_compile_jar_names = attr.string_list(
-            doc = "Names of all JavaInfo::compile_jars for the given target",
-            default = _DEFAULT_LIST,
-        ),
-        expected_exported_processor_jar_names = attr.string_list(
-            doc = "Names of all JavaInfo.plugins JARs returned by the given target",
-            default = _DEFAULT_LIST,
-        ),
-        expected_exported_processor_classes = attr.string_list(
-            doc = "Annotation processors reported as to be run on depending targets",
-        ),
-        expected_processor_classes = attr.string_list(
-            doc = "Annotation processors reported as run on the given target",
-        ),
-        expected_friend_jar_names = attr.string_list(
-            doc = "Names of all -Xfriend-paths= JARs",
-            default = _DEFAULT_LIST,
-        ),
-        expected_runfile_names = attr.string_list(
-            doc = "Names of all runfiles",
-            default = _DEFAULT_LIST,
-        ),
-        expect_jdeps = attr.bool(default = True),
-        expect_processor_classpath = attr.bool(),
-        expect_neverlink = attr.bool(),
-        required_mnemonic_counts = attr.string_dict(
-            doc = """
-                Mnemonics that must be registered (or must not be, if starting with '-').
-            
-                No assertions are made about mnemonics absent from this list.
-            """,
-        ),
-    ),
-)
-
-jvm_library_test = _test
+jvm_library_test = kt_jvm_library_analysis_test
 
 def _coverage_test_impl(ctx):
     env = analysistest.begin(ctx)
@@ -198,7 +74,7 @@ fun greeting(): String = "Hello World!"
             test_name + "/salutations.pgcfg",
         ],
     )
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
     )
@@ -230,7 +106,7 @@ Hi!
             test_name + "/salutations.txt",
         ],
     )
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
     )
@@ -256,7 +132,7 @@ fun greeting(): String = "Hello World!"
         plugins = ["//bazel:auto_value_plugin"],
     )
 
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_processor_classes = ["com.google.auto.value.processor.AutoValueProcessor"],
@@ -277,7 +153,7 @@ def _test_kt_jvm_library_no_kt_srcs_with_plugin():
         plugins = [":%s_plugin" % test_name],
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_processor_classes = [test_name],
@@ -309,7 +185,7 @@ fun greeting(): String = "Hello World!"
         plugins = [":%s_plugin" % test_name],
     )
 
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_processor_classes = [],  # no processor class so no processing
@@ -339,7 +215,7 @@ fun greeting(): String = "Hello World!"
         exported_plugins = [":%s_plugin" % test_name],
     )
 
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_exported_processor_classes = [test_name],
@@ -377,7 +253,7 @@ fun greeting(): String = "Hello World!"
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
 
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_processor_classes = [test_name],
@@ -413,7 +289,7 @@ fun greeting(): String = "Hello World!"
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
 
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_processor_classes = [test_name],
@@ -449,7 +325,7 @@ fun greeting(): String = "Hello World!"
             ":%s_javaexp" % test_name,
         ],
     )
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_compile_jar_names = [
@@ -487,7 +363,7 @@ fun greeting(): String = "Hello World!"
         ],
         exports = [":%s_exports_plugin" % test_name],
     )
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_compile_jar_names = [
@@ -524,7 +400,7 @@ fun greeting(): String = "Hello World!"
         ],
         exports = [":%s_exports_plugin" % test_name],
     )
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expected_compile_jar_names = [
@@ -617,7 +493,7 @@ def _test_kt_jvm_library_with_no_sources_with_exports():
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
         exports = [test_name + "_exp"],
     )
-    _test(
+    kt_jvm_library_analysis_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         expect_jdeps = False,
