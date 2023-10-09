@@ -15,111 +15,16 @@
 """Some utils"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin/common/testing:analysis.bzl", "kt_analysis")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
 # Mark targets that's aren't expected to build, but are needed for analysis test assertions.
-ONLY_FOR_ANALYSIS_TEST_TAGS = ["manual", "nobuilder", "only_for_analysis_test"]
+ONLY_FOR_ANALYSIS_TEST_TAGS = kt_testing_rules.ONLY_FOR_ANALYSIS_TAGS
 
-def create_file(name, content):
-    if content.startswith("\n"):
-        content = content[1:-1]
+create_file = kt_testing_rules.create_file
 
-    native.genrule(
-        name = "gen_" + name,
-        outs = [name],
-        cmd = """
-cat > $@ <<EOF
-%s
-EOF
-""" % content,
-    )
+create_dir = kt_testing_rules.create_dir
 
-    return name
+get_arg = kt_analysis.get_arg
 
-def _create_dir_impl(ctx):
-    dir = ctx.actions.declare_directory(ctx.attr.name)
-
-    command = "mkdir -p {0} " + ("&& cp {1} {0}" if ctx.files.srcs else "# {1}")
-    ctx.actions.run_shell(
-        command = command.format(
-            dir.path + "/" + ctx.attr.subdir,
-            " ".join([s.path for s in ctx.files.srcs]),
-        ),
-        inputs = ctx.files.srcs,
-        outputs = [dir],
-    )
-
-    return [DefaultInfo(files = depset([dir]))]
-
-_create_dir = rule(
-    implementation = _create_dir_impl,
-    attrs = dict(
-        subdir = attr.string(),
-        srcs = attr.label_list(allow_files = True),
-    ),
-)
-
-def create_dir(
-        name,
-        subdir = None,
-        srcs = None):
-    _create_dir(
-        name = name,
-        subdir = subdir,
-        srcs = srcs,
-    )
-    return name
-
-def get_action(actions, mnemonic):
-    """Get a specific action
-
-    Args:
-      actions: [List[Action]]
-      mnemonic: [string] Identify the action whose args to search
-
-    Returns:
-      [Optional[action]] The arg value, or None if it couldn't be found
-    """
-    menmonic_actions = [a for a in actions if a.mnemonic == mnemonic]
-    if len(menmonic_actions) == 0:
-        return None
-    elif len(menmonic_actions) > 1:
-        fail("Expected a single '%s' action" % mnemonic)
-
-    return menmonic_actions[0]
-
-def get_arg(action, arg_name, style = "trim"):
-    """Get a named arg from a specific action
-
-    Args:
-      action: [Optional[Action]]
-      arg_name: [string]
-      style: [Optional[string]] The style of commandline arg
-
-    Returns:
-      [Optional[string]] The arg value, or None if it couldn't be found
-    """
-    if not action:
-        return None
-
-    args = action.argv
-    matches = [(i, a) for (i, a) in enumerate(args) if a.startswith(arg_name)]
-    if len(matches) == 0:
-        return None
-    elif len(matches) > 1:
-        fail("Expected a single '%s' arg" % arg_name)
-    (index, arg) = matches[0]
-
-    if style == "trim":
-        return arg[len(arg_name):]
-    elif style == "next":
-        return args[index + 1]
-    elif style == "list":
-        result = []
-        for i in range(index + 1, len(args)):
-            if args[i].startswith("--"):
-                break
-            result.append(args[i])
-        return result
-
-    else:
-        fail("Unrecognized arg style '%s" % style)
+get_action = kt_analysis.get_action

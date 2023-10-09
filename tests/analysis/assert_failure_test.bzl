@@ -14,18 +14,7 @@
 
 """An assertion for analysis failure."""
 
-load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
-def _assert_failure_test_impl(ctx):
-    env = analysistest.begin(ctx)
-    asserts.expect_failure(env, ctx.attr.msg_contains)
-    return analysistest.end(env)
-
-assert_failure_test = analysistest.make(
-    _assert_failure_test_impl,
-    expect_failure = True,
-    attrs = dict(
-        msg_contains = attr.string(mandatory = True),
-    ),
-)
+assert_failure_test = kt_testing_rules.assert_failure_test

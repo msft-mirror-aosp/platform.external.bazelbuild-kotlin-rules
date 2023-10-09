@@ -14,27 +14,11 @@
 
 """Rules for test."""
 
-load("//kotlin:jvm_library.bzl", "kt_jvm_library")
-load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 load("//:visibility.bzl", "RULES_KOTLIN")
-
-def _kt_jvm_library_for_test(name, **kwargs):
-    kt_jvm_library(
-        name = name,
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-        **kwargs
-    )
-    return name
-
-def _java_library_for_test(name, **kwargs):
-    native.java_library(
-        name = name,
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
-        **kwargs
-    )
-    return name
+load("//kotlin:jvm_library.bzl", "kt_jvm_library")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
 rules_for_test = struct(
-    kt_jvm_library = _kt_jvm_library_for_test,
-    java_library = _java_library_for_test,
+    kt_jvm_library = kt_testing_rules.wrap_for_analysis(kt_jvm_library),
+    java_library = kt_testing_rules.wrap_for_analysis(native.java_library),
 )
