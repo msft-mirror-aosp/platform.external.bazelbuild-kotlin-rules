@@ -16,6 +16,7 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:jvm_library.bzl", "kt_jvm_library")
+load("//kotlin/common/testing:asserts.bzl", "kt_asserts")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file", "get_action", "get_arg")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
@@ -83,8 +84,13 @@ def _test_impl(ctx):
 
     if ctx.attr.expected_friend_jar_names != _DEFAULT_LIST:
         friend_paths_arg = get_arg(kt_2_java_compile, "-Xfriend-paths=")
-        friend_jar_names = [p.rsplit("/", 1)[1] for p in friend_paths_arg.split(",")] if friend_paths_arg else []
-        asserts.set_equals(env, sets.make(ctx.attr.expected_friend_jar_names), sets.make(friend_jar_names))
+        kt_asserts.list_matches(
+            env,
+            expected = ctx.attr.expected_friend_jar_names,
+            actual = ["/" + x for x in (friend_paths_arg.split(",") if friend_paths_arg else [])],
+            matcher = lambda expected, actual: actual.endswith(expected),
+            items_name = "friend JARs",
+        )
 
     asserts.equals(
         env,
@@ -93,20 +99,7 @@ def _test_impl(ctx):
         "Mismatch: Expected transitive_runtime_jars iff (neverlink == False)",
     )
 
-    for mnemonic in ctx.attr.required_mnemonics:
-        if mnemonic.startswith("-"):
-            mnemonic = mnemonic.removeprefix("-")
-            asserts.false(
-                env,
-                mnemonic in [a.mnemonic for a in actions],
-                "Found action with forbidden mnemonic " + mnemonic,
-            )
-        else:
-            asserts.true(
-                env,
-                mnemonic in [a.mnemonic for a in actions],
-                "Missing action with required mnemonic " + mnemonic,
-            )
+    kt_asserts.required_mnemonic_counts(env, ctx.attr.required_mnemonic_counts, actions)
 
     return analysistest.end(env)
 
@@ -142,7 +135,7 @@ _test = analysistest.make(
         expect_jdeps = attr.bool(default = True),
         expect_processor_classpath = attr.bool(),
         expect_neverlink = attr.bool(),
-        required_mnemonics = attr.string_list(
+        required_mnemonic_counts = attr.string_dict(
             doc = """
                 Mnemonics that must be registered (or must not be, if starting with '-').
             
@@ -628,7 +621,7 @@ def _test_kt_jvm_library_with_no_sources_with_exports():
         name = test_name,
         target_under_test = test_name + "_tut",
         expect_jdeps = False,
-        required_mnemonics = ["-KtAndroidLint"],
+        required_mnemonic_counts = {"KtAndroidLint": "0"},
     )
     return test_name
 
