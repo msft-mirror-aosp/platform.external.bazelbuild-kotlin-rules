@@ -93,6 +93,21 @@ def _test_impl(ctx):
         "Mismatch: Expected transitive_runtime_jars iff (neverlink == False)",
     )
 
+    for mnemonic in ctx.attr.required_mnemonics:
+        if mnemonic.startswith("-"):
+            mnemonic = mnemonic.removeprefix("-")
+            asserts.false(
+                env,
+                mnemonic in [a.mnemonic for a in actions],
+                "Found action with forbidden mnemonic " + mnemonic,
+            )
+        else:
+            asserts.true(
+                env,
+                mnemonic in [a.mnemonic for a in actions],
+                "Missing action with required mnemonic " + mnemonic,
+            )
+
     return analysistest.end(env)
 
 _test = analysistest.make(
@@ -124,8 +139,16 @@ _test = analysistest.make(
             doc = "Names of all runfiles",
             default = _DEFAULT_LIST,
         ),
+        expect_jdeps = attr.bool(default = True),
         expect_processor_classpath = attr.bool(),
         expect_neverlink = attr.bool(),
+        required_mnemonics = attr.string_list(
+            doc = """
+                Mnemonics that must be registered (or must not be, if starting with '-').
+            
+                No assertions are made about mnemonics absent from this list.
+            """,
+        ),
     ),
 )
 
@@ -581,11 +604,31 @@ def _test_kt_jvm_library_with_no_sources():
             "nobuilder",
         ],
     )
-    tut_label = str(Label("//tests/analysis:kt_jvm_library_with_no_sources_test_tut"))
     assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
-        msg_contains = "One of {srcs, common_srcs, exports, exported_plugins} of target " + tut_label + " must be non empty",
+        msg_contains = "One of {srcs, common_srcs, exports, exported_plugins} of target ",
+    )
+    return test_name
+
+def _test_kt_jvm_library_with_no_sources_with_exports():
+    test_name = "kt_jvm_library_with_no_sources_test_with_exports"
+
+    kt_jvm_library(
+        name = test_name + "_exp",
+        srcs = ["testinputs/Foo.java"],
+        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+    )
+    kt_jvm_library(
+        name = test_name + "_tut",
+        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
+        exports = [test_name + "_exp"],
+    )
+    _test(
+        name = test_name,
+        target_under_test = test_name + "_tut",
+        expect_jdeps = False,
+        required_mnemonics = ["-KtAndroidLint"],
     )
     return test_name
 
@@ -655,6 +698,7 @@ def test_suite(name):
             _test_kt_jvm_library_with_plugin(),
             _test_kt_jvm_library_with_proguard_specs(),
             _test_kt_jvm_library_with_resources(),
+            _test_kt_jvm_library_with_no_sources_with_exports(),
             _test_kt_jvm_library_coverage(),
         ],
     )

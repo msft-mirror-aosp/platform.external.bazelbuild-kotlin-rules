@@ -15,8 +15,6 @@
 """Common Kotlin definitions."""
 
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
-
-# go/keep-sorted start
 load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
 load("//kotlin/jvm/internal_do_not_use/util:srcjars.bzl", "kt_srcjars")
 load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
@@ -24,8 +22,8 @@ load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//bazel:stubs.bzl", "lint_actions")
 load("//bazel:stubs.bzl", "jspecify_flags")
+load("//bazel:stubs.bzl", "is_android_lint_exempt")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
-# go/keep-sorted end
 
 # TODO: Remove the _ALLOWED_*_RULES lists to determine which rules
 # are accepted dependencies to Kotlin rules as the approach does not scale
@@ -504,7 +502,6 @@ def _kt_jvm_library(
         common_srcs = [],
         coverage_srcs = [],
         java_android_lint_config = None,
-        force_android_lint = False,  # TODO Remove this param
         manifest = None,  # set for Android libs, otherwise None.
         merged_manifest = None,  # set for Android libs, otherwise None.
         resource_files = [],  # set for Android libs, otherwise empty.
@@ -718,7 +715,7 @@ def _kt_jvm_library(
     # TODO: Remove the is_android_library_without_kt_srcs condition once KtAndroidLint
     # uses the same lint checks with AndroidLint
 
-    if force_android_lint or not is_android_library_without_kt_srcs:
+    if (srcs or common_srcs or resource_files) and not is_android_lint_exempt(ctx):
         lint_flags = [
             "--java-language-level",  # b/159950410
             kt_toolchain.java_language_version,

@@ -39,7 +39,6 @@ def kt_jvm_compile(
         resource_files,
         exported_plugins,
         java_android_lint_config = None,
-        force_android_lint = False,  # TODO Remove this param
         manifest = None,
         merged_manifest = None,
         classpath_resources = [],
@@ -75,7 +74,6 @@ def kt_jvm_compile(
       resource_files: List of Files. The list of Android Resource files.
       exported_plugins: List of exported javac/kotlinc plugins
       java_android_lint_config: Android Lint XML config file to use if there are no Kotlin srcs
-      force_android_lint: Force AndroidLint action
       manifest: A File. The raw Android manifest. Optional.
       merged_manifest: A File. The merged Android manifest. Optional.
       classpath_resources: List of Files. The list of classpath resources (kt_jvm_library only).
@@ -187,7 +185,6 @@ def kt_jvm_compile(
             ),
         ),
         java_android_lint_config = java_android_lint_config,
-        force_android_lint = force_android_lint,
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,

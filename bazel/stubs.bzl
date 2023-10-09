@@ -25,6 +25,8 @@ is_forbidden_dep = _empty_fn
 
 is_exempt_dep = _empty_fn
 
+is_android_lint_exempt = _empty_fn
+
 DEFAULT_BUILTIN_PROCESSORS = [
     "com.google.android.apps.play.store.plugins.injectionentrypoint.InjectionEntryPointProcessor",
     "com.google.android.apps.play.store.plugins.interfaceaggregator.InterfaceAggregationProcessor",
