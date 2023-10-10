@@ -15,6 +15,7 @@
 """kt_for_analysis"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin:jvm_import.bzl", "kt_jvm_import")
 load("//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
@@ -22,7 +23,9 @@ visibility(RULES_KOTLIN)
 
 kt_for_analysis = struct(
     # go/keep-sorted start
+    java_import = kt_testing_rules.wrap_for_analysis(native.java_import),
     java_library = kt_testing_rules.wrap_for_analysis(native.java_library),
+    kt_jvm_import = kt_testing_rules.wrap_for_analysis(kt_jvm_import),
     kt_jvm_library = kt_testing_rules.wrap_for_analysis(kt_jvm_library),
     # go/keep-sorted end
 )
