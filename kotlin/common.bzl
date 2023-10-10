@@ -578,21 +578,9 @@ def _kt_jvm_library(
     java_plugin_datas = kt_codegen_processing_env.get("java_plugin_data_set", depset()).to_list()
     processors_for_java_srcs = kt_codegen_processing_env.get("processors_for_java_srcs", depset()).to_list()
     java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
-
-    out_jars = [
-        jar
-        for java_info in generative_deps
-        for jar in java_info.runtime_output_jars
-    ]
-
-    out_srcjars = [
-    ] if codegen_plugin_output else []
-
-    out_compilejars = [
-        jar
-        for java_info in generative_deps
-        for jar in java_info.compile_jars.to_list()
-    ]
+    out_jars = kt_codegen_processing_env.get("codegen_runtime_output_jars", [])
+    out_srcjars = kt_codegen_processing_env.get("codegen_source_jars", [])
+    out_compilejars = kt_codegen_processing_env.get("codegen_compile_jars", [])
 
     kt_hdrs = _derive_headers(
         ctx,
@@ -661,10 +649,8 @@ def _kt_jvm_library(
 
         javac_out = output if is_android_library_without_kt_srcs_without_generative_deps else file_factory.declare_file("-libjvm-java.jar")
 
-        annotation_plugins = list(plugins.java_plugin_infos)
-
-        # Enable annotation processing for java-only sources to enable data binding
-        enable_annotation_processing = True if processors_for_java_srcs else False
+        annotation_plugins = kt_codegen_processing_env.get("java_common_annotation_plugins", list(plugins.java_plugin_infos))
+        enable_annotation_processing = kt_codegen_processing_env.get("enable_java_common_annotation_processing", False)
 
         javac_java_info = java_common.compile(
             ctx,
