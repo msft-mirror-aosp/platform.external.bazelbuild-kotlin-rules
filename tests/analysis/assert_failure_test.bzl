@@ -17,4 +17,6 @@
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
+visibility(RULES_KOTLIN)
+
 assert_failure_test = kt_testing_rules.assert_failure_test

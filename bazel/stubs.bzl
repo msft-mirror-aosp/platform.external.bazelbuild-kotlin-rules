@@ -16,6 +16,8 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 
+visibility(RULES_KOTLIN)
+
 def _empty_fn(*_args, **_kwargs):
     pass
 

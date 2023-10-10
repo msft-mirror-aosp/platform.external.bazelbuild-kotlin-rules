@@ -16,6 +16,8 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 
+visibility(RULES_KOTLIN)
+
 def _get_jdeps(target, _ctx_rule):
     return [
         out.compile_jdeps

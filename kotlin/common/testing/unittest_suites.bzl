@@ -58,6 +58,8 @@ load("//:visibility.bzl", "RULES_KOTLIN")
 load("@bazel_skylib//lib:unittest.bzl", "unittest")
 load(":testing_rules.bzl", "kt_testing_rules")
 
+visibility(RULES_KOTLIN)
+
 def _create():
     """Create a new test suite.
 

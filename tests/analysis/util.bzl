@@ -18,6 +18,8 @@ load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin/common/testing:analysis.bzl", "kt_analysis")
 load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
+visibility(RULES_KOTLIN)
+
 # Mark targets that's aren't expected to build, but are needed for analysis test assertions.
 ONLY_FOR_ANALYSIS_TEST_TAGS = kt_testing_rules.ONLY_FOR_ANALYSIS_TAGS
 

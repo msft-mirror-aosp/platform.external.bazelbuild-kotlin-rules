@@ -24,6 +24,8 @@ load(":friend_labels.bzl", "kt_friend_labels_visitor")
 load(":java_plugin.bzl", "java_plugin_visitor")
 # go/keep-sorted end
 
+visibility(RULES_KOTLIN)
+
 # java_xxx_proto_library don't populate java_outputs but we can get them through
 # required_aspect_providers from their proto_library deps.
 _DEPS_AS_EXPORTS_RULES = [

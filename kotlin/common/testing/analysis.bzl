@@ -16,6 +16,8 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 
+visibility(RULES_KOTLIN)
+
 def _get_action(actions, mnemonic):
     """Get a specific action
 

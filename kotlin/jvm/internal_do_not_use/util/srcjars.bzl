@@ -19,6 +19,8 @@ load("//:visibility.bzl", "RULES_KOTLIN")
 load(":run_deploy_jar.bzl", "kt_run_deploy_jar")
 # go/keep-sorted end
 
+visibility(RULES_KOTLIN)
+
 def _zip(
         ctx,
         kt_jvm_toolchain,

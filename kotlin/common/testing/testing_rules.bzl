@@ -17,6 +17,8 @@
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 
+visibility(RULES_KOTLIN)
+
 # Mark targets that's aren't expected to build, but are needed for analysis test assertions.
 _ONLY_FOR_ANALYSIS_TAGS = ["manual", "nobuilder", "notap"]
 

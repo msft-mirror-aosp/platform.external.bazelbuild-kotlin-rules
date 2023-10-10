@@ -14,15 +14,17 @@
 
 """Kotlin kt_jvm_compile API test."""
 
-load("//kotlin:traverse_exports.bzl", "kt_traverse_exports")
-load("//kotlin:jvm_compile.bzl", "kt_jvm_compile")
+load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:common.bzl", "common")
+load("//kotlin:jvm_compile.bzl", "kt_jvm_compile")
+load("//kotlin:traverse_exports.bzl", "kt_traverse_exports")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_dir", "create_file")
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load(":assert_failure_test.bzl", "assert_failure_test")
-load("//:visibility.bzl", "RULES_KOTLIN")
+
+visibility(RULES_KOTLIN)
 
 def _impl(ctx):
     # As additional capabilites need to be tested, this rule should support

@@ -20,6 +20,8 @@ load("//kotlin/common/testing:asserts.bzl", "kt_asserts")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 
+visibility(RULES_KOTLIN)
+
 kt_jvm_library_analysis_test = analysistest.make(
     impl = lambda ctx: _kt_jvm_library_analysis_test_impl(ctx),
     attrs = dict(

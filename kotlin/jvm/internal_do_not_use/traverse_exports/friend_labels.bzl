@@ -14,10 +14,10 @@
 
 """kt_friend_labels_visitor"""
 
-# go/keep-sorted start
-load("//kotlin/common:is_eligible_friend.bzl", "is_eligible_friend")
 load("//:visibility.bzl", "RULES_KOTLIN")
-# go/keep-sorted end
+load("//kotlin/common:is_eligible_friend.bzl", "is_eligible_friend")
+
+visibility(RULES_KOTLIN)
 
 def _get_output_labels(target, _):
     return [target.label]

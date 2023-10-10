@@ -17,6 +17,8 @@
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 
+visibility(RULES_KOTLIN)
+
 def _get_exported_plugins(_target, ctx_rule):
     return [
         t[KtCompilerPluginInfo]

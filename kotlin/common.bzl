@@ -25,6 +25,8 @@ load("//bazel:stubs.bzl", "jspecify_flags")
 load("//bazel:stubs.bzl", "is_android_lint_exempt")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 
+visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
+
 # TODO: Remove the _ALLOWED_*_RULES lists to determine which rules
 # are accepted dependencies to Kotlin rules as the approach does not scale
 # because it will require a cl + release for every new rule.

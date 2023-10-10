@@ -21,6 +21,8 @@ load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load(":assert_failure_test.bzl", "assert_failure_test")
 
+visibility(RULES_KOTLIN)
+
 jvm_library_test = kt_jvm_library_analysis_test
 
 def _coverage_test_impl(ctx):

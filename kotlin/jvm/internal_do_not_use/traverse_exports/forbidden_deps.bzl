@@ -23,6 +23,8 @@ Currently this system recognizes:
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//bazel:stubs.bzl", "is_exempt_dep", "is_forbidden_dep")
 
+visibility(RULES_KOTLIN)
+
 def _error(target, msg):
     return (str(target.label), msg)
 

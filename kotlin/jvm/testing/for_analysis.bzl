@@ -18,6 +18,8 @@ load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:jvm_library.bzl", "kt_jvm_library")
 load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
+visibility(RULES_KOTLIN)
+
 kt_for_analysis = struct(
     # go/keep-sorted start
     java_library = kt_testing_rules.wrap_for_analysis(native.java_library),

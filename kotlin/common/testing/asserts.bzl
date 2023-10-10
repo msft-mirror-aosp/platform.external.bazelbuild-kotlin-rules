@@ -17,6 +17,8 @@
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("@bazel_skylib//lib:unittest.bzl", "asserts")
 
+visibility(RULES_KOTLIN)
+
 def _equals(a, b):
     return a == b
 

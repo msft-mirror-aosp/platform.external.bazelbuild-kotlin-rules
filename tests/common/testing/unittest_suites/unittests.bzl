@@ -17,6 +17,8 @@
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin/common/testing:unittest_suites.bzl", "kt_unittest_suites")
 
+visibility(RULES_KOTLIN)
+
 unittests = kt_unittest_suites.create()
 
 def _add_private_test_case(_ctx, _env):

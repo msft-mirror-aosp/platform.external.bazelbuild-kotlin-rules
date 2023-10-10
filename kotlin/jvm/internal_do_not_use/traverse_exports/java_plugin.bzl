@@ -21,6 +21,8 @@ from the way that java targets handles plugins.
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 
+visibility(RULES_KOTLIN)
+
 def _get_java_plugins(_target, ctx_rule):
     return [
         t[JavaPluginInfo].plugins

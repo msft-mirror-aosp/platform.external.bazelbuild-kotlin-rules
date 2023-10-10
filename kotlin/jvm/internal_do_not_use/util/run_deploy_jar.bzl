@@ -19,6 +19,8 @@ load("//:visibility.bzl", "RULES_KOTLIN")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 # go/keep-sorted end
 
+visibility(RULES_KOTLIN)
+
 def kt_run_deploy_jar(
         ctx,
         java_runtime,

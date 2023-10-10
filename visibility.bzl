@@ -18,6 +18,8 @@ RULES_KOTLIN = [
     "//...",
 ]
 
+visibility(RULES_KOTLIN)
+
 TOOLS_KOTLIN = [
 ]
 

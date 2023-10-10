@@ -14,8 +14,10 @@
 
 """A fake impl of kt_compiler_plugin."""
 
-load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
+
+visibility(RULES_KOTLIN)
 
 def _kt_fake_compiler_plugin_impl(ctx):
     return [
