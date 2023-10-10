@@ -14,14 +14,16 @@
 
 """Common Kotlin definitions."""
 
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+
 # go/keep-sorted start
 load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
 load("//kotlin/jvm/internal_do_not_use/util:srcjars.bzl", "kt_srcjars")
 load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
-load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//bazel:stubs.bzl", "lint_actions")
+load("//bazel:stubs.bzl", "jspecify_flags")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
 # go/keep-sorted end
 
@@ -84,7 +86,7 @@ def _get_common_and_user_kotlinc_args(ctx, toolchain, extra_kotlinc_args):
         # Set module name so module-level metadata is preserved when merging Jars (b/139403883)
         "-module-name",
         _derive_module_name(ctx),
-    ] + extra_kotlinc_args
+    ] + jspecify_flags(ctx) + extra_kotlinc_args
 
 def _kt_plugins_map(
         android_lint_rulesets = [],
@@ -196,7 +198,9 @@ def _run_kotlinc(
         mnemonic = mnemonic,
         progress_message = message_prefix + str(_get_original_kt_target_label(ctx)),
         execution_requirements = {
-            "local": "1",  # Ensure comparable results across runs (cold builds, same machine)
+            # Ensure comparable results across runs (cold builds, same machine)
+            "no-cache": "1",
+            "no-remote": "1",
         } if toolchain.is_profiling_enabled(ctx.label) else {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
@@ -499,6 +503,8 @@ def _kt_jvm_library(
         srcs = [],
         common_srcs = [],
         coverage_srcs = [],
+        java_android_lint_config = None,
+        force_android_lint = False,  # TODO Remove this param
         manifest = None,  # set for Android libs, otherwise None.
         merged_manifest = None,  # set for Android libs, otherwise None.
         resource_files = [],  # set for Android libs, otherwise empty.
@@ -532,30 +538,33 @@ def _kt_jvm_library(
     file_factory = FileFactory(ctx, output)
     static_deps = list(deps)  # Defensive copy
 
-    kt_codegen_processing_env = dict(
-        processors_for_kt_codegen_processing = depset(),
-        processors_for_legacy_kapt = [],
-        codegen_output_java_infos = [],
-        java_plugin_datas_legacy = [],
-        legacy_java_plugin_classpaths = depset(),
-    )
+    kt_codegen_processing_env = dict()
+    codegen_plugin_output = None
 
-    kt_codegen_processors = kt_codegen_processing_env["processors_for_kt_codegen_processing"]
-    generative_deps = kt_codegen_processing_env["codegen_output_java_infos"]
+    kt_codegen_processors = kt_codegen_processing_env.get("processors_for_kt_codegen_processing", depset()).to_list()
+    codegen_tags = kt_codegen_processing_env.get("codegen_tags", [])
+    generative_deps = kt_codegen_processing_env.get("codegen_output_java_infos", depset()).to_list()
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
+
+    is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs and not common_srcs
+    is_android_library_without_kt_srcs_without_generative_deps = is_android_library_without_kt_srcs and not generative_deps
 
     # TODO: Remove this special case
     if kt_srcs and ("flogger" in [p.plugin_id for p in plugins.kt_compiler_plugin_infos]):
         static_deps.append(kt_toolchain.flogger_runtime)
 
-    if kt_srcs or common_srcs or rule_family != _RULE_FAMILY.ANDROID_LIBRARY:
+    if not is_android_library_without_kt_srcs_without_generative_deps:
         static_deps.extend(kt_toolchain.kotlin_libs)
 
     # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
-    if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or kt_srcs:
-        _check_srcs_package(ctx.label.package, srcs, "srcs")
+    if not is_android_library_without_kt_srcs:
+        if "check_srcs_package_against_kt_srcs_only" in codegen_tags:
+            _check_srcs_package(ctx.label.package, kt_srcs, "srcs")
+        else:
+            _check_srcs_package(ctx.label.package, srcs, "srcs")
+
         _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
         _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
@@ -567,13 +576,24 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas_legacy = kt_codegen_processing_env["java_plugin_datas_legacy"]
-    legacy_kapt_processors = kt_codegen_processing_env["processors_for_legacy_kapt"]
-    legacy_java_plugin_classpaths = kt_codegen_processing_env["legacy_java_plugin_classpaths"]
+    java_plugin_datas = kt_codegen_processing_env.get("java_plugin_data_set", depset()).to_list()
+    processors_for_java_srcs = kt_codegen_processing_env.get("processors_for_java_srcs", depset()).to_list()
+    java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
 
-    out_jars = []
-    out_srcjars = []
-    out_compilejars = []
+    out_jars = [
+        jar
+        for java_info in generative_deps
+        for jar in java_info.runtime_output_jars
+    ]
+
+    out_srcjars = [
+    ] if codegen_plugin_output else []
+
+    out_compilejars = [
+        jar
+        for java_info in generative_deps
+        for jar in java_info.compile_jars.to_list()
+    ]
 
     kt_hdrs = _derive_headers(
         ctx,
@@ -629,10 +649,9 @@ def _kt_jvm_library(
 
     javac_java_info = None
     java_native_headers_jar = None
-    is_android_library_without_kt_srcs = rule_family == _RULE_FAMILY.ANDROID_LIBRARY and not kt_srcs
 
     if java_srcs or java_syncer.srcjars or classpath_resources:
-        javac_deps = extended_deps  # Defensive copy
+        javac_deps = list(extended_deps)  # Defensive copy
         if kotlinc_result:
             javac_deps.append(kotlinc_result.java_info)
             if ctx.coverage_instrumented():
@@ -641,12 +660,12 @@ def _kt_jvm_library(
                 # (which doesn't contain instrumentation). See b/117897097.
                 javac_deps.append(kt_toolchain.coverage_runtime)
 
-        javac_out = output if is_android_library_without_kt_srcs else file_factory.declare_file("-java.jar")
+        javac_out = output if is_android_library_without_kt_srcs_without_generative_deps else file_factory.declare_file("-libjvm-java.jar")
 
         annotation_plugins = list(plugins.java_plugin_infos)
 
         # Enable annotation processing for java-only sources to enable data binding
-        enable_annotation_processing = not kt_srcs
+        enable_annotation_processing = True if processors_for_java_srcs else False
 
         javac_java_info = java_common.compile(
             ctx,
@@ -655,7 +674,7 @@ def _kt_jvm_library(
             resources = classpath_resources_non_dirs,
             # For targets that are not android_library with java-only srcs, exports will be passed
             # to the final constructed JavaInfo.
-            exports = exports if is_android_library_without_kt_srcs else [],
+            exports = exports if is_android_library_without_kt_srcs_without_generative_deps else [],
             output = javac_out,
             exported_plugins = exported_plugins,
             deps = javac_deps,
@@ -674,7 +693,7 @@ def _kt_jvm_library(
 
         # Directly return the JavaInfo from java.compile() for java-only android_library targets
         # to avoid creating a new JavaInfo. See b/239847857 for additional context.
-        if is_android_library_without_kt_srcs:
+        if is_android_library_without_kt_srcs_without_generative_deps:
             return struct(
                 java_info = javac_java_info,
                 validations = [],
@@ -687,17 +706,9 @@ def _kt_jvm_library(
 
     java_gensrcjar = None
     java_genjar = None
-    if kt_codegen_processors:
-        java_gen_srcjars = kt_codegen_processing_env["java_gen_srcjar"]
-        kt_gen_srcjars = kt_codegen_processing_env["kt_gen_srcjar"]
-        java_gensrcjar = file_factory.declare_file("-java_info_generated_source_jar.srcjar")
-        _singlejar(
-            ctx,
-            inputs = java_gen_srcjars + kt_gen_srcjars,
-            output = java_gensrcjar,
-            singlejar = java_toolchain.single_jar,
-            mnemonic = "JavaInfoGeneratedSourceJar",
-        )
+
+    if codegen_plugin_output:
+        pass
 
     elif javac_java_info:
         java_gensrcjar = javac_java_info.annotation_processing.source_jar
@@ -715,7 +726,8 @@ def _kt_jvm_library(
     # TODO: Remove the is_android_library_without_kt_srcs condition once KtAndroidLint
     # uses the same lint checks with AndroidLint
 
-    if not is_android_library_without_kt_srcs:
+    disable_lint_checks = disable_lint_checks + kt_codegen_processing_env.get("disabled_lint_checks", [])
+    if force_android_lint or not is_android_library_without_kt_srcs:
         lint_flags = [
             "--java-language-level",  # b/159950410
             kt_toolchain.java_language_version,
@@ -743,12 +755,12 @@ def _kt_jvm_library(
             merged_manifest = merged_manifest,
             resource_files = resource_files,
             baseline_file = androidlint_toolchains.get_baseline(ctx),
-            config = kt_toolchain.android_lint_config,
+            config = (None if (kt_srcs or common_srcs) else java_android_lint_config) or kt_toolchain.android_lint_config,
             android_lint_rules = plugins.android_lint_rulesets + [
-                lint_actions.AndroidLintRulesetInfo(singlejars = legacy_java_plugin_classpaths),
+                lint_actions.AndroidLintRulesetInfo(singlejars = java_plugin_classpaths_for_java_srcs),
             ],
             lint_flags = lint_flags,
-            extra_input_depsets = [p.processor_data for p in java_plugin_datas_legacy] + [depset([java_genjar] if java_genjar else [])],
+            extra_input_depsets = [p.processor_data for p in java_plugin_datas],
             testonly = testonly,
             android_java8_libs = kt_toolchain.android_java8_apis_desugared,
             mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
@@ -881,6 +893,7 @@ def _validate_proguard_specs(
 
         ctx.actions.run(
             executable = proguard_allowlister,
+            toolchain = kt_jvm_toolchains.type,
             arguments = [args],
             inputs = [proguard_spec],
             outputs = [validated_proguard_spec],

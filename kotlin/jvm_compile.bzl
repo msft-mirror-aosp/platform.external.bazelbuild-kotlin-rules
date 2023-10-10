@@ -14,11 +14,11 @@
 
 """Compile method that can compile kotlin or java sources"""
 
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//bazel:stubs.bzl", "lint_actions")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
-load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
-load("//bazel:stubs.bzl", "lint_actions")
 
 _RULE_FAMILY = common.RULE_FAMILY
 
@@ -38,6 +38,8 @@ def kt_jvm_compile(
         android_lint_plugins,
         resource_files,
         exported_plugins,
+        java_android_lint_config = None,
+        force_android_lint = False,  # TODO Remove this param
         manifest = None,
         merged_manifest = None,
         classpath_resources = [],
@@ -72,6 +74,8 @@ def kt_jvm_compile(
         execute as a part of linting.
       resource_files: List of Files. The list of Android Resource files.
       exported_plugins: List of exported javac/kotlinc plugins
+      java_android_lint_config: Android Lint XML config file to use if there are no Kotlin srcs
+      force_android_lint: Force AndroidLint action
       manifest: A File. The raw Android manifest. Optional.
       merged_manifest: A File. The merged Android manifest. Optional.
       classpath_resources: List of Files. The list of classpath resources (kt_jvm_library only).
@@ -182,6 +186,8 @@ def kt_jvm_compile(
                 common.collect_providers(KtCompilerPluginInfo, plugins)
             ),
         ),
+        java_android_lint_config = java_android_lint_config,
+        force_android_lint = force_android_lint,
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,
