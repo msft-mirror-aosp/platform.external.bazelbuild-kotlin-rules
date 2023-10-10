@@ -15,11 +15,9 @@
 """Kotlin kt_jvm_import rule tests."""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
-load("//kotlin:jvm_import.bzl", "kt_jvm_import")
-load("//kotlin:jvm_library.bzl", "kt_jvm_library")
-load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
+load("//kotlin/jvm/testing:for_analysis.bzl", ktfa = "kt_for_analysis")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
-load(":assert_failure_test.bzl", "assert_failure_test")
 
 visibility(RULES_KOTLIN)
 
@@ -45,7 +43,7 @@ def _test_kt_jvm_import():
         name = "jar1",
         srcs = [],
     )
-    kt_jvm_import(
+    ktfa.kt_jvm_import(
         name = test_name + "_tut",
         jars = [
             "libjar1.jar",
@@ -64,7 +62,7 @@ def _test_kt_jvm_import_no_srcjar():
         name = "jar3",
         srcs = [],
     )
-    kt_jvm_import(
+    ktfa.kt_jvm_import(
         name = test_name + "_tut",
         jars = [
             "libjar3.jar",
@@ -87,7 +85,7 @@ def _test_kt_jvm_import_with_srcjar_ext():
         cmd = "touch $@",
         outs = ["libjar2.srcjar"],
     )
-    kt_jvm_import(
+    ktfa.kt_jvm_import(
         name = test_name + "_tut",
         jars = [
             "libjar2.jar",
@@ -106,7 +104,7 @@ def _test_kt_jvm_import_with_runtime_deps():
         name = test_name + "_dep",
         srcs = [],
     )
-    kt_jvm_import(
+    ktfa.kt_jvm_import(
         name = test_name + "_tut",
         jars = [
             "lib%s_dep.jar" % test_name,
@@ -128,13 +126,13 @@ def _test_kt_jvm_import_with_proguard_specs():
         srcs = [],
     )
 
-    kt_jvm_import(
+    ktfa.kt_jvm_import(
         name = test_name + "_tut",
         jars = [
             "lib%s_jar.jar" % test_name,
         ],
         proguard_specs = [
-            create_file(
+            kt_testing_rules.create_file(
                 name = test_name + "/salutations.pgcfg",
                 content = """
 -keep class * {

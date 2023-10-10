@@ -15,11 +15,10 @@
 """Kotlin kt_jvm_library rule tests."""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
-load("//kotlin:jvm_library.bzl", "kt_jvm_library")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
+load("//kotlin/jvm/testing:for_analysis.bzl", ktfa = "kt_for_analysis")
 load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
-load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_file")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
-load(":assert_failure_test.bzl", "assert_failure_test")
 
 visibility(RULES_KOTLIN)
 
@@ -51,7 +50,7 @@ _coverage_test = analysistest.make(
 
 def _test_kt_jvm_library_with_proguard_specs():
     test_name = "kt_jvm_library_with_proguard_specs_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -59,7 +58,7 @@ package test
 fun greeting(): String = "Hello World!"
 """,
     )
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/salutations.pgcfg",
         content = """
 -keep class * {
@@ -67,7 +66,7 @@ fun greeting(): String = "Hello World!"
 }
 """,
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -84,7 +83,7 @@ fun greeting(): String = "Hello World!"
 
 def _test_kt_jvm_library_with_resources():
     test_name = "kt_jvm_library_with_resources_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -92,13 +91,13 @@ package test
 fun greeting(): String = "Hello World!"
 """,
     )
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/salutations.txt",
         content = """
 Hi!
 """,
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -116,7 +115,7 @@ Hi!
 
 def _test_kt_jvm_library_with_plugin():
     test_name = "kt_jvm_library_with_plugin_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -125,7 +124,7 @@ fun greeting(): String = "Hello World!"
 """,
     )
 
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -149,11 +148,10 @@ def _test_kt_jvm_library_no_kt_srcs_with_plugin():
         processor_class = test_name,
         srcs = ["testinputs/Foo.java"],  # induce processor_classpath
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = ["testinputs/Bar.java"],
         plugins = [":%s_plugin" % test_name],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
     kt_jvm_library_analysis_test(
         name = test_name,
@@ -165,7 +163,7 @@ def _test_kt_jvm_library_no_kt_srcs_with_plugin():
 
 def _test_kt_jvm_library_with_non_processor_plugin():
     test_name = "kt_jvm_library_with_non_processor_plugin_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -179,7 +177,7 @@ fun greeting(): String = "Hello World!"
         name = "%s_plugin" % test_name,
         srcs = ["testinputs/Foo.java"],
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -197,7 +195,7 @@ fun greeting(): String = "Hello World!"
 
 def _test_kt_jvm_library_with_exported_plugin():
     test_name = "kt_jvm_library_with_exported_plugin_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -209,7 +207,7 @@ fun greeting(): String = "Hello World!"
         name = "%s_plugin" % test_name,
         processor_class = test_name,
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -227,7 +225,7 @@ fun greeting(): String = "Hello World!"
 
 def _test_kt_jvm_library_dep_on_exported_plugin():
     test_name = "kt_jvm_library_dep_on_exported_plugin_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -241,18 +239,17 @@ fun greeting(): String = "Hello World!"
         processor_class = test_name,
         srcs = ["testinputs/Foo.java"],  # induce processor_classpath
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = "%s_exports_plugin" % test_name,
         srcs = [test_name + "/Salutations.kt"],
         exported_plugins = [":%s_plugin" % test_name],
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
         ],
         deps = [":%s_exports_plugin" % test_name],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
 
     kt_jvm_library_analysis_test(
@@ -265,7 +262,7 @@ fun greeting(): String = "Hello World!"
 
 def _test_kt_jvm_library_java_dep_on_exported_plugin():
     test_name = "kt_jvm_library_java_dep_on_exported_plugin_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -282,13 +279,12 @@ fun greeting(): String = "Hello World!"
         name = "%s_exports_plugin" % test_name,
         exported_plugins = [":%s_plugin" % test_name],
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
         ],
         deps = [":%s_exports_plugin" % test_name],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
 
     kt_jvm_library_analysis_test(
@@ -301,7 +297,7 @@ fun greeting(): String = "Hello World!"
 
 def _test_kt_jvm_library_with_exports():
     test_name = "kt_jvm_library_with_exports_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -309,7 +305,7 @@ package test
 fun greeting(): String = "Hello World!"
 """,
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_exp",
         srcs = [test_name + "/Salutations.kt"],
     )
@@ -317,7 +313,7 @@ fun greeting(): String = "Hello World!"
         name = test_name + "_javaexp",
         srcs = ["testinputs/Foo.java"],  # need file here so we get a Jar
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -340,7 +336,7 @@ fun greeting(): String = "Hello World!"
 
 def _test_kt_jvm_library_with_export_that_exports_plugin():
     test_name = "kt_jvm_library_with_export_that_exports_plugin_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -353,12 +349,12 @@ fun greeting(): String = "Hello World!"
         processor_class = test_name,
         srcs = ["testinputs/Foo.java"],  # induce processor_classpath
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = "%s_exports_plugin" % test_name,
         exported_plugins = [":%s_plugin" % test_name],
         srcs = [test_name + "/Salutations.kt"],
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -378,7 +374,7 @@ fun greeting(): String = "Hello World!"
 
 def _test_kt_jvm_library_with_java_export_that_exports_plugin():
     test_name = "kt_jvm_library_with_java_export_that_exports_plugin_test"
-    create_file(
+    kt_testing_rules.create_file(
         name = test_name + "/Salutations.kt",
         content = """
 package test
@@ -395,7 +391,7 @@ fun greeting(): String = "Hello World!"
         name = "%s_exports_plugin" % test_name,
         exported_plugins = [":%s_plugin" % test_name],
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [
             test_name + "/Salutations.kt",
@@ -416,7 +412,7 @@ fun greeting(): String = "Hello World!"
 def _test_forbidden_nano_dep():
     test_name = "kt_jvm_library_forbidden_nano_test"
 
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [test_name + "/Ignored.kt"],
         deps = [test_name + "_fake_nano_proto_lib"],
@@ -430,7 +426,7 @@ def _test_forbidden_nano_dep():
         srcs = [],
                 tags = ["nano_proto_library"],
     )
-    assert_failure_test(
+    kt_testing_rules.assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         msg_contains = test_name + "_fake_nano_proto_lib : nano_proto_library",
@@ -440,7 +436,7 @@ def _test_forbidden_nano_dep():
 def _test_forbidden_nano_export():
     test_name = "kt_jvm_library_forbidden_nano_export_test"
 
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = [test_name + "/Ignored.kt"],
         deps = [test_name + "_export"],
@@ -458,7 +454,7 @@ def _test_forbidden_nano_export():
         srcs = [],
                 tags = ["nano_proto_library"],
     )
-    assert_failure_test(
+    kt_testing_rules.assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         msg_contains = test_name + "_fake_nano_proto_lib : nano_proto_library",
@@ -468,14 +464,14 @@ def _test_forbidden_nano_export():
 def _test_kt_jvm_library_with_no_sources():
     test_name = "kt_jvm_library_with_no_sources_test"
 
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         tags = [
             "manual",
             "nobuilder",
         ],
     )
-    assert_failure_test(
+    kt_testing_rules.assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_tut",
         msg_contains = "One of {srcs, common_srcs, exports, exported_plugins} of target ",
@@ -485,14 +481,12 @@ def _test_kt_jvm_library_with_no_sources():
 def _test_kt_jvm_library_with_no_sources_with_exports():
     test_name = "kt_jvm_library_with_no_sources_test_with_exports"
 
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_exp",
         srcs = ["testinputs/Foo.java"],
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
-        tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
         exports = [test_name + "_exp"],
     )
     kt_jvm_library_analysis_test(
@@ -505,7 +499,7 @@ def _test_kt_jvm_library_with_no_sources_with_exports():
 
 def _test_kt_jvm_library_coverage():
     test_name = "kt_jvm_library_coverage"
-    kt_jvm_library(
+    ktfa.kt_jvm_library(
         name = test_name + "_tut",
         srcs = ["testinputs/Srcs.kt"],
         common_srcs = ["testinputs/CommonSrcs.kt"],

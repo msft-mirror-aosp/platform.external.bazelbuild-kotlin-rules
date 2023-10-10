@@ -13,7 +13,11 @@
 # limitations under the License.
 
 load("//kotlin:compiler_plugin.bzl", "kt_compiler_plugin")
-load("//tests/analysis:assert_failure_test.bzl", "assert_failure_test")
-load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
+
+package(
+    default_applicable_licenses = ["//:license"],
+    default_testonly = True,
+)
 
 licenses(["notice"])

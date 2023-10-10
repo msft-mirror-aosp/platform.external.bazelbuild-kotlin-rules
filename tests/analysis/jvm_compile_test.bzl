@@ -18,11 +18,11 @@ load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:common.bzl", "common")
 load("//kotlin:jvm_compile.bzl", "kt_jvm_compile")
 load("//kotlin:traverse_exports.bzl", "kt_traverse_exports")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS", "create_dir", "create_file")
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
-load(":assert_failure_test.bzl", "assert_failure_test")
 
 visibility(RULES_KOTLIN)
 
@@ -179,7 +179,7 @@ fun bar(): String = "Bar"
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
         r_java = ":foo",
     )
-    assert_failure_test(
+    kt_testing_rules.assert_failure_test(
         name = test_name,
         target_under_test = ":kt_jvm_compile_with_illegal_r_java",
         msg_contains = "illegal dependency provided for r_java",
@@ -276,7 +276,7 @@ def _test_kt_jvm_compile_without_srcs_for_jvm():
         exports = [],
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
-    assert_failure_test(
+    kt_testing_rules.assert_failure_test(
         name = test_name,
         target_under_test = ":kt_jvm_compile_without_srcs_for_jvm",
         msg_contains = "Expected one of (srcs, common_srcs, exports) is not empty",
@@ -371,7 +371,7 @@ def _test_kt_jvm_compile_unsupported_src_artifacts():
         tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     )
 
-    assert_failure_test(
+    kt_testing_rules.assert_failure_test(
         name = test_name,
         target_under_test = test_name + "_unexpected_lib",
         msg_contains = "/src.unexpected",
