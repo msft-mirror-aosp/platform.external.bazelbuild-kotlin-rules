@@ -15,7 +15,6 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 package(
-    default_applicable_licenses = ["//:license"],
     default_testonly = True,
     default_visibility = ["//:internal"],
 )

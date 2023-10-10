@@ -31,7 +31,7 @@ def FileFactory(ctx, base):
         FileFactory
     """
 
-    if type(base) == "File":
+    if type(base) != "string":
         base = _scrub_base_file(ctx, base)
 
     def declare_directory(suffix):

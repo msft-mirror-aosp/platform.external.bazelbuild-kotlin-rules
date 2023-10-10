@@ -25,3 +25,9 @@ package_group(
         "//...",
     ],
 )
+
+bzl_library(
+    name = "visibility_bzl",
+    srcs = ["visibility.bzl"],
+    visibility = [":internal"],
+)

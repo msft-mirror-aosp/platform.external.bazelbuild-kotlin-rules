@@ -12,30 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load(":happy_test.bzl", "file_factory_happy_test")
-load(":check_base_file_valid.bzl", "check_base_file_valid")
-load("//tests/analysis:assert_failure_test.bzl", "assert_failure_test")
+load(":unittests.bzl", "unittests")
+
+package(
+    default_testonly = True,
+)
 
 licenses(["notice"])
 
-file_factory_happy_test(
-    name = "happy_test",
-)
-
-assert_failure_test(
-    name = "base_without_extension_test",
-    msg_contains = "file must have an extension",
-    target_under_test = check_base_file_valid(
-        name = "base_without_extension",
-        base_file = "BUILD",
-    ),
-)
-
-assert_failure_test(
-    name = "base_from_other_package_test",
-    msg_contains = "file must be from ctx package",
-    target_under_test = check_base_file_valid(
-        name = "base_from_other_package",
-        base_file = "//tests/analysis/internal_do_not_use/util/file_factory/sub",
-    ),
+unittests.render(
+    name = "unittests",
 )

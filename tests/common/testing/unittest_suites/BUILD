@@ -12,11 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load(":unittests.bzl", "unittests")
+
+package(
+    default_testonly = True,
+)
+
 licenses(["notice"])
 
-genrule(
-    name = "sub",
-    outs = ["sub.txt"],
-    cmd = "touch $(OUTS)",
-    visibility = ["//tests/analysis/internal_do_not_use/util/file_factory:__pkg__"],
+unittests.render(
+    name = "unittests",
+)
+
+bzl_library(
+    name = "unittests_bzl",
+    srcs = ["unittests.bzl"],
+    deps = ["//kotlin/common/testing:testing_bzl"],
 )
