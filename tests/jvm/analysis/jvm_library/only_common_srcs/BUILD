@@ -13,28 +13,21 @@
 # limitations under the License.
 
 load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
-load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
+load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
 
 package(
+    default_applicable_licenses = ["//:license"],
     default_testonly = True,
 )
 
 licenses(["notice"])
 
-kt_for_analysis.java_library(
-    name = "runtime_deps_test_dep",
-    srcs = [],
-)
-
-jvm_library_test(
-    name = "runtime_deps_test",
+kt_jvm_library_analysis_test(
+    name = "only_common_srcs_test",
     target_under_test = kt_for_analysis.kt_jvm_library(
-        name = "runtime_deps",
-        srcs = [
+        name = "only_common_srcs",
+        common_srcs = [
             "Input.kt",
-        ],
-        runtime_deps = [
-            ":runtime_deps_test_dep",
         ],
     ),
 )

@@ -22,8 +22,6 @@ load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 
 visibility(RULES_KOTLIN)
 
-jvm_library_test = kt_jvm_library_analysis_test
-
 def _coverage_test_impl(ctx):
     env = analysistest.begin(ctx)
     target_under_test = analysistest.target_under_test(env)

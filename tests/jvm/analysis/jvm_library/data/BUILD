@@ -13,20 +13,29 @@
 # limitations under the License.
 
 load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
-load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
+load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
 
 package(
+    default_applicable_licenses = ["//:license"],
     default_testonly = True,
 )
 
 licenses(["notice"])
 
-jvm_library_test(
-    name = "no_kt_srcs_test",
+kt_jvm_library_analysis_test(
+    name = "data_test",
+    expected_runfile_names = [
+        "data.txt",
+        # libX.jar is always in data_runfiles as well - just append it.
+        "libdata.jar",
+    ],
     target_under_test = kt_for_analysis.kt_jvm_library(
-        name = "no_kt_srcs",
+        name = "data",
         srcs = [
-            "Input.java",
+            "Input.kt",
+        ],
+        data = [
+            "data.txt",
         ],
     ),
 )
