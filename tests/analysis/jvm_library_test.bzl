@@ -479,7 +479,7 @@ def _test_kt_jvm_library_with_no_sources():
     return test_name
 
 def _test_kt_jvm_library_with_no_sources_with_exports():
-    test_name = "kt_jvm_library_with_no_sources_test_with_exports"
+    test_name = "kt_jvm_library_with_no_sources_with_exports_test"
 
     ktfa.kt_jvm_library(
         name = test_name + "_exp",

@@ -16,6 +16,7 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load(":analysis.bzl", "kt_analysis")
 
 visibility(RULES_KOTLIN)
 
@@ -51,6 +52,8 @@ _assert_failure_test = analysistest.make(
 )
 
 def _assert_failure_test_impl(ctx):
+    kt_analysis.check_endswith_test(ctx)
+
     env = analysistest.begin(ctx)
     asserts.expect_failure(env, ctx.attr.msg_contains)
     return analysistest.end(env)

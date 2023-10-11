@@ -73,9 +73,22 @@ def _get_arg(action, arg_name, style = "trim"):
     else:
         fail("Unrecognized arg style '%s" % style)
 
+def _check_endswith_test(ctx):
+    name = ctx.label.name
+    for i in range(0, 10):
+        # TODO: Remove support for suffix digits
+        if name.endswith(str(i)):
+            name = name.removesuffix(str(i))
+            break
+    if name.endswith("_test"):
+        return
+
+    fail("Analysis test names must end in '_test'")
+
 kt_analysis = struct(
     # go/keep-sorted start
     DEFAULT_LIST = ["__default__"],
+    check_endswith_test = _check_endswith_test,
     get_action = _get_action,
     get_arg = _get_arg,
     # go/keep-sorted end

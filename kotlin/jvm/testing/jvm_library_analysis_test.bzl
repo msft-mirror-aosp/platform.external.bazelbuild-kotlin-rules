@@ -61,6 +61,8 @@ kt_jvm_library_analysis_test = analysistest.make(
 )
 
 def _kt_jvm_library_analysis_test_impl(ctx):
+    kt_analysis.check_endswith_test(ctx)
+
     env = analysistest.begin(ctx)
     actual = ctx.attr.target_under_test
 
