@@ -12,4 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
--167606518
+load("//kotlin/jvm/testing:for_analysis.bzl", ktfa = "kt_for_analysis")
+load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
+
+package(
+    default_applicable_licenses = ["//:license"],
+    default_testonly = True,
+)
+
+licenses(["notice"])
+
+kt_jvm_library_analysis_test(
+    name = "has_resources_test",
+    target_under_test = ktfa.kt_jvm_library(
+        name = "has_resources",
+        srcs = ["Input.kt"],
+        resources = ["resource.txt"],
+    ),
+)

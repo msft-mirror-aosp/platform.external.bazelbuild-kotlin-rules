@@ -23,6 +23,7 @@ visibility(RULES_KOTLIN)
 
 kt_for_analysis = struct(
     # go/keep-sorted start
+    java_binary = kt_testing_rules.wrap_for_analysis(native.java_binary),
     java_import = kt_testing_rules.wrap_for_analysis(native.java_import),
     java_library = kt_testing_rules.wrap_for_analysis(native.java_library),
     kt_jvm_import = kt_testing_rules.wrap_for_analysis(kt_jvm_import),

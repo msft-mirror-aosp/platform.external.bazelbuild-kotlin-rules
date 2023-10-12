@@ -14,7 +14,6 @@
 
 load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 load("//kotlin/jvm/testing:for_analysis.bzl", ktfa = "kt_for_analysis")
-load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
 
 package(
     default_applicable_licenses = ["//:license"],
@@ -24,46 +23,32 @@ package(
 licenses(["notice"])
 
 kt_testing_rules.assert_failure_test(
-    name = "no_srcs_test",
-    msg_contains = "Expected a source-bearing or an export-oriented target",
+    name = "has_forbidden_nano_dep_test",
+    msg_contains = "fake_nano_proto_lib",
     target_under_test = ktfa.kt_jvm_library(
-        name = "no_srcs",
-        srcs = [],
+        name = "has_forbidden_nano_dep",
+        srcs = ["Inputs.kt"],
+        deps = [":fake_nano_proto_lib"],
     ),
 )
 
-kt_jvm_library_analysis_test(
-    name = "no_srcs_with_exports_test",
-    expect_jdeps = False,
-    required_mnemonic_counts = {"KtAndroidLint": "0"},
+kt_testing_rules.assert_failure_test(
+    name = "dep_on_has_forbidden_nano_export_test",
+    msg_contains = "fake_nano_proto_lib",
     target_under_test = ktfa.kt_jvm_library(
-        name = "no_srcs_with_exports",
-        srcs = [],
-        exports = [
-            ktfa.kt_jvm_library(
-                name = "no_srcs_with_exports_export",
-                srcs = ["Input.kt"],
+        name = "dep_on_has_forbidden_nano_export",
+        srcs = ["Input.kt"],
+        deps = [
+            ktfa.java_library(
+                name = "has_forbidden_nano_export",
+                exports = [":fake_nano_proto_lib"],
             ),
         ],
     ),
 )
 
-kt_jvm_library_analysis_test(
-    name = "only_kt_srcs_test",
-    target_under_test = ktfa.kt_jvm_library(
-        name = "only_kt_srcs",
-        srcs = [
-            "Input.kt",
-        ],
-    ),
-)
-
-kt_jvm_library_analysis_test(
-    name = "only_java_srcs_test",
-    target_under_test = ktfa.kt_jvm_library(
-        name = "only_java_srcs",
-        srcs = [
-            "Input.java",
-        ],
-    ),
+ktfa.java_library(
+    name = "fake_nano_proto_lib",
+    srcs = [],
+    tags = ["nano_proto_library"],
 )

@@ -16,13 +16,10 @@
 
 load("//tests/analysis:jvm_compile_test.bzl", jvm_compile_test_suite = "test_suite")
 load("//tests/analysis:jvm_import_test.bzl", jvm_import_test_suite = "test_suite")
-load("//tests/analysis:jvm_library_test.bzl", kt_jvm_library_analysis_test_suite = "test_suite")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
 
 jvm_compile_test_suite(name = "jvm_compile_tests")
-
-kt_jvm_library_analysis_test_suite(name = "kt_jvm_library_analysis_tests")
 
 jvm_import_test_suite(name = "jvm_import_tests")

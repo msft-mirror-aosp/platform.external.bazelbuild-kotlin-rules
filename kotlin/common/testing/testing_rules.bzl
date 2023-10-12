@@ -58,6 +58,30 @@ def _assert_failure_test_impl(ctx):
     asserts.expect_failure(env, ctx.attr.msg_contains)
     return analysistest.end(env)
 
+_coverage_instrumentation_test = analysistest.make(
+    impl = lambda ctx: _coverage_instrumentation_test_impl(ctx),
+    attrs = dict(
+        expected_instrumented_file_names = attr.string_list(),
+    ),
+    config_settings = {
+        "//command_line_option:collect_code_coverage": "1",
+        "//command_line_option:instrument_test_targets": "1",
+        "//command_line_option:instrumentation_filter": "+",
+    },
+)
+
+def _coverage_instrumentation_test_impl(ctx):
+    env = analysistest.begin(ctx)
+    target_under_test = analysistest.target_under_test(env)
+    instrumented_files_info = target_under_test[InstrumentedFilesInfo]
+    instrumented_files = instrumented_files_info.instrumented_files.to_list()
+    asserts.equals(
+        env,
+        ctx.attr.expected_instrumented_file_names,
+        [file.basename for file in instrumented_files],
+    )
+    return analysistest.end(env)
+
 def _create_file(name, content = ""):
     """Declare a generated file with optional content.
 
@@ -111,6 +135,7 @@ kt_testing_rules = struct(
     # go/keep-sorted start
     ONLY_FOR_ANALYSIS_TAGS = _ONLY_FOR_ANALYSIS_TAGS,
     assert_failure_test = _assert_failure_test,
+    coverage_instrumentation_test = _coverage_instrumentation_test,
     create_dir = _wrap_for_analysis(_create_dir),
     create_file = _create_file,
     wrap_for_analysis = _wrap_for_analysis,
