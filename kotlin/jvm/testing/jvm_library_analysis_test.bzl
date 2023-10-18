@@ -43,6 +43,10 @@ kt_jvm_library_analysis_test = analysistest.make(
         expected_processor_classes = attr.string_list(
             doc = "Annotation processors reported as run on the given target",
         ),
+        expected_kotlinc_plugin_jar_names = attr.string_list(
+            doc = "Names of all -Xplugin= JARs",
+            default = kt_analysis.DEFAULT_LIST,
+        ),
         expected_friend_jar_names = attr.string_list(
             doc = "Names of all -Xfriend-paths= JARs",
             default = kt_analysis.DEFAULT_LIST,
@@ -124,10 +128,19 @@ def _kt_jvm_library_analysis_test_impl(ctx):
         friend_paths_arg = kt_analysis.get_arg(kt_2_java_compile, "-Xfriend-paths=")
         kt_asserts.list_matches(
             env,
-            expected = ctx.attr.expected_friend_jar_names,
-            actual = ["/" + x for x in (friend_paths_arg.split(",") if friend_paths_arg else [])],
+            expected = ["/" + x for x in ctx.attr.expected_friend_jar_names],
+            actual = friend_paths_arg.split(",") if friend_paths_arg else [],
             matcher = lambda expected, actual: actual.endswith(expected),
             items_name = "friend JARs",
+        )
+
+    if ctx.attr.expected_kotlinc_plugin_jar_names != kt_analysis.DEFAULT_LIST:
+        kt_asserts.list_matches(
+            env,
+            expected = ["/" + x for x in ctx.attr.expected_kotlinc_plugin_jar_names],
+            actual = kt_analysis.get_all_args(kt_2_java_compile, "-Xplugin="),
+            matcher = lambda expected, actual: actual.endswith(expected),
+            items_name = "kotlinc plugin JARs",
         )
 
     asserts.equals(

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-licenses(["notice"])
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
+load("//kotlin/jvm/testing:for_analysis.bzl", ktfa = "kt_for_analysis")
 
-genrule(
-    name = "empty_jar",
-    outs = ["empty.jar"],
-    cmd = """$(location @bazel_tools//tools/zip:zipper) c $@ "assets/_empty=" """,
-    tools = ["@bazel_tools//tools/zip:zipper"],
-    visibility = ["//tests/analysis/compiler_plugin:__subpackages__"],
+package(
+    default_applicable_licenses = ["//:license"],
+    default_testonly = True,
 )
+
+licenses(["notice"])

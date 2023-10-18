@@ -15,7 +15,6 @@
 """Some utils"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
-load("//kotlin/common/testing:analysis.bzl", "kt_analysis")
 load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 
 visibility(RULES_KOTLIN)
@@ -26,7 +25,3 @@ ONLY_FOR_ANALYSIS_TEST_TAGS = kt_testing_rules.ONLY_FOR_ANALYSIS_TAGS
 create_file = kt_testing_rules.create_file
 
 create_dir = kt_testing_rules.create_dir
-
-get_arg = kt_analysis.get_arg
-
-get_action = kt_analysis.get_action

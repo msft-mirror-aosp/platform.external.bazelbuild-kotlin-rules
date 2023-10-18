@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
-load(":fake_compiler_plugin.bzl", "kt_fake_compiler_plugin")
+load(":unittests.bzl", "unittests")
 
 package(
     default_applicable_licenses = ["//:license"],
@@ -21,3 +20,5 @@ package(
 )
 
 licenses(["notice"])
+
+unittests.render(name = "unittests")

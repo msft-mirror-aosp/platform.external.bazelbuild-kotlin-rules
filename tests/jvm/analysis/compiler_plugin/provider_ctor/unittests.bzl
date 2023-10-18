@@ -12,29 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""An assertion on kt_compiler_plugin analysis."""
+"""unittests"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
-load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load("//kotlin/common/testing:unittest_suites.bzl", "kt_unittest_suites")
 
 visibility(RULES_KOTLIN)
 
-def _test_impl(ctx):
-    env = analysistest.begin(ctx)
-    info = ctx.attr.target_under_test[KtCompilerPluginInfo]
+unittests = kt_unittest_suites.create()
 
-    asserts.equals(env, info.plugin_id, ctx.attr.expected_id)
-    asserts.equals(env, info.jar, ctx.file.expected_jar)
-    asserts.equals(env, info.args, ctx.attr.expected_args)
+def _cannot_construct_provider(ctx):
+    KtCompilerPluginInfo(
+        plugin_id = "fake",
+        jar = ctx.actions.declare_file("fake.jar"),
+        args = [],
+    )
 
-    return analysistest.end(env)
+unittests.expect_fail(_cannot_construct_provider, "Error in fail")
 
-assert_compiler_plugin_test = analysistest.make(
-    impl = _test_impl,
-    attrs = dict(
-        expected_id = attr.string(),
-        expected_jar = attr.label(allow_single_file = True, cfg = "exec"),
-        expected_args = attr.string_list(),
-    ),
-)
+_test, _fail = unittests.close()  # @unused

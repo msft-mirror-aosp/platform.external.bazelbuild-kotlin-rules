@@ -22,11 +22,11 @@ def _get_action(actions, mnemonic):
     """Get a specific action
 
     Args:
-      actions: [List[Action]]
-      mnemonic: [string] Identify the action whose args to search
+        actions: [List[Action]]
+        mnemonic: [string] Identify the action whose args to search
 
     Returns:
-      [Optional[action]] The arg value, or None if it couldn't be found
+        [Action|None] The arg value, or None if it couldn't be found
     """
     menmonic_actions = [a for a in actions if a.mnemonic == mnemonic]
     if len(menmonic_actions) == 0:
@@ -36,42 +36,60 @@ def _get_action(actions, mnemonic):
 
     return menmonic_actions[0]
 
-def _get_arg(action, arg_name, style = "trim"):
-    """Get a named arg from a specific action
+def _get_all_args(action, arg_name, style = "trim"):
+    """Gets values for all instances of an arg name from a specific action.
 
     Args:
-      action: [Optional[Action]]
-      arg_name: [string]
-      style: ["trim"|"next"|"list"] The style of commandline arg
+        action: [Action|None]
+        arg_name: [string]
+        style: ["trim"|"next"|"list"] The style of commandline arg
 
     Returns:
-      [Optional[string]] The arg value, or None if it couldn't be found
+        [list[string]|list[list[string]]|None] The list of matching arg values
     """
     if not action:
-        return None
+        return []
 
     args = action.argv
     matches = [(i, a) for (i, a) in enumerate(args) if a.startswith(arg_name)]
-    if len(matches) == 0:
+
+    result = []
+    for index, arg in matches:
+        if style == "trim":
+            result.append(arg[len(arg_name):])
+        elif style == "next":
+            result.append(args[index + 1])
+        elif style == "list":
+            sub_result = []
+            for i in range(index + 1, len(args)):
+                if args[i].startswith("--"):
+                    break
+                sub_result.append(args[i])
+            result.append(sub_result)
+        else:
+            fail("Unrecognized arg style '%s" % style)
+
+    return result
+
+def _get_arg(action, arg_name, style = "trim"):
+    """Gets values for exactly one instance of an arg name from a specific action.
+
+    Args:
+        action: [Action|None]
+        arg_name: [string]
+        style: ["trim"|"next"|"list"] The style of commandline arg
+
+    Returns:
+        [string|list[string]|None] The arg value, or None if it couldn't be found
+    """
+    results = _get_all_args(action, arg_name, style)
+
+    if len(results) == 0:
         return None
-    elif len(matches) > 1:
-        fail("Expected a single '%s' arg" % arg_name)
-    (index, arg) = matches[0]
-
-    if style == "trim":
-        return arg[len(arg_name):]
-    elif style == "next":
-        return args[index + 1]
-    elif style == "list":
-        result = []
-        for i in range(index + 1, len(args)):
-            if args[i].startswith("--"):
-                break
-            result.append(args[i])
-        return result
-
+    elif len(results) == 1:
+        return results[0]
     else:
-        fail("Unrecognized arg style '%s" % style)
+        fail("Expected a single '%s' arg" % arg_name)
 
 def _check_endswith_test(ctx):
     name = ctx.label.name
@@ -90,6 +108,7 @@ kt_analysis = struct(
     DEFAULT_LIST = ["__default__"],
     check_endswith_test = _check_endswith_test,
     get_action = _get_action,
+    get_all_args = _get_all_args,
     get_arg = _get_arg,
     # go/keep-sorted end
 )
