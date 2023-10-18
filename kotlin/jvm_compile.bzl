@@ -20,6 +20,8 @@ load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
 
+visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
+
 _RULE_FAMILY = common.RULE_FAMILY
 
 def kt_jvm_compile(
@@ -39,7 +41,6 @@ def kt_jvm_compile(
         resource_files,
         exported_plugins,
         java_android_lint_config = None,
-        force_android_lint = False,  # TODO Remove this param
         manifest = None,
         merged_manifest = None,
         classpath_resources = [],
@@ -75,7 +76,6 @@ def kt_jvm_compile(
       resource_files: List of Files. The list of Android Resource files.
       exported_plugins: List of exported javac/kotlinc plugins
       java_android_lint_config: Android Lint XML config file to use if there are no Kotlin srcs
-      force_android_lint: Force AndroidLint action
       manifest: A File. The raw Android manifest. Optional.
       merged_manifest: A File. The merged Android manifest. Optional.
       classpath_resources: List of Files. The list of classpath resources (kt_jvm_library only).
@@ -116,7 +116,7 @@ def kt_jvm_compile(
     if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
         fail("resources attribute only allowed for jvm libraries")
 
-    if type(java_toolchain) != "JavaToolchainInfo":
+    if type(java_toolchain) == "Target":
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
 
@@ -187,7 +187,6 @@ def kt_jvm_compile(
             ),
         ),
         java_android_lint_config = java_android_lint_config,
-        force_android_lint = force_android_lint,
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,

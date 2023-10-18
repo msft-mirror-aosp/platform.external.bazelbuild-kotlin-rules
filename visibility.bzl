@@ -18,10 +18,13 @@ RULES_KOTLIN = [
     "//...",
 ]
 
+visibility(RULES_KOTLIN)
+
 TOOLS_KOTLIN = [
 ]
 
 # bzl files in these packages have access to internal parts of rules_kotlin, so think carefully
 # before expanding the list.
 RULES_DEFS_THAT_COMPILE_KOTLIN = RULES_KOTLIN + [
+    "public",
 ]
