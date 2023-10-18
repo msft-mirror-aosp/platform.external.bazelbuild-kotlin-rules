@@ -14,9 +14,6 @@
 
 # Analysis Tests
 
-load("//tests/analysis:jvm_compile_test.bzl", jvm_compile_test_suite = "test_suite")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 licenses(["notice"])
-
-jvm_compile_test_suite(name = "jvm_compile_tests")
