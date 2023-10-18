@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//tests/analysis:for_test.bzl", "rules_for_test")
-load("//tests/analysis:jvm_library_test.bzl", "jvm_library_test")
+load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
+load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
 
 licenses(["notice"])
 
-jvm_library_test(
+kt_jvm_library_analysis_test(
     name = "neverlinked_input_library_test",
     expect_neverlink = True,
-    target_under_test = rules_for_test.kt_jvm_library(
+    target_under_test = kt_for_analysis.kt_jvm_library(
         name = "neverlinked_input_library",
         srcs = ["Input.kt"],
         neverlink = True,
