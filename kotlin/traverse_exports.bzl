@@ -15,7 +15,7 @@
 """Combined aspect for all rules_kotlin behaviours that need to traverse exports."""
 
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
-load("//kotlin/jvm/internal_do_not_use/traverse_exports:traverse_exports.bzl", _kt_traverse_exports = "kt_traverse_exports")
+load("//kotlin/jvm/traverse_exports:traverse_exports.bzl", _kt_traverse_exports = "kt_traverse_exports")
 
 visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
 

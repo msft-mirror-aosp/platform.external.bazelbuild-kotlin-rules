@@ -16,7 +16,7 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin/common/testing:unittest_suites.bzl", "kt_unittest_suites")
-load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
+load("//kotlin/jvm/util:file_factory.bzl", "FileFactory")
 load("@bazel_skylib//lib:unittest.bzl", "asserts")
 
 visibility(RULES_KOTLIN)
