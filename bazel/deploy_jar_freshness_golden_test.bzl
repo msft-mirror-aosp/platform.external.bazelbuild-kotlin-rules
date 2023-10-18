@@ -16,6 +16,8 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 
+visibility(RULES_KOTLIN)
+
 def _deploy_jar_freshness_golden_test_impl(ctx):
     test_command = """
       if ! cmp $1 $2 ; then
