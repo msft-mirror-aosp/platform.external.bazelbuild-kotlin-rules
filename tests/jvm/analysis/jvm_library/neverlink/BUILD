@@ -12,15 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
+load("//kotlin/jvm/testing:for_analysis.bzl", ktfa = "kt_for_analysis")
 load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
+
+package(
+    default_applicable_licenses = ["//:license"],
+    default_testonly = True,
+)
 
 licenses(["notice"])
 
 kt_jvm_library_analysis_test(
     name = "neverlinked_input_library_test",
     expect_neverlink = True,
-    target_under_test = kt_for_analysis.kt_jvm_library(
+    target_under_test = ktfa.kt_jvm_library(
         name = "neverlinked_input_library",
         srcs = ["Input.kt"],
         neverlink = True,
