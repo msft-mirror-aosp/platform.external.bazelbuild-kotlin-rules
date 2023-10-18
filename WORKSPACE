@@ -47,6 +47,16 @@ http_archive(
 )
 
 http_archive(
+    name = "rules_license",
+    sha256 = "4531deccb913639c30e5c7512a054d5d875698daeb75d8cf90f284375fe7c360",
+    urls = [
+        "https://github.com/bazelbuild/rules_license/releases/download/0.0.7/rules_license-0.0.7.tar.gz",
+    ],
+)
+load("@rules_license//:deps.bzl", "rules_license_dependencies")
+rules_license_dependencies()
+
+http_archive(
     name = "rules_java",
     urls = [
       "https://mirror.bazel.build/github.com/bazelbuild/rules_java/releases/download/5.5.0/rules_java-5.5.0.tar.gz",

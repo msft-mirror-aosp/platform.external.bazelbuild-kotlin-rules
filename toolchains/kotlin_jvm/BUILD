@@ -55,7 +55,6 @@ toolchain(
 
 kt_jvm_toolchains.declare(
     name = "kt_jvm_toolchain_no_turbine_darwin_jdk",
-    enable_turbine_direct = False,
 )
 
 # Turn on profiling of Kotlin/JVM actions
