@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//kotlin:rules.bzl", "kt_jvm_library")
-load("//kotlin/jvm/testing:for_analysis.bzl", "kt_for_analysis")
+load("//kotlin/jvm/testing:for_analysis.bzl", ktfa = "kt_for_analysis")
 load("//kotlin/jvm/testing:jvm_library_analysis_test.bzl", "kt_jvm_library_analysis_test")
-load("//tests/analysis:util.bzl", "ONLY_FOR_ANALYSIS_TEST_TAGS")
 
 package(
     default_applicable_licenses = ["//:license"],
@@ -31,7 +29,7 @@ kt_jvm_library_analysis_test(
         "libkt_exports_friend-compile.jar",
         "libfriend-compile.jar",
     ],
-    target_under_test = kt_for_analysis.kt_jvm_library(
+    target_under_test = ktfa.kt_jvm_library(
         name = "has_kt_exported_friend_impl_package",
         srcs = ["Input.kt"],
         deps = [":kt_exports_friend"],
@@ -43,7 +41,7 @@ kt_jvm_library_analysis_test(
     expected_friend_jar_names = [
         "libfriend-compile.jar",
     ],
-    target_under_test = kt_for_analysis.kt_jvm_library(
+    target_under_test = ktfa.kt_jvm_library(
         name = "has_direct_friend_impl_package",
         srcs = ["Input.kt"],
         deps = ["//tests/jvm/analysis/jvm_library/friends:friend"],
@@ -56,7 +54,7 @@ kt_jvm_library_analysis_test(
         "libkt_exports_subfriend-compile.jar",
         # Absent # "subfriend-compile.jar"
     ],
-    target_under_test = kt_for_analysis.kt_jvm_library(
+    target_under_test = ktfa.kt_jvm_library(
         name = "no_kt_exported_friend_sibling_package",
         srcs = ["Input.kt"],
         deps = [":kt_exports_subfriend"],
@@ -66,29 +64,26 @@ kt_jvm_library_analysis_test(
 kt_jvm_library_analysis_test(
     name = "no_direct_friend_sibling_package_test",
     expected_friend_jar_names = [],
-    target_under_test = kt_for_analysis.kt_jvm_library(
+    target_under_test = ktfa.kt_jvm_library(
         name = "no_direct_friend_sibling_package",
         srcs = ["Input.kt"],
         deps = ["//tests/jvm/analysis/jvm_library/friends/sub:subfriend"],
     ),
 )
 
-kt_jvm_library(
+ktfa.kt_jvm_library(
     name = "kt_exports_subfriend",
     srcs = ["Input.kt"],
-    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     exports = ["//tests/jvm/analysis/jvm_library/friends/sub:subfriend"],
 )
 
-kt_jvm_library(
+ktfa.kt_jvm_library(
     name = "kt_exports_friend",
     srcs = ["Input.kt"],
-    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
     exports = ["//tests/jvm/analysis/jvm_library/friends:friend"],
 )
 
-kt_jvm_library(
+ktfa.kt_jvm_library(
     name = "testingfriend",
     srcs = ["Input.kt"],
-    tags = ONLY_FOR_ANALYSIS_TEST_TAGS,
 )
