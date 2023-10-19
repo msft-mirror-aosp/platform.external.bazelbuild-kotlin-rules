@@ -15,6 +15,7 @@
 """kt_jvm_import_analysis_test"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin/common/testing:analysis.bzl", "kt_analysis")
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 
 visibility(RULES_KOTLIN)
@@ -25,7 +26,7 @@ kt_jvm_import_analysis_test = analysistest.make(
 )
 
 def _kt_jvm_import_analysis_test_impl(ctx):
-    env = analysistest.begin(ctx)
+    env = kt_analysis.begin_with_checks(ctx)
     asserts.true(
         env,
         JavaInfo in ctx.attr.target_under_test,

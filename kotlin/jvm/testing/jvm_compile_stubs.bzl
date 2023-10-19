@@ -99,10 +99,7 @@ _kt_jvm_compile_stub_analysis_test = analysistest.make(
 )
 
 def _kt_jvm_compile_stub_analysis_test_impl(ctx):
-    kt_analysis.check_endswith_test(ctx)
-
-    env = analysistest.begin(ctx)
-
+    env = kt_analysis.begin_with_checks(ctx)
     actions = analysistest.target_actions(env)
     kotlinc_action = kt_analysis.get_action(actions, "Kt2JavaCompile")
 

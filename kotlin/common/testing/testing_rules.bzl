@@ -52,9 +52,7 @@ _assert_failure_test = analysistest.make(
 )
 
 def _assert_failure_test_impl(ctx):
-    kt_analysis.check_endswith_test(ctx)
-
-    env = analysistest.begin(ctx)
+    env = kt_analysis.begin_with_checks(ctx)
     asserts.expect_failure(env, ctx.attr.msg_contains)
     return analysistest.end(env)
 
@@ -71,7 +69,7 @@ _coverage_instrumentation_test = analysistest.make(
 )
 
 def _coverage_instrumentation_test_impl(ctx):
-    env = analysistest.begin(ctx)
+    env = kt_analysis.begin_with_checks(ctx)
     target_under_test = analysistest.target_under_test(env)
     instrumented_files_info = target_under_test[InstrumentedFilesInfo]
     instrumented_files = instrumented_files_info.instrumented_files.to_list()

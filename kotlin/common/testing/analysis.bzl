@@ -15,6 +15,7 @@
 """kt_analysis"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("@bazel_skylib//lib:unittest.bzl", "analysistest")
 
 visibility(RULES_KOTLIN)
 
@@ -91,22 +92,28 @@ def _get_arg(action, arg_name, style = "trim"):
     else:
         fail("Expected a single '%s' arg" % arg_name)
 
-def _check_endswith_test(ctx):
-    name = ctx.label.name
-    for i in range(0, 10):
-        # TODO: Remove support for suffix digits
-        if name.endswith(str(i)):
-            name = name.removesuffix(str(i))
-            break
-    if name.endswith("_test"):
-        return
+def _begin_with_checks(ctx):
+    """Begin an analysis test and run some rules_kotlin-specific checks.
 
-    fail("Analysis test names must end in '_test'")
+    Args:
+        ctx: [ctx]
+
+    Returns:
+        [analysistests.env]
+    """
+
+    env = analysistest.begin(ctx)
+
+    tut_name = analysistest.target_under_test(env).label.name.removeprefix("_")
+    if ctx.label.name != tut_name + "_test":
+        fail("Analysis test name was '%s', expected '%s_test'" % (ctx.label.name, tut_name))
+
+    return env
 
 kt_analysis = struct(
     # go/keep-sorted start
     DEFAULT_LIST = ["__default__"],
-    check_endswith_test = _check_endswith_test,
+    begin_with_checks = _begin_with_checks,
     get_action = _get_action,
     get_all_args = _get_all_args,
     get_arg = _get_arg,

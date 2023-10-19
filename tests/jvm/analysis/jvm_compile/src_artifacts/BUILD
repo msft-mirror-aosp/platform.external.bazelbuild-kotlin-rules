@@ -25,7 +25,7 @@ licenses(["notice"])
 kt_jvm_compile_stubs.analysis_test(
     name = "has_allowed_aritfacts_test",
     target_under_test = kt_jvm_compile_stubs.rule(
-        name = "has_allowed_artifacts",
+        name = "has_allowed_aritfacts",
         srcs = [
             # go/keep-sorted start
             kt_testing_rules.create_dir(name = "has_allowed_artifacts/java"),
