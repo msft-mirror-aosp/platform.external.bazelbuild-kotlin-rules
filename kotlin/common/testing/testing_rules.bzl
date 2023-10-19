@@ -37,6 +37,7 @@ def _wrap_for_analysis(inner_rule):
         inner_rule(
             name = name,
             tags = tags + _ONLY_FOR_ANALYSIS_TAGS,
+            testonly = True,
             **kwargs
         )
         return name
