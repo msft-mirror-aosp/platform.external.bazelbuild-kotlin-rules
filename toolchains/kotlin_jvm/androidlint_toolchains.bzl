@@ -14,8 +14,10 @@
 
 """Android Lint toolchain for Kotlin."""
 
-load("//bazel:stubs.bzl", "lint_actions")
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//bazel:stubs.bzl", "lint_actions")
+
+visibility(RULES_KOTLIN)
 
 _ATTRS = dict(
     _android_lint_baseline_file = attr.label(
