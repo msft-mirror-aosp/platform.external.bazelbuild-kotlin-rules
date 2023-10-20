@@ -541,7 +541,6 @@ def _kt_jvm_library(
     codegen_plugin_output = None
 
     kt_codegen_processors = kt_codegen_processing_env.get("processors_for_kt_codegen_processing", depset()).to_list()
-    codegen_tags = kt_codegen_processing_env.get("codegen_tags", [])
     generative_deps = kt_codegen_processing_env.get("codegen_output_java_infos", depset()).to_list()
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
@@ -557,14 +556,10 @@ def _kt_jvm_library(
     if not is_android_library_without_kt_srcs_without_generative_deps:
         static_deps.extend(kt_toolchain.kotlin_libs)
 
-    # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
+    _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
     if not is_android_library_without_kt_srcs:
-        if "check_srcs_package_against_kt_srcs_only" in codegen_tags:
-            _check_srcs_package(ctx.label.package, kt_srcs, "srcs")
-        else:
-            _check_srcs_package(ctx.label.package, srcs, "srcs")
-
-        _check_srcs_package(ctx.label.package, common_srcs, "common_srcs")
+        # Skip srcs package check for android_library targets with no kotlin sources: b/239725424
+        _check_srcs_package(ctx.label.package, srcs, "srcs")
         _check_srcs_package(ctx.label.package, coverage_srcs, "coverage_srcs")
 
     # Includes generative deps from codegen.
