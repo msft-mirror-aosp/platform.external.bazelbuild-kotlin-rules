@@ -16,6 +16,8 @@
 
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 
+visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
+
 def is_eligible_friend(target, friend):
     """
     Determines if `target` is allowed to use `internal` members of `friend`
