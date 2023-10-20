@@ -22,6 +22,8 @@ load("//bazel:stubs.bzl", "LINT_REGISTRY")
 load("//bazel:stubs.bzl", "registry_checks_for_package")
 load(":jvm_library.internal.bzl", "kt_jvm_library_helper")
 
+visibility(RULES_KOTLIN)
+
 def kt_jvm_library(
         name,
         srcs = None,

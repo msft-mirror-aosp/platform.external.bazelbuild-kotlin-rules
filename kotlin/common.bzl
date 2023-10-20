@@ -15,17 +15,17 @@
 """Common Kotlin definitions."""
 
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
-
-# go/keep-sorted start
-load("//kotlin/jvm/internal_do_not_use/util:file_factory.bzl", "FileFactory")
-load("//kotlin/jvm/internal_do_not_use/util:srcjars.bzl", "kt_srcjars")
+load("//kotlin/jvm/util:file_factory.bzl", "FileFactory")
+load("//kotlin/jvm/util:srcjars.bzl", "kt_srcjars")
 load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:sets.bzl", "sets")
 load("//bazel:stubs.bzl", "lint_actions")
 load("//bazel:stubs.bzl", "jspecify_flags")
+load("//bazel:stubs.bzl", "is_android_lint_exempt")
 load("//bazel:stubs.bzl", "BASE_JVMOPTS")
-# go/keep-sorted end
+
+visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
 
 # TODO: Remove the _ALLOWED_*_RULES lists to determine which rules
 # are accepted dependencies to Kotlin rules as the approach does not scale
@@ -204,7 +204,7 @@ def _run_kotlinc(
         } if toolchain.is_profiling_enabled(ctx.label) else {
             "worker-key-mnemonic": "Kt2JavaCompile",
         },
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = toolchain.toolchain_type,
     )
 
     return struct(
@@ -317,7 +317,7 @@ def _derive_headers(
         outputs = [output_dir],
         mnemonic = "KtDeriveHeaders",
         progress_message = "Deriving %s: %s" % (output_dir.basename, _get_original_kt_target_label(ctx)),
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = toolchain.toolchain_type,
     )
     return [output_dir]
 
@@ -388,7 +388,7 @@ def _offline_instrument_jar(ctx, toolchain, jar, srcs = []):
         outputs = [output],
         mnemonic = "KtJaCoCoInstrument",
         progress_message = "Instrumenting Kotlin for coverage collection: %s" % _get_original_kt_target_label(ctx),
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = toolchain.toolchain_type,
     )
 
     return output
@@ -443,7 +443,7 @@ def _merge_jdeps(ctx, kt_jvm_toolchain, jdeps_files, file_factory):
         arguments = [args],
         mnemonic = "KtMergeJdeps",
         progress_message = "Merging jdeps files %{output}",
-        toolchain = kt_jvm_toolchains.type,
+        toolchain = kt_jvm_toolchain.toolchain_type,
     )
 
     return merged_jdeps_file
@@ -504,7 +504,6 @@ def _kt_jvm_library(
         common_srcs = [],
         coverage_srcs = [],
         java_android_lint_config = None,
-        force_android_lint = False,  # TODO Remove this param
         manifest = None,  # set for Android libs, otherwise None.
         merged_manifest = None,  # set for Android libs, otherwise None.
         resource_files = [],  # set for Android libs, otherwise empty.
@@ -576,24 +575,12 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas = kt_codegen_processing_env.get("java_plugin_data_set", depset()).to_list()
-    processors_for_java_srcs = kt_codegen_processing_env.get("processors_for_java_srcs", depset()).to_list()
+    java_plugin_datas = kt_codegen_processing_env.get("java_plugin_data_set", plugins.java_plugin_datas).to_list()
+    processors_for_java_srcs = kt_codegen_processing_env.get("processors_for_java_srcs", depset(transitive = [p.processor_classes for p in java_plugin_datas])).to_list()
     java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
-
-    out_jars = [
-        jar
-        for java_info in generative_deps
-        for jar in java_info.runtime_output_jars
-    ]
-
-    out_srcjars = [
-    ] if codegen_plugin_output else []
-
-    out_compilejars = [
-        jar
-        for java_info in generative_deps
-        for jar in java_info.compile_jars.to_list()
-    ]
+    out_jars = kt_codegen_processing_env.get("codegen_runtime_output_jars", [])
+    out_srcjars = kt_codegen_processing_env.get("codegen_source_jars", [])
+    out_compilejars = kt_codegen_processing_env.get("codegen_compile_jars", [])
 
     kt_hdrs = _derive_headers(
         ctx,
@@ -662,10 +649,8 @@ def _kt_jvm_library(
 
         javac_out = output if is_android_library_without_kt_srcs_without_generative_deps else file_factory.declare_file("-libjvm-java.jar")
 
-        annotation_plugins = list(plugins.java_plugin_infos)
-
-        # Enable annotation processing for java-only sources to enable data binding
-        enable_annotation_processing = True if processors_for_java_srcs else False
+        annotation_plugins = kt_codegen_processing_env.get("java_common_annotation_plugins", list(plugins.java_plugin_infos))
+        enable_annotation_processing = kt_codegen_processing_env.get("enable_java_common_annotation_processing", True)
 
         javac_java_info = java_common.compile(
             ctx,
@@ -690,14 +675,6 @@ def _kt_jvm_library(
             annotation_processor_additional_outputs = annotation_processor_additional_outputs,
             annotation_processor_additional_inputs = annotation_processor_additional_inputs,
         )
-
-        # Directly return the JavaInfo from java.compile() for java-only android_library targets
-        # to avoid creating a new JavaInfo. See b/239847857 for additional context.
-        if is_android_library_without_kt_srcs_without_generative_deps:
-            return struct(
-                java_info = javac_java_info,
-                validations = [],
-            )
 
         out_jars.append(javac_out)
         out_srcjars.extend(javac_java_info.source_jars)
@@ -726,8 +703,7 @@ def _kt_jvm_library(
     # TODO: Remove the is_android_library_without_kt_srcs condition once KtAndroidLint
     # uses the same lint checks with AndroidLint
 
-    disable_lint_checks = disable_lint_checks + kt_codegen_processing_env.get("disabled_lint_checks", [])
-    if force_android_lint or not is_android_library_without_kt_srcs:
+    if (srcs or common_srcs or resource_files) and not is_android_lint_exempt(ctx):
         lint_flags = [
             "--java-language-level",  # b/159950410
             kt_toolchain.java_language_version,
@@ -763,9 +739,17 @@ def _kt_jvm_library(
             extra_input_depsets = [p.processor_data for p in java_plugin_datas],
             testonly = testonly,
             android_java8_libs = kt_toolchain.android_java8_apis_desugared,
-            mnemonic = "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
+            mnemonic = "AndroidLint" if is_android_library_without_kt_srcs else "KtAndroidLint",  # so LSA extractor can distinguish Kotlin (b/189442586)
         )
         blocking_action_outs.append(android_lint_out)
+
+    # Directly return the JavaInfo from java.compile() for java-only android_library targets
+    # to avoid creating a new JavaInfo. See b/239847857 for additional context.
+    if javac_java_info and is_android_library_without_kt_srcs_without_generative_deps:
+        return struct(
+            java_info = javac_java_info,
+            validations = blocking_action_outs,
+        )
 
     if output_srcjar == None:
         output_srcjar = file_factory.declare_file("-src.jar")
