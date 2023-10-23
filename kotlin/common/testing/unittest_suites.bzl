@@ -30,13 +30,13 @@ def _some_test_case(ctx, env):
     # Test logic here
     asserts.true(env, 1 == 1)
     return [] # Return any declared files
-    
+
 unittests.expect_finish(_some_test_case) # Include the test case in the suite
 
 def _some_fail_case(ctx):
     # No assertions are allowed in fail cases
     _some_logic_that_should_call_fail(ctx)
-    
+
 unittests.expect_fail(_some_fail_case, "fail message substring") # Expect this case to call fail
 
 # Generate a pair of rules that will be used for test targets
@@ -54,11 +54,11 @@ unittests.render(
 ```
 """
 
-load("//:visibility.bzl", "RULES_KOTLIN")
+load("//:visibility.bzl", "RULES_KOTLIN", "TOOLS_KOTLIN")
 load("@bazel_skylib//lib:unittest.bzl", "unittest")
 load(":testing_rules.bzl", "kt_testing_rules")
 
-visibility(RULES_KOTLIN)
+visibility(RULES_KOTLIN + TOOLS_KOTLIN)
 
 def _create():
     """Create a new test suite.
@@ -84,6 +84,8 @@ def _create():
         test_case_name = _fn_name(test_case)
         if not test_case_name.startswith("_"):
             fail("Test cases must be private '%s'" % test_case_name)
+
+        test_case_name = test_case_name.removeprefix("_")
         if test_case_name in test_cases:
             fail("Existing test case named '%s'" % test_case_name)
 
@@ -160,7 +162,7 @@ def _create():
 
         test_targets = []
         for test_case_name, test_case_data in test_cases.items():
-            target_name = test_case_name.removeprefix("_") + "_test"
+            target_name = name + "-" + test_case_name + "_test"
             test_targets.append(target_name)
 
             if test_case_data.msg_contains == None:
@@ -171,15 +173,16 @@ def _create():
                     **kwargs
                 )
             else:
+                target_under_test_name = name + "-" + test_case_name
                 fail_rule(
-                    name = test_case_name,
+                    name = target_under_test_name,
                     tags = tags + kt_testing_rules.ONLY_FOR_ANALYSIS_TAGS,
                     case_name = test_case_name,
                     **kwargs
                 )
                 kt_testing_rules.assert_failure_test(
                     name = target_name,
-                    target_under_test = test_case_name,
+                    target_under_test = target_under_test_name,
                     msg_contains = test_case_data.msg_contains,
                 )
 

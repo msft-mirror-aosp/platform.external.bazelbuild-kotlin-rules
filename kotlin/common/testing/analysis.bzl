@@ -104,7 +104,7 @@ def _begin_with_checks(ctx):
 
     env = analysistest.begin(ctx)
 
-    tut_name = analysistest.target_under_test(env).label.name.removeprefix("_")
+    tut_name = analysistest.target_under_test(env).label.name
     if ctx.label.name != tut_name + "_test":
         fail("Analysis test name was '%s', expected '%s_test'" % (ctx.label.name, tut_name))
 
