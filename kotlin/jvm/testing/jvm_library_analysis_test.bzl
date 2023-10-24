@@ -40,6 +40,10 @@ kt_jvm_library_analysis_test = analysistest.make(
         expected_exported_processor_classes = attr.string_list(
             doc = "Annotation processors reported as to be run on depending targets",
         ),
+        expected_merge_compile_jar_names = attr.string_list(
+            doc = "Names of all JARs merged with KtMergeCompileJar",
+            default = kt_analysis.DEFAULT_LIST,
+        ),
         expected_processor_classes = attr.string_list(
             doc = "Annotation processors reported as run on the given target",
         ),
@@ -70,6 +74,7 @@ def _kt_jvm_library_analysis_test_impl(ctx):
 
     actions = analysistest.target_actions(env)
     kt_al_action = kt_analysis.get_action(actions, "KtAndroidLint")
+    kt_merge_compile_jar_action = kt_analysis.get_action(actions, "KtMergeCompileJar")
 
     asserts.true(
         env,
@@ -98,6 +103,16 @@ def _kt_jvm_library_analysis_test_impl(ctx):
             sets.make(ctx.attr.expected_compile_jar_names),
             sets.make([f.basename for f in actual[JavaInfo].compile_jars.to_list()]),
             "kt_jvm_library JavaInfo::compile_jars",
+        )
+
+    if ctx.attr.expected_merge_compile_jar_names != kt_analysis.DEFAULT_LIST:
+        # Confirm
+        kt_asserts.list_matches(
+            env,
+            expected = ["/" + s for s in ctx.attr.expected_merge_compile_jar_names],
+            actual = kt_analysis.get_arg(kt_merge_compile_jar_action, "--sources", style = "list"),
+            matcher = lambda expected, actual: actual.endswith(expected),
+            items_name = "KtMergeCompileJars",
         )
 
     if ctx.attr.expected_exported_processor_jar_names != kt_analysis.DEFAULT_LIST:

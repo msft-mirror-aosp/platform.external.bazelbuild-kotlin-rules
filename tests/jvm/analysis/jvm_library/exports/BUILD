@@ -23,19 +23,47 @@ package(
 licenses(["notice"])
 
 kt_jvm_library_analysis_test(
-    name = "has_exports_test",
+    name = "kt_has_exports_test",
     expected_compile_jar_names = [
         # go/keep-sorted start
         "libexports_transitive-compile.jar",
-        "libhas_exports-compile.jar",
+        "libjava_library-hjar.jar",
+        "libkt_has_exports-compile.jar",
+        "libkt_jvm_library-compile.jar",
+        "libtransitive-compile.jar",
+        # go/keep-sorted end
+    ],
+    expected_merge_compile_jar_names = [
+        "libkt_has_exports-kt-ijar.jar",
+    ],
+    target_under_test = ktfa.kt_jvm_library(
+        name = "kt_has_exports",
+        srcs = ["Input.kt"],
+        exports = [
+            ":exports_transitive",
+            ":java_library",
+            ":kt_jvm_library",
+        ],
+    ),
+)
+
+kt_jvm_library_analysis_test(
+    name = "java_has_exports_test",
+    expected_compile_jar_names = [
+        # go/keep-sorted start
+        "libexports_transitive-compile.jar",
+        "libjava_has_exports-compile.jar",
         "libjava_library-hjar.jar",
         "libkt_jvm_library-compile.jar",
         "libtransitive-compile.jar",
         # go/keep-sorted end
     ],
+    expected_merge_compile_jar_names = [
+        "libjava_has_exports-libjvm-java-hjar.jar",
+    ],
     target_under_test = ktfa.kt_jvm_library(
-        name = "has_exports",
-        srcs = ["Input.kt"],
+        name = "java_has_exports",
+        srcs = ["Input.java"],
         exports = [
             ":exports_transitive",
             ":java_library",

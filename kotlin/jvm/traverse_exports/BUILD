@@ -28,6 +28,7 @@ bzl_library(
         "//:visibility_bzl",
         "//kotlin:for_traverse_exports_bzl",
         "//kotlin/common:common_bzl",
+        "//kotlin/jvm/util:util_bzl",
         "@bazel_skylib//lib:sets",
     ],
 )

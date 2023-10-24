@@ -16,6 +16,7 @@
 
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
 load("//kotlin/jvm/util:file_factory.bzl", "FileFactory")
+load("//kotlin/jvm/util:java_infos.bzl", "kt_java_infos")
 load("//kotlin/jvm/util:srcjars.bzl", "kt_srcjars")
 load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
@@ -652,9 +653,7 @@ def _kt_jvm_library(
             source_files = java_srcs,
             source_jars = java_syncer.srcjars,
             resources = classpath_resources_non_dirs,
-            # For targets that are not android_library with java-only srcs, exports will be passed
-            # to the final constructed JavaInfo.
-            exports = exports if is_android_library_without_kt_srcs_without_generative_deps else [],
+            exports = exports,
             output = javac_out,
             exported_plugins = exported_plugins,
             deps = javac_deps,
@@ -673,7 +672,7 @@ def _kt_jvm_library(
 
         out_jars.append(javac_out)
         out_srcjars.extend(javac_java_info.source_jars)
-        out_compilejars.extend(javac_java_info.compile_jars.to_list())  # unpack singleton depset
+        out_compilejars.extend(kt_java_infos.get_own_compile_jars(javac_java_info))
         java_native_headers_jar = javac_java_info.outputs.native_headers
 
     java_gensrcjar = None
