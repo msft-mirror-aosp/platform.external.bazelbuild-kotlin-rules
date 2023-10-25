@@ -16,7 +16,9 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 
-visibility(RULES_KOTLIN)
+visibility(RULES_KOTLIN + [
+    # TODO Consider making this a public API
+])
 
 def FileFactory(ctx, base):
     """Creates files with names derived from some base file or prefix
