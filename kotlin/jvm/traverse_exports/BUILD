@@ -29,6 +29,7 @@ bzl_library(
         "//kotlin:for_traverse_exports_bzl",
         "//kotlin/common:common_bzl",
         "//kotlin/jvm/util:util_bzl",
+        "//toolchains/kotlin_jvm:toolchain_bzl",
         "@bazel_skylib//lib:sets",
     ],
 )
