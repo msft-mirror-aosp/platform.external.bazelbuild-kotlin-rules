@@ -15,38 +15,12 @@
 """A rule for declaring and passing kotlinc plugins."""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin/common/providers:compiler_plugin_infos.bzl", "kt_compiler_plugin_infos")
 
 visibility(RULES_KOTLIN)
 
-KtCompilerPluginInfo, _make_kt_compiler_plugin_info = provider(
-    doc = "Info for running a plugin that directly registers itself to kotlinc extension points",
-    fields = dict(
-        plugin_id = "string",
-        jar = "File",
-        args = "list[string]",
-    ),
-    init = fail,
-)
-
-def _kt_compiler_plugin_impl(ctx):
-
-    return [
-        JavaPluginInfo(
-            runtime_deps = [],
-            processor_class = None,
-        ),
-        _make_kt_compiler_plugin_info(
-            plugin_id = ctx.attr.plugin_id,
-            jar = ctx.file.jar or ctx.attr.jar[JavaInfo].output_jar,
-            args = [
-                "plugin:%s:%s=%s" % (ctx.attr.plugin_id, k, v)
-                for (k, v) in ctx.attr.args.items()
-            ],
-        ),
-    ]
-
 kt_compiler_plugin = rule(
-    implementation = _kt_compiler_plugin_impl,
+    implementation = lambda ctx: _kt_compiler_plugin_impl(ctx),
     attrs = dict(
         plugin_id = attr.string(
             doc = "ID used to register this plugin with kotlinc",
@@ -69,6 +43,23 @@ kt_compiler_plugin = rule(
     ),
     provides = [
         JavaPluginInfo,  # Allow this rule to be passed to java rules
-        KtCompilerPluginInfo,
+        kt_compiler_plugin_infos.Info,
     ],
 )
+
+def _kt_compiler_plugin_impl(ctx):
+
+    return [
+        JavaPluginInfo(
+            runtime_deps = [],
+            processor_class = None,
+        ),
+        kt_compiler_plugin_infos.private_ctor(
+            plugin_id = ctx.attr.plugin_id,
+            jar = ctx.file.jar or ctx.attr.jar[JavaInfo].output_jar,
+            args = [
+                "plugin:%s:%s=%s" % (ctx.attr.plugin_id, k, v)
+                for (k, v) in ctx.attr.args.items()
+            ],
+        ),
+    ]

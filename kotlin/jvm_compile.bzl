@@ -15,9 +15,9 @@
 """Compile method that can compile kotlin or java sources"""
 
 load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//kotlin/common/providers:compiler_plugin_infos.bzl", "kt_compiler_plugin_infos")
 load("//bazel:stubs.bzl", "lint_actions")
 load(":common.bzl", "common")
-load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
 
 visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
@@ -183,7 +183,7 @@ def kt_jvm_compile(
             java_plugin_infos = common.collect_providers(JavaPluginInfo, plugins),
             kt_compiler_plugin_infos = (
                 kt_traverse_exports.expand_compiler_plugins(deps).to_list() +
-                common.collect_providers(KtCompilerPluginInfo, plugins)
+                common.collect_providers(kt_compiler_plugin_infos.Info, plugins)
             ),
         ),
         java_android_lint_config = java_android_lint_config,

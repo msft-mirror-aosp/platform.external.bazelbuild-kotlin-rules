@@ -12,23 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""unittests"""
+load("//bazel:stubs.bzl", "integration_test_filegroup")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
-load("//:visibility.bzl", "RULES_KOTLIN")
-load("//kotlin:compiler_plugin.bzl", "KtCompilerPluginInfo")
-load("//kotlin/common/testing:unittest_suites.bzl", "kt_unittest_suites")
+package(
+    default_applicable_licenses = ["//:license"],
+    default_visibility = ["//:internal"],
+)
 
-visibility(RULES_KOTLIN)
+licenses(["notice"])
 
-unittests = kt_unittest_suites.create()
+bzl_library(
+    name = "providers_bzl",
+    srcs = glob(["*.bzl"]),
+    visibility = [
+        "//:internal",
+    ],
+    deps = [
+        "//:visibility_bzl",
+    ],
+)
 
-def _cannot_construct_provider(ctx):
-    KtCompilerPluginInfo(
-        plugin_id = "fake",
-        jar = ctx.actions.declare_file("fake.jar"),
-        args = [],
-    )
-
-unittests.expect_fail(_cannot_construct_provider, "Error in fail")
-
-_test, _fail = unittests.close()  # @unused
+integration_test_filegroup(
+    name = "bazel_osx_p4deps",
+)

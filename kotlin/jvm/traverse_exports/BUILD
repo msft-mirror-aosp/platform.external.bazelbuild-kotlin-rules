@@ -26,8 +26,8 @@ bzl_library(
     srcs = glob(["*.bzl"]),
     deps = [
         "//:visibility_bzl",
-        "//kotlin:for_traverse_exports_bzl",
         "//kotlin/common:common_bzl",
+        "//kotlin/common/providers:providers_bzl",
         "//kotlin/jvm/util:util_bzl",
         "//toolchains/kotlin_jvm:toolchain_bzl",
         "@bazel_skylib//lib:sets",
@@ -39,5 +39,6 @@ integration_test_filegroup(
     deps = [
         ":traverse_exports_bzl",
         "//kotlin/common:bazel_osx_p4deps",
+        "//kotlin/common/providers:bazel_osx_p4deps",
     ],
 )

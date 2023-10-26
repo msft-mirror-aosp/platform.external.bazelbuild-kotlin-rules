@@ -12,24 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""kt_compiler_plugin_visitor"""
+"""unittests"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 load("//kotlin/common/providers:compiler_plugin_infos.bzl", "kt_compiler_plugin_infos")
+load("//kotlin/common/testing:unittest_suites.bzl", "kt_unittest_suites")
 
 visibility(RULES_KOTLIN)
 
-def _get_exported_plugins(_target, ctx_rule):
-    return [
-        t[kt_compiler_plugin_infos.Info]
-        for t in getattr(ctx_rule.attr, "exported_plugins", [])
-        if (kt_compiler_plugin_infos.Info in t)
-    ]
+unittests = kt_unittest_suites.create()
 
-kt_compiler_plugin_visitor = struct(
-    name = "compiler_plugins",
-    visit_target = _get_exported_plugins,
-    filter_edge = None,
-    finish_expansion = None,
-    process_unvisited_target = None,
-)
+def _cannot_construct_public_provider(ctx):
+    kt_compiler_plugin_infos.Info(
+        plugin_id = "fake",
+        jar = ctx.actions.declare_file("fake.jar"),
+        args = [],
+    )
+
+unittests.expect_fail(_cannot_construct_public_provider, "Error in fail")
+
+_test, _fail = unittests.close()  # @unused

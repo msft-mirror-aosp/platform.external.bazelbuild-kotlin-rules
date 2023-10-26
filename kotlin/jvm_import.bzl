@@ -15,11 +15,11 @@
 """Kotlin kt_jvm_import rule."""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
+load("//kotlin/common/providers:compiler_plugin_infos.bzl", "kt_compiler_plugin_infos")
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load(":common.bzl", "common")
-load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
 
 visibility(RULES_KOTLIN)
@@ -92,7 +92,7 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
                  missing dependencies and a command to fix the rule.""",
     ),
     exported_plugins = attr.label_list(
-        providers = [[KtCompilerPluginInfo]],
+        providers = [[kt_compiler_plugin_infos.Info]],
         cfg = "exec",
         doc = """JVM plugins to export to users.
 

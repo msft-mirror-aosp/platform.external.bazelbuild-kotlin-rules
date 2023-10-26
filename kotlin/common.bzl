@@ -103,7 +103,7 @@ def _kt_plugins_map(
         java_plugin_datas: (depset[JavaPluginData]) for KtCodegenProcessing.
         java_plugin_infos: (list[JavaPluginInfo])
         kt_codegen_plugin_infos: (depset[KtCodegenPluginInfo]) for KtCodegenProcessing.
-        kt_compiler_plugin_infos: (list[KtCompilerPluginInfo])
+        kt_compiler_plugin_infos: (list[kt_compiler_plugin_infos.Info])
     """
     return struct(
         android_lint_rulesets = android_lint_rulesets,

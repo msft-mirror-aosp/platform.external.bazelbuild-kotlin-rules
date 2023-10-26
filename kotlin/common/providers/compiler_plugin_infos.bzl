@@ -12,24 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""kt_compiler_plugin_visitor"""
+"""kt_compiler_plugin_infos"""
 
 load("//:visibility.bzl", "RULES_KOTLIN")
-load("//kotlin/common/providers:compiler_plugin_infos.bzl", "kt_compiler_plugin_infos")
 
 visibility(RULES_KOTLIN)
 
-def _get_exported_plugins(_target, ctx_rule):
-    return [
-        t[kt_compiler_plugin_infos.Info]
-        for t in getattr(ctx_rule.attr, "exported_plugins", [])
-        if (kt_compiler_plugin_infos.Info in t)
-    ]
+_KtCompilerPluginInfo, _private_ctor = provider(
+    doc = "Info for running a plugin that directly registers itself to kotlinc extension points",
+    fields = dict(
+        plugin_id = "string",
+        jar = "File",
+        args = "list[string]",
+    ),
+    init = fail,
+)
 
-kt_compiler_plugin_visitor = struct(
-    name = "compiler_plugins",
-    visit_target = _get_exported_plugins,
-    filter_edge = None,
-    finish_expansion = None,
-    process_unvisited_target = None,
+kt_compiler_plugin_infos = struct(
+    Info = _KtCompilerPluginInfo,
+    private_ctor = _private_ctor,
 )
