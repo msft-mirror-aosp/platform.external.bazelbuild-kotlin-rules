@@ -538,11 +538,11 @@ def _kt_jvm_library(
     file_factory = FileFactory(ctx, output)
     static_deps = list(deps)  # Defensive copy
 
-    kt_codegen_processing_env = dict()
+    kt_codegen_result = dict()
     codegen_plugin_output = None
 
-    kt_codegen_processors = kt_codegen_processing_env.get("processors_for_kt_codegen_processing", depset()).to_list()
-    generative_deps = kt_codegen_processing_env.get("codegen_output_java_infos", depset()).to_list()
+    kt_codegen_processors = kt_codegen_result.get("processors_for_kt_codegen_processing", depset()).to_list()
+    generative_deps = kt_codegen_result.get("codegen_output_java_infos", depset()).to_list()
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
     kt_srcs, java_srcs = _split_srcs_by_language(srcs, common_srcs, java_syncer)
@@ -571,12 +571,12 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas = kt_codegen_processing_env.get("java_plugin_data_set", plugins.java_plugin_datas).to_list()
-    processors_for_java_srcs = kt_codegen_processing_env.get("processors_for_java_srcs", depset(transitive = [p.processor_classes for p in java_plugin_datas])).to_list()
+    java_plugin_datas = kt_codegen_result.get("java_plugin_data_set", plugins.java_plugin_datas).to_list()
+    processors_for_java_srcs = kt_codegen_result.get("processors_for_java_srcs", depset(transitive = [p.processor_classes for p in java_plugin_datas])).to_list()
     java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
-    out_jars = kt_codegen_processing_env.get("codegen_runtime_output_jars", [])
-    out_srcjars = kt_codegen_processing_env.get("codegen_source_jars", [])
-    out_compilejars = kt_codegen_processing_env.get("codegen_compile_jars", [])
+    out_jars = kt_codegen_result.get("codegen_runtime_output_jars", [])
+    out_srcjars = kt_codegen_result.get("codegen_source_jars", [])
+    out_compilejars = kt_codegen_result.get("codegen_compile_jars", [])
 
     kt_hdrs = _derive_headers(
         ctx,
@@ -645,8 +645,8 @@ def _kt_jvm_library(
 
         javac_out = output if is_android_library_without_kt_srcs_without_generative_deps else file_factory.declare_file("-libjvm-java.jar")
 
-        annotation_plugins = kt_codegen_processing_env.get("java_common_annotation_plugins", list(plugins.java_plugin_infos))
-        enable_annotation_processing = kt_codegen_processing_env.get("enable_java_common_annotation_processing", True)
+        annotation_plugins = kt_codegen_result.get("java_common_annotation_plugins", list(plugins.java_plugin_infos))
+        enable_annotation_processing = kt_codegen_result.get("enable_java_common_annotation_processing", True)
 
         javac_java_info = java_common.compile(
             ctx,
