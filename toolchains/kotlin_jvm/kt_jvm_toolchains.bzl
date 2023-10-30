@@ -62,9 +62,6 @@ def _kt_jvm_toolchain_impl(ctx):
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         source_jar_zipper = ctx.file.source_jar_zipper,
         toolchain_type = None if ctx.attr.toolchain_type == None else str(ctx.attr.toolchain_type.label),
-        turbine = ctx.file.turbine,
-        turbine_direct = _opt_for_test(ctx.attr.turbine_direct, lambda x: x[DefaultInfo].files_to_run),
-        turbine_java_runtime = ctx.attr.turbine_java_runtime,
         # go/keep-sorted end
     )
     return [
@@ -99,11 +96,6 @@ kt_jvm_toolchain = rule(
         ),
         coverage_runtime = attr.label(
             default = "@maven//:org_jacoco_org_jacoco_agent",
-        ),
-        enable_turbine_direct = attr.bool(
-            # If disabled, the value of turbine_direct will be ignored.
-            # Starlark doesn't allow None to override default-valued attributes:
-            default = True,
         ),
         genclass = attr.label(
             default = "@bazel_tools//tools/jdk:GenClass_deploy.jar",
@@ -187,19 +179,6 @@ kt_jvm_toolchain = rule(
             default = "//tools/bin:source_jar_zipper_binary",
             cfg = "exec",
             allow_single_file = [".jar"],
-        ),
-        turbine = attr.label(
-            default = "@bazel_tools//tools/jdk:turbine_direct",
-            cfg = "exec",
-            allow_single_file = True,
-        ),
-        turbine_direct = attr.label(
-            executable = True,
-            cfg = "exec",
-            allow_single_file = True,
-        ),
-        turbine_java_runtime = attr.label(
-            cfg = "exec",
         ),
         toolchain_type = attr.label(),
     ),
