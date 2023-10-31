@@ -43,6 +43,9 @@ _kt_jvm_compile_stub_rule = rule(
             aspects = [kt_traverse_exports.aspect],
             providers = [JavaInfo],
         ),
+        disabled_lint_checks = attr.string_list(
+            default = [],
+        ),
         rule_family = attr.int(
             default = common.RULE_FAMILY.UNKNOWN,
         ),
@@ -86,7 +89,7 @@ def _kt_jvm_compile_stub_rule_impl(ctx):
         rule_family = ctx.attr.rule_family,
         kt_toolchain = kt_jvm_toolchains.get(ctx),
         java_toolchain = java_toolchains.get(ctx),
-        disable_lint_checks = [],
+        disable_lint_checks = ctx.attr.disabled_lint_checks,
         r_java = ctx.attr.r_java[JavaInfo] if ctx.attr.r_java else None,
     )
     return [result.java_info]

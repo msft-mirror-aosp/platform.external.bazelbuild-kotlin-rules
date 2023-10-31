@@ -710,10 +710,6 @@ def _kt_jvm_library(
             "--text",
             "stdout",  # also log to stdout
         ]
-        if disable_lint_checks and disable_lint_checks != [""]:
-            lint_flags.append("--disable")
-            lint_flags.append(",".join(disable_lint_checks))
-
         android_lint_out = lint_actions.run_lint_on_library(
             ctx,
             runner = kt_toolchain.android_lint_runner,
@@ -726,6 +722,7 @@ def _kt_jvm_library(
             resource_files = resource_files,
             baseline_file = androidlint_toolchains.get_baseline(ctx),
             config = (None if (kt_srcs or common_srcs) else java_android_lint_config) or kt_toolchain.android_lint_config,
+            disable_lint_checks = disable_lint_checks,
             android_lint_rules = plugins.android_lint_rulesets + [
                 lint_actions.AndroidLintRulesetInfo(singlejars = java_plugin_classpaths_for_java_srcs),
             ],
