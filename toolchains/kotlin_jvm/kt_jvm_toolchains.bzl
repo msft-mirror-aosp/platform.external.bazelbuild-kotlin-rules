@@ -58,7 +58,6 @@ def _kt_jvm_toolchain_impl(ctx):
         kotlin_sdk_libraries = ctx.attr.kotlin_sdk_libraries,
         kotlinc_cli_flags = ctx.attr.kotlinc_cli_flags + kotlinc_define_flags,
         kotlinc_ide_flags = ctx.attr.kotlinc_ide_flags + kotlinc_define_flags,
-        kt_codegen_java_runtime = ctx.attr.kt_codegen_java_runtime,
         proguard_whitelister = ctx.attr.proguard_whitelister[DefaultInfo].files_to_run,
         source_jar_zipper = ctx.file.source_jar_zipper,
         toolchain_type = None if ctx.attr.toolchain_type == None else str(ctx.attr.toolchain_type.label),
@@ -152,9 +151,6 @@ kt_jvm_toolchain = rule(
         kotlinc_ide_flags = attr.string_list(
             doc = "The static flags to pass to IDE kotlinc invocations",
             default = kotlinc_flags.IDE_FLAGS,
-        ),
-        kt_codegen_java_runtime = attr.label(
-            cfg = "exec",
         ),
         profiling_filter = attr.label(
             default = "//toolchains/kotlin_jvm:profiling_filter",
