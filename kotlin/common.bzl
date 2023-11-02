@@ -91,7 +91,6 @@ def _get_common_and_user_kotlinc_args(ctx, toolchain, extra_kotlinc_args):
 
 def _kt_plugins_map(
         android_lint_rulesets = [],
-        java_plugin_datas = depset(),
         java_plugin_infos = [],
         kt_codegen_plugin_infos = depset(),
         kt_compiler_plugin_infos = []):
@@ -100,14 +99,12 @@ def _kt_plugins_map(
     Args:
         android_lint_rulesets: (list[lint_actions.AndroidLintRulesInfo]) Android Lint checkers.
             Each JAR is self-contained and should be loaded in an isolated classloader.
-        java_plugin_datas: (depset[JavaPluginData]) for KtCodegenProcessing.
         java_plugin_infos: (list[JavaPluginInfo])
         kt_codegen_plugin_infos: (depset[KtCodegenPluginInfo]) for KtCodegenProcessing.
         kt_compiler_plugin_infos: (list[kt_compiler_plugin_infos.Info])
     """
     return struct(
         android_lint_rulesets = android_lint_rulesets,
-        java_plugin_datas = java_plugin_datas,
         java_plugin_infos = java_plugin_infos,
         kt_codegen_plugin_infos = kt_codegen_plugin_infos,
         kt_compiler_plugin_infos = kt_compiler_plugin_infos,
@@ -480,7 +477,7 @@ def _split_srcs_by_language(srcs, common_srcs, java_syncer):
     return (kt_srcs, java_srcs)
 
 def _merge_exported_plugins(exported_plugins_map):
-    for field in ["java_plugin_datas", "kt_codegen_plugin_infos", "kt_compiler_plugin_infos"]:
+    for field in ["kt_codegen_plugin_infos", "kt_compiler_plugin_infos"]:
         if getattr(exported_plugins_map, field):
             fail("exported_plugins doesn't support %s. These are propagated with aspects" % field)
 
@@ -537,6 +534,7 @@ def _kt_jvm_library(
 
     file_factory = FileFactory(ctx, output)
     static_deps = list(deps)  # Defensive copy
+    java_plugin_datas = [x.plugins for x in (plugins.java_plugin_infos + static_deps)]
 
     kt_codegen_result = dict()
     codegen_plugin_output = None
@@ -571,7 +569,6 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    java_plugin_datas = kt_codegen_result.get("java_plugin_data_set", plugins.java_plugin_datas).to_list()
     processors_for_java_srcs = kt_codegen_result.get("processors_for_java_srcs", depset(transitive = [p.processor_classes for p in java_plugin_datas])).to_list()
     java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
     out_jars = kt_codegen_result.get("codegen_runtime_output_jars", [])
@@ -645,9 +642,6 @@ def _kt_jvm_library(
 
         javac_out = output if is_android_library_without_kt_srcs_without_generative_deps else file_factory.declare_file("-libjvm-java.jar")
 
-        annotation_plugins = kt_codegen_result.get("java_common_annotation_plugins", list(plugins.java_plugin_infos))
-        enable_annotation_processing = kt_codegen_result.get("enable_java_common_annotation_processing", True)
-
         javac_java_info = java_common.compile(
             ctx,
             source_files = java_srcs,
@@ -661,11 +655,11 @@ def _kt_jvm_library(
             # all sources of default flags (for Ellipsis builds, see b/125452475).
             # TODO: remove default_javac_flags here once java_common.compile is fixed.
             javac_opts = ctx.fragments.java.default_javac_flags + javacopts,
-            plugins = annotation_plugins,
+            plugins = plugins.java_plugin_infos + kt_codegen_result.get("extra_java_plugin_infos", []),
             strict_deps = "DEFAULT",
             java_toolchain = java_toolchain,
             neverlink = neverlink,
-            enable_annotation_processing = enable_annotation_processing,
+            enable_annotation_processing = kt_codegen_result.get("enable_java_common_annotation_processing", True),
             annotation_processor_additional_outputs = annotation_processor_additional_outputs,
             annotation_processor_additional_inputs = annotation_processor_additional_inputs,
         )
