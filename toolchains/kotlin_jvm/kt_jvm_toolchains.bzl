@@ -23,7 +23,7 @@ load(":kotlinc_flags.bzl", "kotlinc_flags")
 # buildifier: disable=provider-params
 KtJvmToolchainInfo = provider()
 
-KT_VERSION = "v1_9_10"
+KT_VERSION = "v1_9_20"
 
 # TODO: Remove this alias. Why are we letting people read this?
 KT_LANG_VERSION = kotlinc_flags.KT_LANG_VERSION

@@ -80,7 +80,7 @@ load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "KT_VERSION")
 http_archive(
     name = "kotlinc",
     build_file = "@//bazel:kotlinc.BUILD",
-    sha256 = "7d74863deecf8e0f28ea54c3735feab003d0eac67e8d3a791254b16889c20342",
+    sha256 = "15a8a2825b74ccf6c44e04e97672db802d2df75ce2fbb63ef0539bf3ae5006f0",
     strip_prefix = "kotlinc",
     urls = [
         "https://github.com/JetBrains/kotlin/releases/download/v{0}/kotlin-compiler-{0}.zip".format(KT_VERSION[1:].replace("_", ".")),
