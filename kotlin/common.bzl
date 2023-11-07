@@ -539,7 +539,7 @@ def _kt_jvm_library(
     kt_codegen_result = dict()
     codegen_plugin_output = None
 
-    kt_codegen_processors = kt_codegen_result.get("processors_for_kt_codegen_processing", depset()).to_list()
+    kt_codegen_processors = kt_codegen_result.get("kt_codegen_processors", depset()).to_list()
     generative_deps = kt_codegen_result.get("codegen_output_java_infos", depset()).to_list()
 
     java_syncer = kt_srcjars.DirSrcjarSyncer(ctx, kt_toolchain, file_factory)
@@ -569,7 +569,7 @@ def _kt_jvm_library(
     # Collect all plugin data, including processors to run and all plugin classpaths,
     # whether they have processors or not (b/120995492).
     # This may include go/errorprone plugin classpaths that kapt will ignore.
-    processors_for_java_srcs = kt_codegen_result.get("processors_for_java_srcs", depset(transitive = [p.processor_classes for p in java_plugin_datas])).to_list()
+    processors_for_java_srcs = [] if kt_codegen_result else depset(transitive = [p.processor_classes for p in java_plugin_datas]).to_list()
     java_plugin_classpaths_for_java_srcs = depset(transitive = [p.processor_jars for p in java_plugin_datas])
     out_jars = kt_codegen_result.get("codegen_runtime_output_jars", [])
     out_srcjars = kt_codegen_result.get("codegen_source_jars", [])
