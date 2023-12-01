@@ -66,9 +66,6 @@ _SHARED_FLAGS = [
     "-Xallow-no-source-files",
 
     # TODO: Remove this flag
-    "-Xuse-old-innerclasses-logic",
-
-    # TODO: Remove this flag
     "-Xno-source-debug-extension",
 ]
 
