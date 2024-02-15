@@ -18,9 +18,9 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
     name = "rules_jvm_external",
-    strip_prefix = "rules_jvm_external-4.2",
-    sha256 = "cd1a77b7b02e8e008439ca76fd34f5b07aecb8c752961f9640dea15e9e5ba1ca",
-    url = "https://github.com/bazelbuild/rules_jvm_external/archive/4.2.zip",
+    strip_prefix = "rules_jvm_external-5.2",
+    sha256 = "3824ac95d9edf8465c7a42b7fcb88a5c6b85d2bac0e98b941ba13f235216f313",
+    url = "https://github.com/bazelbuild/rules_jvm_external/archive/5.2.zip",
 )
 load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
 rules_jvm_external_deps()
@@ -47,12 +47,22 @@ http_archive(
 )
 
 http_archive(
+    name = "rules_license",
+    sha256 = "4531deccb913639c30e5c7512a054d5d875698daeb75d8cf90f284375fe7c360",
+    urls = [
+        "https://github.com/bazelbuild/rules_license/releases/download/0.0.7/rules_license-0.0.7.tar.gz",
+    ],
+)
+load("@rules_license//:deps.bzl", "rules_license_dependencies")
+rules_license_dependencies()
+
+http_archive(
     name = "rules_java",
     urls = [
-      "https://mirror.bazel.build/github.com/bazelbuild/rules_java/releases/download/5.0.0/rules_java-5.0.0.tar.gz",
-      "https://github.com/bazelbuild/rules_java/releases/download/5.0.0/rules_java-5.0.0.tar.gz",
+      "https://mirror.bazel.build/github.com/bazelbuild/rules_java/releases/download/5.5.0/rules_java-5.5.0.tar.gz",
+      "https://github.com/bazelbuild/rules_java/releases/download/5.5.0/rules_java-5.5.0.tar.gz",
     ],
-    sha256 = "8c376f1e4ab7d7d8b1880e4ef8fc170862be91b7c683af97ca2768df546bb073",
+    sha256 = "bcfabfb407cb0c8820141310faa102f7fb92cc806b0f0e26a625196101b0b57e",
 )
 load("@rules_java//java:repositories.bzl", "java_tools_repos")
 java_tools_repos()
@@ -70,7 +80,7 @@ load("@//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "KT_VERSION")
 http_archive(
     name = "kotlinc",
     build_file = "@//bazel:kotlinc.BUILD",
-    sha256 = "4c3fa7bc1bb9ef3058a2319d8bcc3b7196079f88e92fdcd8d304a46f4b6b5787",
+    sha256 = "7d74863deecf8e0f28ea54c3735feab003d0eac67e8d3a791254b16889c20342",
     strip_prefix = "kotlinc",
     urls = [
         "https://github.com/JetBrains/kotlin/releases/download/v{0}/kotlin-compiler-{0}.zip".format(KT_VERSION[1:].replace("_", ".")),

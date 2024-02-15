@@ -19,6 +19,7 @@ load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchai
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("//bazel:stubs.bzl", "lint_actions")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
@@ -164,6 +165,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         providers = [
             [JavaPluginInfo],
             [KtCompilerPluginInfo],
+            [lint_actions.AndroidLintRulesetInfo],
         ],
         cfg = "exec",
         doc = """JVM plugins to export to users.
@@ -198,6 +200,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         providers = [
             [JavaPluginInfo],
             [KtCompilerPluginInfo],
+            [lint_actions.AndroidLintRulesetInfo],
         ],
         cfg = "exec",
         doc = """JVM plugins to run during compilation.
@@ -233,10 +236,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                  To support circular dependencies, this can include `.kt` and `.java` files.""",
     ),
     _android_lint_plugins = attr.label_list(
-        providers = [
-            [JavaInfo],
-        ],
+        providers = [lint_actions.AndroidLintRulesetInfo],
         cfg = "exec",
+        doc = """Additional Android Lint checks to run at compile-time.""",
     ),
 )
 
@@ -249,7 +251,7 @@ kt_jvm_library_helper = rule(
     ),
     provides = [JavaInfo],
     implementation = _jvm_library_impl,
-    toolchains = [kt_jvm_toolchains.type],
+    toolchains = [kt_jvm_toolchains.type, "@bazel_tools//tools/jdk:toolchain_type"],
     doc = """This rule compiles Kotlin (and Java) sources into a Jar file. Most Java-like libraries
              and binaries can depend on this rule, and this rule can in turn depend on Kotlin and
              Java libraries. This rule supports a subset of attributes supported by `java_library`.
