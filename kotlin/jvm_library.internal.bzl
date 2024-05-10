@@ -15,9 +15,11 @@
 """Kotlin kt_jvm_library rule."""
 
 load("//kotlin:compiler_opt.bzl", "kotlincopts_attrs", "merge_kotlincopts")
+load("//toolchains/kotlin_jvm:androidlint_toolchains.bzl", "androidlint_toolchains")
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
 load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load("//bazel:stubs.bzl", "lint_actions")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
@@ -124,6 +126,7 @@ def _jvm_library_impl(ctx):
     ]
 
 _KT_JVM_LIBRARY_ATTRS = dicts.add(
+    androidlint_toolchains.attrs,
     java_toolchains.attrs,
     kotlincopts_attrs(),
     kt_jvm_toolchains.attrs,
@@ -137,9 +140,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         allow_files = True,
     ),
     deps = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
         ],
         aspects = [
             kt_traverse_exports.aspect,
@@ -162,6 +165,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         providers = [
             [JavaPluginInfo],
             [KtCompilerPluginInfo],
+            [lint_actions.AndroidLintRulesetInfo],
         ],
         cfg = "exec",
         doc = """JVM plugins to export to users.
@@ -171,9 +175,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                      will not run kotlinc plugins""",
     ),
     exports = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
         ],
         aspects = [
             kt_traverse_exports.aspect,
@@ -196,6 +200,7 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
         providers = [
             [JavaPluginInfo],
             [KtCompilerPluginInfo],
+            [lint_actions.AndroidLintRulesetInfo],
         ],
         cfg = "exec",
         doc = """JVM plugins to run during compilation.
@@ -214,9 +219,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                          go/be#java_library.resources.""",
     ),
     runtime_deps = attr.label_list(
-        allow_rules = common.ALLOWED_JVM_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
             [CcInfo],  # for JNI / native dependencies
         ],
         aspects = [
@@ -231,10 +236,9 @@ _KT_JVM_LIBRARY_ATTRS = dicts.add(
                  To support circular dependencies, this can include `.kt` and `.java` files.""",
     ),
     _android_lint_plugins = attr.label_list(
-        providers = [
-            [JavaInfo],
-        ],
+        providers = [lint_actions.AndroidLintRulesetInfo],
         cfg = "exec",
+        doc = """Additional Android Lint checks to run at compile-time.""",
     ),
 )
 
@@ -247,7 +251,7 @@ kt_jvm_library_helper = rule(
     ),
     provides = [JavaInfo],
     implementation = _jvm_library_impl,
-    toolchains = [kt_jvm_toolchains.type],
+    toolchains = [kt_jvm_toolchains.type, "@bazel_tools//tools/jdk:toolchain_type"],
     doc = """This rule compiles Kotlin (and Java) sources into a Jar file. Most Java-like libraries
              and binaries can depend on this rule, and this rule can in turn depend on Kotlin and
              Java libraries. This rule supports a subset of attributes supported by `java_library`.

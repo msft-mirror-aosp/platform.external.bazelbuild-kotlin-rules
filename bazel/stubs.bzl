@@ -14,14 +14,20 @@
 
 """Stubs"""
 
-load("@bazel_skylib//lib:sets.bzl", "sets")
+load("//:visibility.bzl", "RULES_KOTLIN")
 
-def register_extension_info(**_kwargs):
+visibility(RULES_KOTLIN)
+
+def _empty_fn(*_args, **_kwargs):
     pass
 
-FORBIDDEN_DEP_PACKAGES = sets.make([])
+register_extension_info = _empty_fn
 
-EXEMPT_DEPS = sets.make([])
+is_forbidden_dep = _empty_fn
+
+is_exempt_dep = _empty_fn
+
+is_android_lint_exempt = _empty_fn
 
 DEFAULT_BUILTIN_PROCESSORS = [
     "com.google.android.apps.play.store.plugins.injectionentrypoint.InjectionEntryPointProcessor",
@@ -33,5 +39,31 @@ DEFAULT_BUILTIN_PROCESSORS = [
 
 BASE_JVMOPTS = []
 
-def select_java_language_version(**_kwargs):
+def select_java_language_level(**_kwargs):
     return "11"
+
+registry_checks_for_package = _empty_fn
+
+LINT_REGISTRY = None  # Only ever passed to registry_checks_for_package
+
+def _run_lint_on_library(ctx, output, *_args, **_kwargs):
+    ctx.actions.write(output, "Android Lint Disabled")
+    return output
+
+_AndroidLintRulesetInfo = provider()
+
+lint_actions = struct(
+    AndroidLintRulesetInfo = _AndroidLintRulesetInfo,
+    run_lint_on_library = _run_lint_on_library,
+    get_android_lint_baseline_file = _empty_fn,
+)
+
+def check_compiler_opt_allowlist(_label):
+    pass
+
+def jspecify_flags(_ctx):
+    # Trust JSpecify nullness annotations
+    # (see https://kotlinlang.org/docs/whatsnew1520.html#support-for-jspecify-nullness-annotations)
+    return ["-Xjspecify-annotations=strict"]
+
+integration_test_filegroup = _empty_fn

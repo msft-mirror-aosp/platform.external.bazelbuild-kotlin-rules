@@ -13,10 +13,13 @@
 # limitations under the License.
 
 load("//kotlin:rules.bzl", "kt_jvm_library", "kt_jvm_test")
-load("//tests/analysis:util.bzl", "create_dir", "create_file")
+load("//kotlin/common/testing:testing_rules.bzl", "kt_testing_rules")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
-package(default_testonly = 1)
+package(
+    default_applicable_licenses = ["//:license"],
+    default_testonly = 1,
+)
 
 licenses(["notice"])
 
@@ -41,7 +44,7 @@ kt_jvm_test(
     ],
 )
 
-create_dir(
+kt_testing_rules.create_dir(
     name = "dir/java",
     srcs = [
         "JavaInJavaDir.java",
@@ -49,7 +52,7 @@ create_dir(
     subdir = "srcartifacts",
 )
 
-create_dir(
+kt_testing_rules.create_dir(
     name = "dir/kotlin",
     srcs = [
         "KtInKotlinDir.kt",
@@ -57,16 +60,16 @@ create_dir(
     subdir = "srcartifacts",
 )
 
-create_dir(
+kt_testing_rules.create_dir(
     name = "dir/empty",
     srcs = [],
     subdir = "srcartifacts/empty",
 )
 
-create_dir(
+kt_testing_rules.create_dir(
     name = "dir/resources",
     srcs = [
-        create_file(
+        kt_testing_rules.create_file(
             name = "resources_in_resources_dir.txt",
             content = "Test resource content.",
         ),
@@ -90,7 +93,7 @@ java_library(
 kt_jvm_library(
     name = "empty_java_tree_artifact",
     srcs = [
-        create_dir(
+        kt_testing_rules.create_dir(
             name = "dir/empty_java/java",
             srcs = [],
             subdir = "srcartifacts",
@@ -101,7 +104,7 @@ kt_jvm_library(
 kt_jvm_library(
     name = "empty_kotlin_tree_artifact",
     srcs = [
-        create_dir(
+        kt_testing_rules.create_dir(
             name = "dir/empty_kotlin/kotlin",
             srcs = [],
             subdir = "srcartifacts",

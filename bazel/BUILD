@@ -14,7 +14,7 @@
 
 licenses(["notice"])  # Apache 2.0
 
-package(default_visibility = ["//:internal"])
+package(default_visibility = ["//visibility:public"])
 
 java_library(
     name = "auto_service",
@@ -42,4 +42,11 @@ java_binary(
         "@bazel_tools//tools/jdk:JacocoCoverage",
         "@maven//:org_jacoco_org_jacoco_cli",
     ],
+)
+
+genrule(
+    name = "stub_tool",
+    outs = ["stub_tool.sh"],
+    cmd = "exit 1",
+    executable = True,
 )

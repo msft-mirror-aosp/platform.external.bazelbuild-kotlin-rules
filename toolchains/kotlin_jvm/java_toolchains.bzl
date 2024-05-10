@@ -14,6 +14,10 @@
 
 """Java toolchain for Kotlin."""
 
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+
+visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
+
 _ATTRS = dict(
     _java_toolchain = attr.label(
         default = Label(

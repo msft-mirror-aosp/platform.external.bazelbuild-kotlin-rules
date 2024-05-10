@@ -14,10 +14,13 @@
 
 """Compile method that can compile kotlin or java sources"""
 
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//bazel:stubs.bzl", "lint_actions")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
-load("@bazel_skylib//lib:sets.bzl", "sets")
+
+visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
 
 _RULE_FAMILY = common.RULE_FAMILY
 
@@ -37,6 +40,7 @@ def kt_jvm_compile(
         android_lint_plugins,
         resource_files,
         exported_plugins,
+        java_android_lint_config = None,
         manifest = None,
         merged_manifest = None,
         classpath_resources = [],
@@ -71,6 +75,7 @@ def kt_jvm_compile(
         execute as a part of linting.
       resource_files: List of Files. The list of Android Resource files.
       exported_plugins: List of exported javac/kotlinc plugins
+      java_android_lint_config: Android Lint XML config file to use if there are no Kotlin srcs
       manifest: A File. The raw Android manifest. Optional.
       merged_manifest: A File. The merged Android manifest. Optional.
       classpath_resources: List of Files. The list of classpath resources (kt_jvm_library only).
@@ -111,14 +116,11 @@ def kt_jvm_compile(
     if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
         fail("resources attribute only allowed for jvm libraries")
 
-    if type(java_toolchain) != "JavaToolchainInfo":
+    if type(java_toolchain) == "Target":
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
 
-    srcs = list(srcs)
-    classpath_resources = list(classpath_resources)
     java_infos = []
-    codegen_output_java_infos = []
 
     # The r_java field only support Android resources Jar files. For now, verify
     # that the name of the jar matches "_resources.jar". This check does not to
@@ -132,17 +134,13 @@ def kt_jvm_compile(
                      "'*_resources.jar'.")
         r_java_infos.append(r_java)
 
-    pre_processed_java_plugin_processors = sets.make([])
-
     # Skip deps validation check for any android_library target with no kotlin sources: b/239721906
     has_kt_srcs = any([common.is_kt_src(src) for src in srcs])
     if rule_family != _RULE_FAMILY.ANDROID_LIBRARY or has_kt_srcs:
         kt_traverse_exports.expand_forbidden_deps(deps + runtime_deps + exports)
 
     for dep in deps:
-        if False:
-            pass
-        elif JavaInfo in dep:
+        if JavaInfo in dep:
             java_infos.append(dep[JavaInfo])
         else:
             fail("Unexpected dependency (must provide JavaInfo): %s" % dep.label)
@@ -152,15 +150,15 @@ def kt_jvm_compile(
 
     return common.kt_jvm_library(
         ctx,
-        android_lint_plugins = [p[JavaInfo] for p in android_lint_plugins],
-        android_lint_rules_jars = android_lint_rules_jars,
         classpath_resources = classpath_resources,
         common_srcs = common_srcs,
         coverage_srcs = coverage_srcs,
                 deps = r_java_infos + java_infos,
-        codegen_output_java_infos = codegen_output_java_infos,
         disable_lint_checks = disable_lint_checks,
-        exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
+        exported_plugins = common.kt_plugins_map(
+            java_plugin_infos = common.collect_providers(JavaPluginInfo, exported_plugins),
+            android_lint_rulesets = common.collect_providers(lint_actions.AndroidLintRulesetInfo, exported_plugins),
+        ),
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
         exports = r_java_infos + [e[JavaInfo] for e in exports if JavaInfo in e],
         friend_jars = kt_traverse_exports.expand_friend_jars(deps, root = ctx),
@@ -176,15 +174,19 @@ def kt_jvm_compile(
         output = output,
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
-            java_plugin_infos = [plugin[JavaPluginInfo] for plugin in plugins if (JavaPluginInfo in plugin)],
-            kt_compiler_plugin_infos =
-                kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
-                    plugin[KtCompilerPluginInfo]
-                    for plugin in plugins
-                    if (KtCompilerPluginInfo in plugin)
-                ],
+            android_lint_rulesets = (
+                common.collect_providers(lint_actions.AndroidLintRulesetInfo, android_lint_plugins) +
+                common.collect_providers(lint_actions.AndroidLintRulesetInfo, plugins)
+            ) + [
+                lint_actions.AndroidLintRulesetInfo(singlejars = android_lint_rules_jars),
+            ],
+            java_plugin_infos = common.collect_providers(JavaPluginInfo, plugins),
+            kt_compiler_plugin_infos = (
+                kt_traverse_exports.expand_compiler_plugins(deps).to_list() +
+                common.collect_providers(KtCompilerPluginInfo, plugins)
+            ),
         ),
-        pre_processed_java_plugin_processors = pre_processed_java_plugin_processors,
+        java_android_lint_config = java_android_lint_config,
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,

@@ -12,6 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//bazel:stubs.bzl", "integration_test_filegroup")
+load("@rules_license//rules:license.bzl", "license")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+package(
+    default_applicable_licenses = ["//:license"],
+)
+
 licenses(["notice"])
 
 exports_files(["LICENSE"])
@@ -21,4 +29,16 @@ package_group(
     packages = [
         "//...",
     ],
+)
+
+bzl_library(
+    name = "visibility_bzl",
+    srcs = ["visibility.bzl"],
+    visibility = [":internal"],
+)
+
+license(
+    name = "license",
+    package_name = "rules_kotlin",
+    visibility = [":internal"],
 )

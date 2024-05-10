@@ -14,12 +14,15 @@
 
 """Kotlin kt_jvm_import rule."""
 
-load(":common.bzl", "common")
-load(":traverse_exports.bzl", "kt_traverse_exports")
-load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
+load("//:visibility.bzl", "RULES_KOTLIN")
 load("//toolchains/kotlin_jvm:java_toolchains.bzl", "java_toolchains")
+load("//toolchains/kotlin_jvm:kt_jvm_toolchains.bzl", "kt_jvm_toolchains")
 load("@bazel_skylib//lib:dicts.bzl", "dicts")
+load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
+load(":traverse_exports.bzl", "kt_traverse_exports")
+
+visibility(RULES_KOTLIN)
 
 def _kt_jvm_import_impl(ctx):
     kt_jvm_toolchain = kt_jvm_toolchains.get(ctx)
@@ -72,12 +75,10 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
     java_toolchains.attrs,
     kt_jvm_toolchains.attrs,
     deps = attr.label_list(
-        # We allow android rule deps to make importing android JARs easier.
-        allow_rules = common.ALLOWED_JVM_RULES + common.ALLOWED_ANDROID_RULES,
         aspects = [kt_traverse_exports.aspect],
         providers = [
             # Each provider-set expands on allow_rules
-            [JavaInfo],
+            [JavaInfo],  # We allow android rule deps to make importing android JARs easier.
         ],
         doc = """The list of libraries this library directly depends on at compile-time. For Java
                  and Kotlin libraries listed, the Jars they build as well as the transitive closure
@@ -115,10 +116,9 @@ _KT_JVM_IMPORT_ATTRS = dicts.add(
         doc = """Proguard specifications to go along with this library.""",
     ),
     runtime_deps = attr.label_list(
-        # TODO: Delete common.ALLOWED_ANDROID_RULES
-        allow_rules = common.ALLOWED_JVM_RULES + common.ALLOWED_ANDROID_RULES,
         providers = [
             # Each provider-set expands on allow_rules
+            [JavaInfo],
             [CcInfo],  # for JNI / native dependencies
         ],
         aspects = [kt_traverse_exports.aspect],
@@ -140,7 +140,7 @@ kt_jvm_import = rule(
     fragments = ["java"],
     provides = [JavaInfo],
     implementation = _kt_jvm_import_impl,
-    toolchains = [kt_jvm_toolchains.type],
+    toolchains = [kt_jvm_toolchains.type, "@bazel_tools//tools/jdk:toolchain_type"],
     doc = """Allows the use of precompiled Kotlin `.jar` files as deps of `kt_*` targets.
 
              Prefer this rule to `java_import` for Kotlin Jars. Most Java-like libraries
