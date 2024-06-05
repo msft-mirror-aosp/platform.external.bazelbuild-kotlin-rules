@@ -16,16 +16,17 @@
 
 load("//:visibility.bzl", "RULES_KOTLIN")
 
-_KtCompilerPluginInfo = provider(
+visibility(RULES_KOTLIN)
+
+KtCompilerPluginInfo, _make_kt_compiler_plugin_info = provider(
     doc = "Info for running a plugin that directly registers itself to kotlinc extension points",
     fields = dict(
         plugin_id = "string",
         jar = "File",
         args = "list[string]",
     ),
+    init = fail,
 )
-
-KtCompilerPluginInfo, _make_kt_compiler_plugin_info = (_KtCompilerPluginInfo, _KtCompilerPluginInfo)
 
 def _kt_compiler_plugin_impl(ctx):
 

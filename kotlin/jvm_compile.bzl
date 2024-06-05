@@ -14,10 +14,13 @@
 
 """Compile method that can compile kotlin or java sources"""
 
+load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+load("//bazel:stubs.bzl", "lint_actions")
 load(":common.bzl", "common")
 load(":compiler_plugin.bzl", "KtCompilerPluginInfo")
 load(":traverse_exports.bzl", "kt_traverse_exports")
-load("//:visibility.bzl", "RULES_DEFS_THAT_COMPILE_KOTLIN")
+
+visibility(RULES_DEFS_THAT_COMPILE_KOTLIN)
 
 _RULE_FAMILY = common.RULE_FAMILY
 
@@ -37,6 +40,7 @@ def kt_jvm_compile(
         android_lint_plugins,
         resource_files,
         exported_plugins,
+        java_android_lint_config = None,
         manifest = None,
         merged_manifest = None,
         classpath_resources = [],
@@ -71,6 +75,7 @@ def kt_jvm_compile(
         execute as a part of linting.
       resource_files: List of Files. The list of Android Resource files.
       exported_plugins: List of exported javac/kotlinc plugins
+      java_android_lint_config: Android Lint XML config file to use if there are no Kotlin srcs
       manifest: A File. The raw Android manifest. Optional.
       merged_manifest: A File. The merged Android manifest. Optional.
       classpath_resources: List of Files. The list of classpath resources (kt_jvm_library only).
@@ -111,7 +116,7 @@ def kt_jvm_compile(
     if classpath_resources and rule_family != _RULE_FAMILY.JVM_LIBRARY:
         fail("resources attribute only allowed for jvm libraries")
 
-    if type(java_toolchain) != "JavaToolchainInfo":
+    if type(java_toolchain) == "Target":
         # Allow passing either a target or a provider until all callers are updated
         java_toolchain = java_toolchain[java_common.JavaToolchainInfo]
 
@@ -150,7 +155,10 @@ def kt_jvm_compile(
         coverage_srcs = coverage_srcs,
                 deps = r_java_infos + java_infos,
         disable_lint_checks = disable_lint_checks,
-        exported_plugins = [e[JavaPluginInfo] for e in exported_plugins if (JavaPluginInfo in e)],
+        exported_plugins = common.kt_plugins_map(
+            java_plugin_infos = common.collect_providers(JavaPluginInfo, exported_plugins),
+            android_lint_rulesets = common.collect_providers(lint_actions.AndroidLintRulesetInfo, exported_plugins),
+        ),
         # Not all exported targets contain a JavaInfo (e.g. some only have CcInfo)
         exports = r_java_infos + [e[JavaInfo] for e in exports if JavaInfo in e],
         friend_jars = kt_traverse_exports.expand_friend_jars(deps, root = ctx),
@@ -166,20 +174,19 @@ def kt_jvm_compile(
         output = output,
         output_srcjar = output_srcjar,
         plugins = common.kt_plugins_map(
-            android_lint_singlejar_plugins = android_lint_rules_jars,
-            android_lint_libjar_plugin_infos = [p[JavaInfo] for p in android_lint_plugins],
-            java_plugin_infos = [
-                plugin[JavaPluginInfo]
-                for plugin in plugins
-                if (JavaPluginInfo in plugin)
+            android_lint_rulesets = (
+                common.collect_providers(lint_actions.AndroidLintRulesetInfo, android_lint_plugins) +
+                common.collect_providers(lint_actions.AndroidLintRulesetInfo, plugins)
+            ) + [
+                lint_actions.AndroidLintRulesetInfo(singlejars = android_lint_rules_jars),
             ],
-            kt_compiler_plugin_infos =
-                kt_traverse_exports.expand_compiler_plugins(deps).to_list() + [
-                    plugin[KtCompilerPluginInfo]
-                    for plugin in plugins
-                    if (KtCompilerPluginInfo in plugin)
-                ],
+            java_plugin_infos = common.collect_providers(JavaPluginInfo, plugins),
+            kt_compiler_plugin_infos = (
+                kt_traverse_exports.expand_compiler_plugins(deps).to_list() +
+                common.collect_providers(KtCompilerPluginInfo, plugins)
+            ),
         ),
+        java_android_lint_config = java_android_lint_config,
         resource_files = resource_files,
         runtime_deps = [d[JavaInfo] for d in runtime_deps if JavaInfo in d],
         srcs = srcs,
